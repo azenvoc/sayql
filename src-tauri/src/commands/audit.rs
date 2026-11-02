@@ -231,7 +231,7 @@ pub async fn add_knowledge_folder(
     let path = picked
         .into_path()
         .map_err(|e| AppError::User(format!("Could not use that folder: {e}")))?;
-    let path = path.canonicalize().unwrap_or(path);
+    let path = dunce::canonicalize(&path).unwrap_or(path);
     let path = path.to_string_lossy().into_owned();
     let label = default_label(&path);
     let source =
@@ -349,7 +349,7 @@ pub async fn add_knowledge_files(
         let path = p
             .into_path()
             .map_err(|e| AppError::User(format!("Could not use that file: {e}")))?;
-        let path = path.canonicalize().unwrap_or(path);
+        let path = dunce::canonicalize(&path).unwrap_or(path);
         paths.push(path.to_string_lossy().into_owned());
     }
     let label = match paths.as_slice() {
@@ -551,7 +551,9 @@ async fn ready_sources(
         let (ready, error) = match &source.kind {
             SourceKind::Local { path } => {
                 let dir = std::path::Path::new(path);
-                match dir.canonicalize() {
+                // Not std's canonicalize: on Windows it gives `\\?\C:\…`, which OpenCode's
+                // path rules don't match.
+                match dunce::canonicalize(dir) {
                     Ok(dir) if dir.is_dir() => {
                         let commit = repos::head(&dir).await;
                         (
@@ -601,7 +603,7 @@ async fn ready_sources(
                     Some(sub) => dest.join(sub),
                     None => dest.clone(),
                 };
-                match (&commit, dir.canonicalize()) {
+                match (&commit, dunce::canonicalize(&dir)) {
                     (Some(_), Ok(dir)) if dir.is_dir() => (
                         Some(Ready {
                             label: source.label.clone(),
@@ -648,7 +650,7 @@ async fn ready_sources(
                     }
                 };
                 let dir = state.store.repo_dir(&source.id)?;
-                match (&version, dir.canonicalize()) {
+                match (&version, dunce::canonicalize(&dir)) {
                     (Some(_), Ok(dir)) if dir.is_dir() => (
                         Some(Ready {
                             label: source.label.clone(),

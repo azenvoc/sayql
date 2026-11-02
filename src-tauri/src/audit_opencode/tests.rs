@@ -113,15 +113,21 @@ fn targz_with(path: &str, body: &[u8]) -> Vec<u8> {
     out
 }
 
-fn asset_for(bytes: &[u8], archive: Archive, entry: &'static str) -> Asset {
+fn sha_of(bytes: &[u8]) -> &'static str {
     let mut h = Sha256::new();
     h.update(bytes);
+    Box::leak(hex(&h.finalize()).into_boxed_str())
+}
+
+/// An asset pinned to the archive `bytes`, whose `entry` unpacks to `exe`.
+fn asset_for(bytes: &[u8], archive: Archive, entry: &'static str, exe: &[u8]) -> Asset {
     Asset {
         url: "https://example.invalid/x",
         bytes: bytes.len() as u64,
-        sha256: Box::leak(hex(&h.finalize()).into_boxed_str()),
+        sha256: sha_of(bytes),
         archive,
         entry,
+        exe_sha256: sha_of(exe),
     }
 }
 
@@ -214,7 +220,8 @@ fn a_download_is_unpacked_only_when_its_checksum_matches() {
         let file = dir.join("download");
         std::fs::write(&file, &data).unwrap();
         let dest = dir.join(entry);
-        let good = asset_for(&data, archive, entry);
+        let body: &[u8] = b"#!/bin/sh\necho hi\n";
+        let good = asset_for(&data, archive, entry, body);
         let sha = install_from_archive(&file, &good, &dest).unwrap();
         assert_eq!(std::fs::read(&dest).unwrap(), b"#!/bin/sh\necho hi\n");
         assert_eq!(sha, sha256_file(&dest).unwrap());
@@ -238,17 +245,42 @@ fn a_download_is_unpacked_only_when_its_checksum_matches() {
         std::fs::write(&file, &data).unwrap();
         let wrong = Asset {
             sha256: "0000000000000000000000000000000000000000000000000000000000000000",
-            ..asset_for(&data, archive, entry)
+            ..asset_for(&data, archive, entry, body)
         };
         assert!(install_from_archive(&file, &wrong, &dest).is_err());
         assert!(!dest.exists());
+        // The archive as pinned, but its program isn't the one pinned: not kept.
+        let other_program = asset_for(&data, archive, entry, b"another program");
+        let e = install_from_archive(&file, &other_program, &dest).unwrap_err();
+        assert!(e.contains("program didn't match"), "{e}");
+        assert!(!dest.exists());
         // An archive without the executable.
-        let other = asset_for(&data, archive, "nothere");
+        let other = asset_for(&data, archive, "nothere", body);
         assert!(
             install_from_archive(&file, &other, &dest)
                 .unwrap_err()
                 .contains("has no")
         );
+    }
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+/// Every platform's pinned archive and executable hashes, against the release files in
+/// `SAYQL_OPENCODE_ARCHIVES` (all eight, by their download names). Run when the pins change.
+#[test]
+#[ignore = "needs the release archives in SAYQL_OPENCODE_ARCHIVES"]
+fn the_pinned_hashes_match_the_release_files() {
+    let archives = PathBuf::from(std::env::var_os("SAYQL_OPENCODE_ARCHIVES").unwrap());
+    let dir = temp("pins");
+    for p in &PLATFORMS {
+        for asset in [&p.opencode, &p.ripgrep] {
+            let file = archives.join(asset.url.rsplit('/').next().unwrap());
+            let dest = dir.join(format!("{}-{}-{}", p.os, p.arch, asset.entry));
+            let sha = install_from_archive(&file, asset, &dest)
+                .unwrap_or_else(|e| panic!("{}: {e}", asset.url));
+            assert_eq!(sha, asset.exe_sha256, "{}", asset.url);
+            std::fs::remove_file(&dest).unwrap();
+        }
     }
     let _ = std::fs::remove_dir_all(dir);
 }
@@ -260,19 +292,32 @@ fn an_install_is_used_only_while_it_matches_its_hashes() {
     std::fs::create_dir_all(&bin).unwrap();
     std::fs::write(bin.join(exe("opencode")), b"oc").unwrap();
     std::fs::write(bin.join(exe("rg")), b"rg").unwrap();
-    assert_eq!(installed(&dir), None, "no hashes yet");
+    let platform = Platform {
+        os: "test",
+        arch: "test",
+        opencode: asset_for(b"", Archive::Zip, "opencode", b"oc"),
+        ripgrep: asset_for(b"", Archive::TarGz, "rg", b"rg"),
+    };
+    assert_eq!(installed_for(&dir, &platform), None, "not finished yet");
     assert_eq!(present(&dir), None);
+    std::fs::write(dir.join(HASHES), "{}").unwrap();
+    let got = installed_for(&dir, &platform).unwrap();
+    assert_eq!(got.opencode, bin.join(exe("opencode")));
+    assert_eq!(got.bin_dir, bin);
+    assert!(present(&dir).is_some());
+    std::fs::write(bin.join(exe("rg")), b"changed").unwrap();
+    assert_eq!(
+        installed_for(&dir, &platform),
+        None,
+        "a changed file isn't run"
+    );
+    // A matching hash file in the install folder doesn't make a changed file trusted.
     let hashes = json!({
         "opencode": sha256_file(&bin.join(exe("opencode"))).unwrap(),
         "rg": sha256_file(&bin.join(exe("rg"))).unwrap(),
     });
     std::fs::write(dir.join(HASHES), hashes.to_string()).unwrap();
-    let got = installed(&dir).unwrap();
-    assert_eq!(got.opencode, bin.join(exe("opencode")));
-    assert_eq!(got.bin_dir, bin);
-    assert!(present(&dir).is_some());
-    std::fs::write(bin.join(exe("rg")), b"changed").unwrap();
-    assert_eq!(installed(&dir), None, "a changed file isn't run");
+    assert_eq!(installed_for(&dir, &platform), None);
     let _ = std::fs::remove_dir_all(dir);
 }
 

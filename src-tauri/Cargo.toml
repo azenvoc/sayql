@@ -87,6 +87,9 @@ zip = { version = "4", default-features = false, features = ["deflate"] }
 # Unpacking the built-in OpenCode and ripgrep on Linux and macOS (.tar.gz).
 flate2 = "1"
 tar = "0.4"
+# canonicalize without Windows' `\\?\` prefix, which OpenCode's path rules don't match. The same as
+# std on macOS and Linux. Already in the tree through tauri.
+dunce = "1.0.5"
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]
