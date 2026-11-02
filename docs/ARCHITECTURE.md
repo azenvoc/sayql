@@ -66,6 +66,8 @@ src-tauri/src/
   pii.rs                likely personal data in text, for the masker and note checks
   notes.rs              database notes: checks, review after a schema change, suggested fixes
   knowledge.rs          knowledge sources: file text (PDF, DOCX, HTML) and the web crawler
+  knowledge/pdf.rs      PDF text, read by SayQL's own executable in a child process (`--extract-pdf`,
+                        wired in main.rs) with a time, output and (Linux) memory limit
   repos.rs              git and local code sources copied for the audit
   audit.rs              the audit prompt and its sources
   audit_runner.rs       runs the audit in a coding agent (Claude Code, Codex, ...), read-only

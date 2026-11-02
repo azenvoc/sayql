@@ -46,6 +46,17 @@ fn with_menu(b: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
     b
 }
 
+/// Runs one of SayQL's helper modes when the arguments ask for one, before anything of the app
+/// starts: its exit code. `None` means start the app. The only mode reads one PDF's text for
+/// the app in a child process (`--extract-pdf`, see `knowledge::pdf`).
+pub fn helper_mode() -> Option<i32> {
+    let mut args = std::env::args_os().skip(1);
+    match (args.next(), args.next()) {
+        (Some(flag), None) if flag == knowledge::pdf::FLAG => Some(knowledge::pdf::reader_main()),
+        _ => None,
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     with_menu(tauri::Builder::default())
