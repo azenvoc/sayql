@@ -96,6 +96,11 @@ opt-level = 3
 panic = "abort"
 strip = true
 
+[target.'cfg(unix)'.dependencies]
+# setrlimit without unsafe code, to cap the PDF reader's memory (knowledge/pdf.rs). Already in
+# the tree through tempfile.
+rustix = { version = "1", features = ["process"] }
+
 [target.'cfg(target_os = "linux")'.dependencies]
 # tauri-plugin-deep-link 2.6.2 doesn't compile with rust-ini 0.21.2+ (new ParseOption fields).
 rust-ini = "=0.21.1"

@@ -4566,6 +4566,7 @@ dependencies = [
  "rmcp",
  "rust-ini",
  "rust_decimal",
+ "rustix",
  "schemars 1.2.3",
  "serde",
  "serde_json",
