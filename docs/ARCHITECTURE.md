@@ -73,16 +73,20 @@ src-tauri/src/
     mask/               masks likely personal data in results as per-run tokens (‹email-3›), puts real values back
                         into SQL as dialect literals, and builds the "counts and summaries only" view
   notes.rs              database notes: checks, review after a schema change, suggested fixes
-  knowledge.rs          knowledge sources: file text (PDF, DOCX, HTML) and the web crawler
-  knowledge/pdf.rs      PDF text, read by SayQL's own executable in a child process (`--extract-pdf`,
+  audit/                the audit: an AI checks a database's notes against code, files and web pages
+    mod.rs              the audit prompt and its sources
+    runner.rs, runner/  runs the audit in a coding agent (Claude Code, Codex, ...), read-only; run_dir.rs: the
+                        private run folder
+    opencode.rs, opencode/  the built-in OpenCode audit: pinned download, deny-first config, private HOME,
+                        secret files kept out (secrets.rs)
+    process.rs          child processes: process groups, stop and kill
+    coding_agents.rs    which coding agents are installed
+    knowledge.rs        knowledge sources: file text (PDF, DOCX, HTML) and the web crawler
+    knowledge/pdf.rs    PDF text, read by SayQL's own executable in a child process (`--extract-pdf`,
                         wired in main.rs) with a time, output and (Linux) memory limit
-  repos.rs              git and local code sources copied for the audit
-  audit.rs              the audit prompt and its sources
-  audit_runner.rs       runs the audit in a coding agent (Claude Code, Codex, ...), read-only
-  audit_opencode.rs     the built-in OpenCode audit: pinned download, deny-first config, private HOME
-  agent_process.rs      child processes: process groups, stop and kill
-  coding_agents.rs      which coding agents are installed
-  team.rs, team/        the team server client: sign-in, queries, shared notes, team AI
+    repos.rs            git and local code sources copied for the audit
+  team/                 the team server client (mod.rs): sign-in, queries, shared notes, team AI (ai.rs),
+                        shared knowledge (knowledge.rs)
   app_menu.rs           the native menu
   handoff.rs            sayql:// links from sayql-mcp to the app (prefilled connection, SQL tab): validation, one-time tokens
   error.rs              AppError / AppResult: the single error type; serializes to a message for the UI

@@ -94,24 +94,18 @@ const rustRoot = join(root, "src-tauri", "src");
 
 // New top-level modules are a design decision: add them here and to AGENTS.md's map.
 const TOP_LEVEL = new Set([
-  "agent_process",
   "ai",
   "app_menu",
   "audit",
-  "audit_opencode",
-  "audit_runner",
   "bin",
-  "coding_agents",
   "commands",
   "db",
   "error",
   "handoff",
-  "knowledge",
   "lib",
   "main",
   "mcp",
   "notes",
-  "repos",
   "safety",
   "schema",
   "state",
@@ -134,7 +128,7 @@ for (const e of readdirSync(rustRoot, { withFileTypes: true })) {
 // AppState's shared client, so timeouts and redirect rules apply everywhere.
 const OWN_HTTP_CLIENT = new Set([
   "src-tauri/src/state.rs", // the shared client
-  "src-tauri/src/knowledge.rs", // the crawler: pinned DNS, no redirects followed
+  "src-tauri/src/audit/knowledge.rs", // the crawler: pinned DNS, no redirects followed
 ]);
 // The only place that checks SQL for an AI (never-send and forbidden functions): the AI query
 // gate. The MCP server, agent mode and note checks call it; a new path that runs SQL for an AI

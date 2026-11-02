@@ -75,7 +75,7 @@ Where new code goes:
 | Database access, decoding, introspection | `db/` (no Tauri types) |
 | SQL lexing, read-only and never-send checks, personal-data detection, masking, error redaction, the AI query gate | `safety/` (`sql_lex`, `classify`, `never_send`, `pii`, `mask`, `redact`, `readonly`, `gate`) |
 | AI providers, prompts, agent mode | `ai/` |
-| The audit and its runners, knowledge sources | `audit*`, `knowledge`, `repos` |
+| The audit, its runners and child processes, knowledge and code sources | `audit/` (`runner`, `opencode`, `process`, `coding_agents`, `knowledge`, `repos`) |
 | Saved files and secrets | `store/` (secrets only through `store::secrets`) |
 | Team server client | `team/` |
 
@@ -83,7 +83,7 @@ Where new code goes:
 
 - `#[tauri::command]` only in `commands/`. Commands hold no business logic.
 - Every HTTP request uses `AppState`'s shared `reqwest::Client`. Only `state.rs` (the shared
-  client) and `knowledge.rs` (the crawler, which pins DNS and checks every redirect) build their
+  client) and `audit/knowledge.rs` (the crawler, which pins DNS and checks every redirect) build their
   own client.
 - JSON sent to the UI is camelCase (`#[serde(rename_all = "camelCase")]`). The exception is
   explained in docs/ARCHITECTURE.md.

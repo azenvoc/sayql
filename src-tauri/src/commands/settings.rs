@@ -382,7 +382,7 @@ pub fn mcp_setup() -> AppResult<McpSetup> {
 /// one in the setup. Only checks for files; runs nothing.
 #[tauri::command]
 pub async fn installed_coding_agents() -> AppResult<Vec<&'static str>> {
-    tauri::async_runtime::spawn_blocking(crate::coding_agents::installed)
+    tauri::async_runtime::spawn_blocking(crate::audit::coding_agents::installed)
         .await
         .map_err(|e| AppError::User(format!("Could not look for coding agents: {e}")))
 }

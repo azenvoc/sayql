@@ -2,7 +2,7 @@
 //! files the person picked, and web pages. Only where each is and how its last fetch went is
 //! kept here; a repository's token, if it needs one, is in the keychain
 //! ([`crate::store::secrets::repo_token`]), and its copy (or the text of its files and pages)
-//! is in `repos/<source id>` next to this file (see [`crate::repos`], [`crate::knowledge`]).
+//! is in `repos/<source id>` next to this file (see [`crate::audit::repos`], [`crate::audit::knowledge`]).
 //! The file keeps its first name, `code-sources.json`.
 //!
 //! Replaces `audit-folders.json` (one folder per connection), whose folders become local

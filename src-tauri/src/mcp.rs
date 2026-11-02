@@ -1343,7 +1343,7 @@ mod tests {
     /// new tool can't slip into the run unlisted.
     #[test]
     fn the_audit_allows_or_denies_every_tool() {
-        use crate::audit_runner::{CLAUDE_DENIED, SAYQL_TOOLS};
+        use crate::audit::runner::{CLAUDE_DENIED, SAYQL_TOOLS};
         let offered: Vec<String> = SayqlServer::tool_router()
             .list_all()
             .into_iter()
@@ -1841,7 +1841,7 @@ mod tests {
         assert_eq!(client_label(&info("Zed")).as_deref(), Some("Zed"));
         assert_eq!(
             client_label(&info("opencode")).as_deref(),
-            Some(crate::audit_opencode::APP)
+            Some(crate::audit::opencode::APP)
         );
         // The title an app sends is not used, and an unknown name is marked unverified.
         let mut spoof = info("x-agent");

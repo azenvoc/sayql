@@ -3,8 +3,8 @@
 //! audit reads like a code folder. Nothing here goes anywhere but the files and pages named:
 //! the snapshots reach only the AI the person chose, when they run an audit.
 
+use crate::audit::repos::private_dir;
 use crate::error::AppResult;
-use crate::repos::private_dir;
 use sha2::{Digest, Sha256};
 use std::collections::{HashSet, VecDeque};
 use std::net::{IpAddr, SocketAddr};

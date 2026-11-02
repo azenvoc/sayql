@@ -6,18 +6,18 @@
 //! src/audit_runner.rs and src/audit_opencode.rs for what's enforced, src/repos.rs for git, and
 //! src/knowledge.rs for files and web pages.
 
-use crate::agent_process::{TerminalRun, Tree, kill_tree, launch_terminal, no_window, version_of};
 use crate::ai::{KeyNeed, SAYQL_CREDITS, endpoint};
-use crate::audit::{self, Target};
-use crate::audit_opencode::{self as opencode, OpenCodeStream};
-use crate::audit_runner::run_dir::{self, RunDir};
-use crate::audit_runner::{
+use crate::audit::knowledge;
+use crate::audit::opencode::{self as opencode, OpenCodeStream};
+use crate::audit::process::{TerminalRun, Tree, kill_tree, launch_terminal, no_window, version_of};
+use crate::audit::repos;
+use crate::audit::runner::run_dir::{self, RunDir};
+use crate::audit::runner::{
     self as runner, AgentSpec, AuditModel, AuditPayment, ClaudeStream, RunFiles, RunStream,
 };
+use crate::audit::{self, Target};
 use crate::commands::settings::mcp_binary;
 use crate::error::{AppError, AppResult};
-use crate::knowledge;
-use crate::repos;
 use crate::state::AppState;
 use crate::store::apps::AppGate;
 use crate::store::code_sources::{KnowledgeSource, SourceKind, default_label};

@@ -2,13 +2,13 @@
 //! Read-only: it checks whether files and folders exist and lists two extension folders. It never
 //! runs or opens anything. The ids match `src/features/agent/agents.ts`.
 
-use crate::audit_runner;
+use super::runner;
 use std::path::{Path, PathBuf};
 
 /// How to tell that one agent is installed. Any match counts.
 struct Rule {
     id: &'static str,
-    /// Executables on PATH or in the usual install folders (see `audit_runner::search_dirs`).
+    /// Executables on PATH or in the usual install folders (see `runner::search_dirs`).
     bins: &'static [&'static str],
     /// macOS app bundles, in /Applications or ~/Applications.
     mac_apps: &'static [&'static str],
@@ -162,7 +162,7 @@ pub fn detect(p: &Probe) -> Vec<&'static str> {
     RULES
         .iter()
         .filter(|r| {
-            audit_runner::find_in(r.bins, &p.bin_dirs, |f| (p.exists)(f)).is_some()
+            runner::find_in(r.bins, &p.bin_dirs, |f| (p.exists)(f)).is_some()
                 || r.mac_apps
                     .iter()
                     .any(|a| p.app_dirs.iter().any(|d| (p.exists)(&d.join(a))))
@@ -208,7 +208,7 @@ pub fn installed() -> Vec<&'static str> {
             .unwrap_or_default()
     };
     detect(&Probe {
-        bin_dirs: audit_runner::search_dirs(std::env::var_os("PATH").as_deref(), home.as_deref()),
+        bin_dirs: runner::search_dirs(std::env::var_os("PATH").as_deref(), home.as_deref()),
         app_dirs,
         home,
         local_appdata,

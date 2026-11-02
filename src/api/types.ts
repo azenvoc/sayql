@@ -81,7 +81,7 @@ export interface TeamAiStatus {
 /** Where a query came from, for the team server's audit log. */
 export type QuerySource = "ask" | "agent" | "editor";
 
-/** Must match `team::SIGNED_OUT` in src-tauri/src/team.rs. */
+/** Must match `team::SIGNED_OUT` in src-tauri/src/team/mod.rs. */
 export const TEAM_SIGNED_OUT = "Signed out of your team, sign in again.";
 
 export type Dialect = "PostgreSQL" | "MySQL" | "SQLite" | "SQL Server";
@@ -358,10 +358,10 @@ export interface KnowledgeSource {
   error: string | null;
 }
 
-/** The model an audit runs on; mirrors `audit_runner::AuditModel`. "default" is the person's own Claude Code default. */
+/** The model an audit runs on; mirrors `audit::runner::AuditModel`. "default" is the person's own Claude Code default. */
 export type AuditModel = "sonnet" | "opus" | "default";
 
-/** Who pays for an audit run; mirrors `audit_runner::AuditPayment`. "credits" (paying with SayQL AI credits) is off for now: the app always runs on "subscription". */
+/** Who pays for an audit run; mirrors `audit::runner::AuditPayment`. "credits" (paying with SayQL AI credits) is off for now: the app always runs on "subscription". */
 export type AuditPayment = "subscription" | "credits";
 
 /** The saved payment choice, and whether a SayQL credit key is saved; mirrors `commands::audit::AuditPaymentView`. */

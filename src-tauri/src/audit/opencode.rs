@@ -48,7 +48,7 @@
 //!   list) and names the tools `sayql_<tool>`.
 
 use crate::ai::{Api, KeyNeed, Provider};
-use crate::audit_runner::{CREDITS_HAIKU, CREDITS_OPUS, CREDITS_SONNET, Line, SAYQL_TOOLS};
+use crate::audit::runner::{CREDITS_HAIKU, CREDITS_OPUS, CREDITS_SONNET, Line, SAYQL_TOOLS};
 use crate::store::ProviderSettings;
 use futures_util::StreamExt;
 use serde_json::{Value, json};
@@ -643,7 +643,7 @@ const DENIED: [&str; 14] = [
     "question",
     "doom_loop",
 ];
-/// SayQL's tools the audit doesn't use (see `audit_runner::CLAUDE_DENIED`).
+/// SayQL's tools the audit doesn't use (see `runner::CLAUDE_DENIED`).
 const SAYQL_DENIED: [&str; 5] = [
     "export_csv",
     "add_connection",
@@ -1208,7 +1208,7 @@ impl OpenCodeStream {
                 .to_string()
         };
         let error = state.get("error").and_then(Value::as_str).unwrap_or("");
-        let rel = |p: &str| crate::audit_runner::rel_path(&self.sources, p);
+        let rel = |p: &str| crate::audit::runner::rel_path(&self.sources, p);
         let what = match name {
             "read" => format!("Reading {}", rel(&s("filePath"))),
             "grep" => {
@@ -1274,7 +1274,7 @@ impl OpenCodeStream {
             .unwrap_or(("", None));
         let all = format!("{message}\n{stderr}").to_lowercase();
         if self.credits
-            && let Some(m) = crate::audit_runner::credits_failure(&all, None)
+            && let Some(m) = crate::audit::runner::credits_failure(&all, None)
         {
             return m.into();
         }
@@ -1312,7 +1312,7 @@ impl OpenCodeStream {
     }
 }
 
-impl crate::audit_runner::RunStream for OpenCodeStream {
+impl crate::audit::runner::RunStream for OpenCodeStream {
     fn feed(&mut self, line: &str) -> Vec<Line> {
         OpenCodeStream::feed(self, line)
     }

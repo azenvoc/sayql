@@ -3,7 +3,7 @@
 //! sources on first read, and a deleted connection's entry is still removed from it.
 
 use super::Store;
-use crate::audit_runner::{AuditModel, AuditPayment};
+use crate::audit::runner::{AuditModel, AuditPayment};
 use crate::error::AppResult;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -32,7 +32,7 @@ impl Store {
     }
 
     /// Who pays for the audit run: the person's own sign-in unless they picked credits (a saved
-    /// choice that is ignored while `audit_runner::CREDITS_RUNS` is off).
+    /// choice that is ignored while `audit::runner::CREDITS_RUNS` is off).
     pub fn audit_payment(&self) -> AppResult<AuditPayment> {
         Ok(self.read::<AuditPrefs>(PREFS)?.payment)
     }

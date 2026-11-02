@@ -99,7 +99,7 @@ panic = "abort"
 strip = true
 
 [target.'cfg(unix)'.dependencies]
-# setrlimit without unsafe code, to cap the PDF reader's memory (knowledge/pdf.rs). Already in
+# setrlimit without unsafe code, to cap the PDF reader's memory (audit/knowledge/pdf.rs). Already in
 # the tree through tempfile.
 rustix = { version = "1", features = ["process"] }
 

@@ -28,7 +28,7 @@ import { errorText } from "../../lib/errors";
 import { TEAMS_URL } from "../team/teamText";
 import styles from "./KnowledgeSources.module.css";
 
-/** Hosts whose token user name SayQL knows (src-tauri/src/repos.rs `token_user`). */
+/** Hosts whose token user name SayQL knows (src-tauri/src/audit/repos.rs `token_user`). */
 export function knownTokenHost(url: string): boolean {
   const m = /^(?:https:\/\/|ssh:\/\/|git@)(?:[^@/]*@)?([^/:]+)/i.exec(url.trim());
   const host = m?.[1].toLowerCase() ?? "";

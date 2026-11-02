@@ -1180,7 +1180,7 @@ mod tests {
 
     #[test]
     fn credit_models_are_the_ones_the_credits_service_prices() {
-        let service = include_str!("../../site/api/ai/v1/messages.js");
+        let service = include_str!("../../../site/api/ai/v1/messages.js");
         for m in [CREDITS_OPUS, CREDITS_SONNET, CREDITS_HAIKU] {
             assert!(
                 service.contains(&format!("\"{m}\": {{")),

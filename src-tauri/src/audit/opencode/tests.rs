@@ -736,7 +736,7 @@ fn turns_opencode_events_into_progress_lines() {
     assert_eq!(lines[6].kind, "note");
     assert_eq!(s.suggested, 2, "the refused one doesn't count");
     assert!(s.succeeded());
-    use crate::audit_runner::RunStream;
+    use crate::audit::runner::RunStream;
     assert_eq!(
         RunStream::summary(&s).as_deref(),
         Some("I suggested 2 notes.")

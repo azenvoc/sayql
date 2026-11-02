@@ -8,7 +8,7 @@
 
 use super::agent::model::{Block, Msg, Role, Turn, Usage};
 use super::{GenRequest, Output, prompt};
-use crate::audit_runner::{self, CLAUDE, SETTINGS_JSON};
+use crate::audit::runner::{self, CLAUDE, SETTINGS_JSON};
 use crate::error::{AppError, AppResult};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
@@ -51,8 +51,8 @@ pub fn args(model: &str, system_file: &Path) -> Vec<String> {
 
 /// Where Claude Code is installed, or what to do about it.
 pub fn locate() -> AppResult<PathBuf> {
-    let spec = audit_runner::spec(CLAUDE).expect("Claude Code is in the agent list");
-    audit_runner::locate(spec).ok_or_else(|| {
+    let spec = runner::spec(CLAUDE).expect("Claude Code is in the agent list");
+    runner::locate(spec).ok_or_else(|| {
         AppError::User(
             "Claude Code isn't installed on this computer. Install it from claude.com/claude-code \
              and sign in, or pick another way to use AI in Settings."
@@ -81,7 +81,7 @@ pub async fn check() -> AppResult<PlanCheck> {
         async move {
             tokio::process::Command::new(&bin)
                 .args(args)
-                .env("PATH", audit_runner::child_path(&bin))
+                .env("PATH", runner::child_path(&bin))
                 .stdin(Stdio::null())
                 .kill_on_drop(true)
                 .output()
@@ -91,9 +91,7 @@ pub async fn check() -> AppResult<PlanCheck> {
     };
     let out = run(&["--version"]).await?;
     let version_text = String::from_utf8_lossy(&out.stdout).trim().to_string();
-    if let Some(problem) =
-        audit_runner::version_problem(CLAUDE, audit_runner::parse_version(&version_text))
-    {
+    if let Some(problem) = runner::version_problem(CLAUDE, runner::parse_version(&version_text)) {
         return Err(AppError::User(problem));
     }
     let out = run(&["auth", "status", "--json"]).await?;
@@ -292,7 +290,7 @@ async fn ask(
     let mut child = tokio::process::Command::new(&bin)
         .args(args(model, &system.0))
         .current_dir(&dir)
-        .env("PATH", audit_runner::child_path(&bin))
+        .env("PATH", runner::child_path(&bin))
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

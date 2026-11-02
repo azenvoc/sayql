@@ -10,7 +10,7 @@ use std::process::Stdio;
 pub async fn version_of(bin: &Path) -> Option<String> {
     let mut cmd = tokio::process::Command::new(bin);
     cmd.arg("--version")
-        .env("PATH", crate::audit_runner::child_path(bin))
+        .env("PATH", crate::audit::runner::child_path(bin))
         .env_remove("CLAUDECODE")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -132,7 +132,7 @@ pub fn launch_terminal(run: &TerminalRun) -> AppResult<()> {
     let script = dir.join("SayQL audit.command");
     std::fs::write(
         &script,
-        crate::audit_runner::unix_script(folder, path_var, bin, args, prompt),
+        crate::audit::runner::unix_script(folder, path_var, bin, args, prompt),
     )?;
     std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o700))?;
     let status = std::process::Command::new("open")
@@ -159,7 +159,7 @@ pub fn launch_terminal(run: &TerminalRun) -> AppResult<()> {
     let script = dir.join("sayql-audit.sh");
     std::fs::write(
         &script,
-        crate::audit_runner::unix_script(folder, path_var, bin, args, prompt),
+        crate::audit::runner::unix_script(folder, path_var, bin, args, prompt),
     )?;
     std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o700))?;
     let terminals: [(&str, &[&str]); 5] = [
@@ -202,7 +202,7 @@ pub fn launch_terminal(run: &TerminalRun) -> AppResult<()> {
     let script = dir.join("sayql-audit.ps1");
     std::fs::write(
         &script,
-        crate::audit_runner::powershell_script(folder, path_var, bin, args, prompt),
+        crate::audit::runner::powershell_script(folder, path_var, bin, args, prompt),
     )?;
     std::process::Command::new("cmd")
         .args([

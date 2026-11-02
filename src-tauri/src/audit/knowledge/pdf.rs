@@ -316,7 +316,7 @@ mod tests {
     fn extracting_a_malformed_pdf_never_reads_it_in_process() {
         // Under `cargo test` the "reader" is the test harness, which refuses the flag: what
         // matters is that `extract` returns an error instead of panicking here.
-        let err = crate::knowledge::extract("bad.pdf", &bogus_encoding_pdf()).unwrap_err();
+        let err = crate::audit::knowledge::extract("bad.pdf", &bogus_encoding_pdf()).unwrap_err();
         assert!(
             err.starts_with("bad.pdf isn't a PDF SayQL can read"),
             "{err}"

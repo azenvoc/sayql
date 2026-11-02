@@ -4,8 +4,8 @@
 //! could read the run's files or swap the folder for one with their own plugin or `rg` in it),
 //! and every level is this user's alone ([`RunDir::create`] refuses a folder others can change).
 
+use crate::audit::repos::private_dir;
 use crate::error::AppResult;
-use crate::repos::private_dir;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 

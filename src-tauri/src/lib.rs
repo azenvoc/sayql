@@ -1,21 +1,15 @@
 //! SayQL backend: wires the Tauri app together. Logic lives in the modules below.
 
-mod agent_process;
 mod ai;
 #[cfg(target_os = "macos")]
 mod app_menu;
 mod audit;
-mod audit_opencode;
-mod audit_runner;
-mod coding_agents;
 mod commands;
 mod db;
 mod error;
 pub mod handoff;
-mod knowledge;
 pub mod mcp;
 mod notes;
-mod repos;
 mod safety;
 mod schema;
 mod state;
@@ -45,11 +39,13 @@ fn with_menu(b: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
 
 /// Runs one of SayQL's helper modes when the arguments ask for one, before anything of the app
 /// starts: its exit code. `None` means start the app. The only mode reads one PDF's text for
-/// the app in a child process (`--extract-pdf`, see `knowledge::pdf`).
+/// the app in a child process (`--extract-pdf`, see `audit::knowledge::pdf`).
 pub fn helper_mode() -> Option<i32> {
     let mut args = std::env::args_os().skip(1);
     match (args.next(), args.next()) {
-        (Some(flag), None) if flag == knowledge::pdf::FLAG => Some(knowledge::pdf::reader_main()),
+        (Some(flag), None) if flag == audit::knowledge::pdf::FLAG => {
+            Some(audit::knowledge::pdf::reader_main())
+        }
         _ => None,
     }
 }
