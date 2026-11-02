@@ -73,6 +73,40 @@ pub async fn kill_tree(child: &mut tokio::process::Child) {
     let _ = child.wait().await;
 }
 
+/// A running agent that leads its own process group. Dropped while it's still running (a run
+/// that failed after it started, however it failed), it's stopped with everything it started,
+/// SayQL's MCP server among them; `kill_on_drop` alone would stop the agent only.
+pub struct Tree(pub tokio::process::Child);
+
+impl Drop for Tree {
+    fn drop(&mut self) {
+        // Only while it hasn't exited and been reaped: until then its id is still its own.
+        if !matches!(self.0.try_wait(), Ok(None)) {
+            return;
+        }
+        if let Some(pid) = self.0.id() {
+            #[cfg(unix)]
+            let _ = std::process::Command::new("kill")
+                .args(["-KILL", "--", &format!("-{pid}")])
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status();
+            #[cfg(windows)]
+            {
+                use std::os::windows::process::CommandExt;
+                const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+                let _ = std::process::Command::new("taskkill")
+                    .args(["/PID", &pid.to_string(), "/T", "/F"])
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .status();
+            }
+        }
+        let _ = self.0.start_kill();
+    }
+}
+
 /// What the terminal runs: the agent at `bin` in `folder`, with `args` and the prompt file, and
 /// a script written to `dir`.
 pub struct TerminalRun<'a> {
@@ -186,4 +220,56 @@ pub fn launch_terminal(run: &TerminalRun) -> AppResult<()> {
         .current_dir(folder)
         .spawn()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(unix)]
+    fn alive(pid: &str) -> bool {
+        std::process::Command::new("kill")
+            .args(["-0", pid])
+            .stderr(Stdio::null())
+            .status()
+            .is_ok_and(|s| s.success())
+    }
+
+    /// An agent dropped mid-run takes what it started with it.
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn a_dropped_agent_stops_with_everything_it_started() {
+        use tokio::io::AsyncBufReadExt;
+        let mut cmd = tokio::process::Command::new("sh");
+        cmd.args(["-c", "sleep 30 & echo $!; wait"])
+            .stdout(Stdio::piped())
+            .process_group(0);
+        let mut tree = Tree(cmd.spawn().unwrap());
+        let out = tree.0.stdout.take().unwrap();
+        let mut lines = tokio::io::BufReader::new(out).lines();
+        let started = lines.next_line().await.unwrap().unwrap();
+        assert!(alive(&started));
+        drop(tree);
+        let mut gone = false;
+        for _ in 0..50 {
+            if !alive(&started) {
+                gone = true;
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        }
+        assert!(gone, "what the agent started ({started}) is still running");
+    }
+
+    /// One that already ended and was waited for is left alone: its id may be another's now.
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn an_agent_that_ended_is_not_signalled_again() {
+        let mut cmd = tokio::process::Command::new("true");
+        cmd.process_group(0);
+        let mut tree = Tree(cmd.spawn().unwrap());
+        assert!(tree.0.wait().await.unwrap().success());
+        assert!(matches!(tree.0.try_wait(), Ok(Some(_))));
+        drop(tree);
+    }
 }

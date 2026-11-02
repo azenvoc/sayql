@@ -6,10 +6,11 @@
 //! src/audit_runner.rs and src/audit_opencode.rs for what's enforced, src/repos.rs for git, and
 //! src/knowledge.rs for files and web pages.
 
-use crate::agent_process::{TerminalRun, kill_tree, launch_terminal, no_window, version_of};
+use crate::agent_process::{TerminalRun, Tree, kill_tree, launch_terminal, no_window, version_of};
 use crate::ai::{KeyNeed, SAYQL_CREDITS, endpoint};
 use crate::audit::{self, Target};
 use crate::audit_opencode::{self as opencode, OpenCodeStream};
+use crate::audit_runner::run_dir::{self, RunDir};
 use crate::audit_runner::{
     self as runner, AgentSpec, AuditModel, AuditPayment, ClaudeStream, RunFiles, RunStream,
 };
@@ -781,7 +782,7 @@ struct Prepared {
     bin: PathBuf,
     sources: Sources,
     files: RunFiles,
-    dir: PathBuf,
+    dir: RunDir,
     model: AuditModel,
     payment: AuditPayment,
     /// Set when the run is paid with SayQL credits.
@@ -874,17 +875,36 @@ async fn prepare_sources(
     })
 }
 
-/// A new folder for one run's files, in the temp folder; removed when the run ends.
-fn run_dir() -> AppResult<PathBuf> {
-    let dir = std::env::temp_dir()
-        .join("sayql-audit")
-        .join(uuid::Uuid::new_v4().to_string());
-    std::fs::create_dir_all(&dir)?;
-    Ok(dir)
+/// Where runs keep their files: `<app cache>/audit`, this user's alone (see
+/// [`run_dir::RunDir`]), never the shared temp folder.
+fn audit_dir(app: &AppHandle) -> AppResult<PathBuf> {
+    let cache = app
+        .path()
+        .app_cache_dir()
+        .map_err(|e| AppError::User(format!("Could not find SayQL's cache folder: {e}")))?;
+    Ok(cache.join("audit"))
 }
 
+/// Removes the run folders an earlier start left behind (SayQL quit or crashed mid-run), and
+/// the ones older versions left in the temp folder. Runs in the background at startup.
+pub fn clean_leftover_runs(app: &AppHandle) {
+    let started = std::time::SystemTime::now();
+    let Ok(dir) = audit_dir(app) else { return };
+    std::thread::spawn(move || {
+        run_dir::clean_leftovers(&dir, started);
+        // Older versions kept runs in `<temp>/sayql-audit`.
+        let _ = std::fs::remove_dir_all(std::env::temp_dir().join("sayql-audit"));
+    });
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the run's settings, each from a different place"
+)]
 async fn prepare(
     state: &AppState,
+    audit: &std::path::Path,
+    kind: &str,
     agent: &str,
     id: &str,
     database: Option<&str>,
@@ -931,10 +951,10 @@ async fn prepare(
     // person allows: say so now rather than after a run that couldn't read anything.
     check_gate(state, spec.label)?;
     let sources = prepare_sources(state, id, database, headless, say).await?;
-    let dir = run_dir()?;
+    let dir = RunDir::create(audit, kind)?;
     let files = RunFiles {
-        mcp_config: dir.join("mcp.json"),
-        settings: dir.join("settings.json"),
+        mcp_config: dir.path().join("mcp.json"),
+        settings: dir.path().join("settings.json"),
     };
     std::fs::write(
         &files.mcp_config,
@@ -978,7 +998,18 @@ pub async fn start_audit(
     if agent == opencode::ID {
         return start_opencode(&app, &state, &runs, run_id, &id, database.as_deref()).await;
     }
-    let p = prepare(&state, &agent, &id, database.as_deref(), true, &say).await?;
+    let audit = audit_dir(&app)?;
+    let p = prepare(
+        &state,
+        &audit,
+        run_dir::RUNS,
+        &agent,
+        &id,
+        database.as_deref(),
+        true,
+        &say,
+    )
+    .await?;
     let mut cmd = tokio::process::Command::new(&p.bin);
     cmd.args(runner::claude_args(
         &p.files,
@@ -1013,15 +1044,14 @@ pub async fn start_audit(
     #[cfg(unix)]
     cmd.process_group(0);
     no_window(&mut cmd);
-    let mut child = cmd.spawn().map_err(|e| {
-        let _ = std::fs::remove_dir_all(&p.dir);
-        AppError::User(format!("Could not start {}: {e}", p.spec.label))
-    })?;
+    // From here on, dropping `child` stops the agent with everything it started, and dropping
+    // `p.dir` removes the run's files.
+    let mut child = Tree(
+        cmd.spawn()
+            .map_err(|e| AppError::User(format!("Could not start {}: {e}", p.spec.label)))?,
+    );
     // The prompt goes on stdin: nothing about the run is on the command line but file paths.
-    if let Some(mut stdin) = child.stdin.take() {
-        stdin.write_all(p.sources.prompt.as_bytes()).await?;
-        drop(stdin);
-    }
+    give_prompt(&mut child, &p.sources.prompt).await;
     let stop = CancellationToken::new();
     runs.0
         .lock()
@@ -1038,6 +1068,16 @@ pub async fn start_audit(
     };
     tauri::async_runtime::spawn(drive(app, run_id, child, run, Box::new(stream), stop));
     Ok(())
+}
+
+/// Writes the prompt to the agent's stdin and closes it. An agent that stopped before reading
+/// it (a bad setting, a refused key) breaks the pipe: the run goes on to read what it printed
+/// and why it stopped, which says more than "Broken pipe".
+async fn give_prompt(child: &mut Tree, prompt: &str) {
+    if let Some(mut stdin) = child.0.stdin.take() {
+        let _ = stdin.write_all(prompt.as_bytes()).await;
+        drop(stdin);
+    }
 }
 
 /// The environment SayQL's MCP server gets inside an OpenCode run: the person's real home and
@@ -1162,11 +1202,14 @@ async fn start_opencode(
         let sources = prepare_sources(state, id, database, true, &say).await?;
         let dirs: Vec<PathBuf> = sources.sources.iter().map(|(_, d)| d.clone()).collect();
         // OpenCode would follow a link out of the sources: say which one rather than run.
+        // And what looks like a secret in any case, which its rules can only deny one by one.
         let scan = dirs.clone();
-        if let Some((link, target)) = tokio::task::spawn_blocking(move || opencode::link_out(&scan))
-            .await
-            .map_err(|e| AppError::User(e.to_string()))?
-        {
+        let (out, hidden) = tokio::task::spawn_blocking(move || {
+            (opencode::link_out(&scan), opencode::secret_paths(&scan))
+        })
+        .await
+        .map_err(|e| AppError::User(e.to_string()))?;
+        if let Some((link, target)) = out {
             return Err(format!(
                 "{} is a link to {}, outside this connection's knowledge sources, and SayQL's built-in OpenCode would follow it. Remove the link, or add what it points to as a source, then run the audit again.",
                 link.display(),
@@ -1180,9 +1223,11 @@ async fn start_opencode(
             sayql_mcp: &sources.sayql_mcp,
             mcp_env: &env_for_mcp,
             sources: &dirs,
+            hidden: &hidden,
         })?;
-        let run_dir = run_dir()?;
-        let home = opencode::Home::new(&run_dir);
+        // Dropped on any way out below, it removes the run's files.
+        let run_dir = RunDir::create(&audit_dir(app)?, run_dir::RUNS)?;
+        let home = opencode::Home::new(run_dir.path());
         opencode::prepare_home(&home, &installed.bin_dir.join(opencode::exe("rg")))?;
         let mut cmd = tokio::process::Command::new(&installed.opencode);
         cmd.args(opencode::run_args(&model, &sources.folder))
@@ -1203,15 +1248,12 @@ async fn start_opencode(
         #[cfg(unix)]
         cmd.process_group(0);
         no_window(&mut cmd);
-        let mut child = cmd.spawn().map_err(|e| {
-            let _ = std::fs::remove_dir_all(&run_dir);
-            AppError::User(format!("Could not start OpenCode: {e}"))
-        })?;
+        let mut child = Tree(
+            cmd.spawn()
+                .map_err(|e| AppError::User(format!("Could not start OpenCode: {e}")))?,
+        );
         // The prompt goes on stdin, never on the command line.
-        if let Some(mut stdin) = child.stdin.take() {
-            stdin.write_all(sources.prompt.as_bytes()).await?;
-            drop(stdin);
-        }
+        give_prompt(&mut child, &sources.prompt).await;
         let stream = OpenCodeStream::new(sources.sources.clone(), &model);
         let run = Run {
             app: opencode::APP,
@@ -1246,8 +1288,9 @@ async fn start_opencode(
 struct Run {
     /// The app the audit is recorded for, as SayQL's app list names it.
     app: &'static str,
-    /// The run's own files, removed at the end.
-    dir: PathBuf,
+    /// The run's own files, removed when this is dropped.
+    #[expect(dead_code, reason = "held for its Drop, which removes the files")]
+    dir: RunDir,
     connection_id: String,
     database: Option<String>,
     /// A key the run was given (a credit key, an API key): never shown in the window.
@@ -1257,7 +1300,7 @@ struct Run {
 async fn drive(
     app: AppHandle,
     run_id: String,
-    mut child: tokio::process::Child,
+    mut child: Tree,
     p: Run,
     mut stream: Box<dyn RunStream>,
     stop: CancellationToken,
@@ -1274,7 +1317,7 @@ async fn drive(
     let emit = |e: AuditEvent| {
         let _ = app.emit(EVENT, e);
     };
-    let stderr = child.stderr.take().map(|mut err| {
+    let stderr = child.0.stderr.take().map(|mut err| {
         tokio::spawn(async move {
             let mut buf = Vec::new();
             let _ = (&mut err)
@@ -1286,7 +1329,7 @@ async fn drive(
             String::from_utf8_lossy(&buf).into_owned()
         })
     });
-    let mut lines = child.stdout.take().map(|o| BufReader::new(o).lines());
+    let mut lines = child.0.stdout.take().map(|o| BufReader::new(o).lines());
     let deadline = tokio::time::sleep(runner::TIME_LIMIT);
     tokio::pin!(deadline);
     let mut ended: Option<&'static str> = None;
@@ -1311,13 +1354,13 @@ async fn drive(
         }
     }
     let status = if ended.is_some() {
-        kill_tree(&mut child).await;
+        kill_tree(&mut child.0).await;
         None
     } else {
-        match tokio::time::timeout(std::time::Duration::from_secs(30), child.wait()).await {
+        match tokio::time::timeout(std::time::Duration::from_secs(30), child.0.wait()).await {
             Ok(Ok(s)) => Some(s),
             _ => {
-                kill_tree(&mut child).await;
+                kill_tree(&mut child.0).await;
                 None
             }
         }
@@ -1355,7 +1398,7 @@ async fn drive(
             .store
             .record_audit(&p.connection_id, p.database.as_deref(), p.app);
     }
-    let _ = std::fs::remove_dir_all(&p.dir);
+    drop(p);
     app.state::<AuditRuns>()
         .0
         .lock()
@@ -1388,6 +1431,7 @@ pub fn cancel_audit(runs: State<'_, AuditRuns>, run_id: String) {
 /// instructions as its first message. Repositories are fetched first.
 #[tauri::command]
 pub async fn open_audit_in_terminal(
+    app: AppHandle,
     state: State<'_, AppState>,
     agent: String,
     id: String,
@@ -1399,20 +1443,34 @@ pub async fn open_audit_in_terminal(
                 .into(),
         );
     }
-    let p = prepare(&state, &agent, &id, database.as_deref(), false, &|_, _| {}).await?;
+    let audit = audit_dir(&app)?;
+    let p = prepare(
+        &state,
+        &audit,
+        run_dir::TERMINAL,
+        &agent,
+        &id,
+        database.as_deref(),
+        false,
+        &|_, _| {},
+    )
+    .await?;
     let args = runner::claude_args(&p.files, &p.sources.more_dirs, false, p.model, p.payment);
-    let prompt = p.dir.join("prompt.txt");
+    let prompt = p.dir.path().join("prompt.txt");
     std::fs::write(&prompt, &p.sources.prompt)?;
     let path_var = runner::child_path(&p.bin);
-    // The files stay: the terminal reads them after this returns (they're in the temp folder).
     launch_terminal(&TerminalRun {
-        dir: &p.dir,
+        dir: p.dir.path(),
         folder: &p.sources.folder,
         bin: &p.bin,
         path_var: &path_var,
         args: &args,
         prompt: &prompt,
-    })
+    })?;
+    // The files stay: the terminal reads them after this returns. A later start of SayQL
+    // removes them once they're a week old.
+    let _ = p.dir.keep();
+    Ok(())
 }
 
 #[cfg(test)]

@@ -44,6 +44,8 @@ use std::collections::{HashMap, HashSet};
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
+pub mod run_dir;
+
 /// The longest a run may take before SayQL stops it.
 pub const TIME_LIMIT: std::time::Duration = std::time::Duration::from_secs(15 * 60);
 /// Agentic turns before Claude Code stops by itself (`--max-turns`).

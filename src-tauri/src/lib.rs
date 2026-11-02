@@ -76,6 +76,7 @@ pub fn run() {
             app.manage(handoffs::PendingHandoffs::default());
             app.manage(teams::PendingSso::default());
             app.manage(audits::AuditRuns::default());
+            audits::clean_leftover_runs(app.handle());
             // Installers register sayql:// on Windows and Linux; this covers AppImages and dev builds.
             #[cfg(any(windows, target_os = "linux"))]
             let _ = app.deep_link().register_all();
