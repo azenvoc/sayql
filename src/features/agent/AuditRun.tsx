@@ -305,23 +305,22 @@ export function AuditDialog({ target, connections = [], onReview, onClose }: Aud
               <>
                 {agent.builtIn ? (
                   <p className={styles.lead}>
-                    Runs OpenCode {agent.version}, built into SayQL, read-only, over this database&apos;s code: folders on this
-                    computer and git repositories. It reads the code and SayQL&apos;s schema and suggests notes for you to approve. It
-                    talks to the AI you chose in Settings → AI provider{agent.detail ? ` (${agent.detail})` : ""}, which sees the code
-                    it reads.
+                    Runs OpenCode {agent.version}, built into SayQL, read-only, over this database&apos;s knowledge sources:
+                    code, files and web pages. It reads them and SayQL&apos;s schema and suggests notes for you to approve. It talks to
+                    the AI you chose in Settings → AI provider{agent.detail ? ` (${agent.detail})` : ""}, which sees what it reads.
                   </p>
                 ) : (
                   <p className={styles.lead}>
-                    Runs your installed {agent.label}, read-only, over this database&apos;s code: folders on this computer and git
-                    repositories. It reads the code and SayQL&apos;s schema and suggests notes for you to approve. It uses your own{" "}
+                    Runs your installed {agent.label}, read-only, over this database&apos;s knowledge sources: code,
+                    files and web pages. It reads them and SayQL&apos;s schema and suggests notes for you to approve. It uses your own{" "}
                     {agent.label} sign-in, however you&apos;ve set it up: SayQL never reads your {agent.label} credentials and sends no
                     code anywhere.
                   </p>
                 )}
                 {agent.builtIn && agent.downloadBytes ? (
                   <p className={styles.hint}>
-                    Downloads OpenCode {agent.version}, {megabytes(agent.downloadBytes)}, once, from GitHub. SayQL checks it against a
-                    pinned checksum before running it.
+                    Downloads OpenCode {agent.version} and ripgrep, {megabytes(agent.downloadBytes)}, once, from GitHub. SayQL checks
+                    them against pinned checksums before running them.
                   </p>
                 ) : null}
                 <div className={styles.fields}>

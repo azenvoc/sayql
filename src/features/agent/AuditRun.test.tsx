@@ -105,7 +105,7 @@ it("opens the run dialog from the button, or hands it off", async () => {
   render(<AuditButton target={target} />);
   fireEvent.click(await screen.findByRole("button", { name: "Run audit on Shop" }));
   expect(await screen.findByRole("dialog", { name: "Run an audit" })).toBeTruthy();
-  expect(screen.getByText(/Runs your installed Claude Code, read-only, over this database's code/)).toBeTruthy();
+  expect(screen.getByText(/Runs your installed Claude Code, read-only, over this database's knowledge sources/)).toBeTruthy();
   expect(screen.getByText("Knowledge sources")).toBeTruthy();
   expect(screen.getByText(/SayQL never reads your Claude Code credentials/)).toBeTruthy();
 });
@@ -280,7 +280,7 @@ it("without Claude Code it runs the built-in OpenCode, saying what it downloads 
   render(<AuditDialog target={target} onClose={() => {}} />);
   expect(await screen.findByText(/Runs OpenCode 1.19.5, built into SayQL, read-only/)).toBeTruthy();
   expect(screen.getByText(/SayQL AI credits · claude-sonnet-5-5/)).toBeTruthy();
-  expect(screen.getByText(/Downloads OpenCode 1.19.5, about 66 MB, once, from GitHub/)).toBeTruthy();
+  expect(screen.getByText(/Downloads OpenCode 1.19.5 and ripgrep, about 66 MB, once, from GitHub/)).toBeTruthy();
   expect(screen.queryByRole("combobox", { name: "Model for the audit" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Open in Terminal" })).toBeNull();
   await screen.findByText("/Users/me/code/shop");
