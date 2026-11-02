@@ -2,8 +2,9 @@
 
 "Let agents into your database. Not your data." Claude Code asks a question through SayQL and
 gets counts, not rows; a private column is refused; the app's Agent activity shows it and
-blocks an app; people ask in the app; and a team server gives an agent its own key, a scope
-and an audit trail.
+blocks an app; people ask in the app; an audit learns the database from its code and docs, and
+a note whose column was renamed is flagged with a fix; and a team server gives an agent its
+own key, a scope and an audit trail.
 
 Records the real app UI (the browser preview with `src/dev/mockBackend.ts`) and a throwaway
 SayQL team server's admin page, and turns them into `media/explainer.mp4`,
@@ -16,7 +17,7 @@ pnpm exec vite --port 1431 --strictPort          # keep running
 SAYQL_SERVER_BIN=/path/to/sayql-server scripts/video/team-server.sh   # keep running; prints an admin link
 SAYQL_ADMIN_LINK='http://127.0.0.1:8092/admin#code=…' \
   SAYQL_TEAM_DB="$PWD/scripts/video/out/team-server/shop.db" \
-  node scripts/video/capture.mjs dark            # ~85 s, real time
+  node scripts/video/capture.mjs dark            # ~110 s, real time
 # restart team-server.sh (a new link, empty data), then the same for light
 node scripts/video/render.mjs dark full          # ~3 min each
 node scripts/video/render.mjs dark short
@@ -27,7 +28,10 @@ node scripts/video/render.mjs dark stills 12,40  # single frames at those times,
 
 - `capture.mjs` holds the storyboard: what to type and click, plus the camera targets
   (element rects) and captions. It opens the preview with `?video`, which gives the mock
-  answers for each scene and an Agent activity log that matches the terminal scenes. Then it
+  answers for each scene and an Agent activity log that matches the terminal scenes. For the
+  knowledge scene it gives the demo store two knowledge sources (a code folder and a docs
+  site) and a scripted audit; when the audit ends, the note "products.price is in cents" turns
+  doubtful (the column is `price_cents` in `?video`) with SayQL's fix waiting. Then it
   opens the team server's admin page, adds the Shop connection (with `customers.email` never
   sent), a person and their question off camera, and on camera adds the agent "Support bot",
   scopes it to two tables and tenant 42's orders, and opens the audit log after the agent has

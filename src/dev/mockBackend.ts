@@ -58,7 +58,9 @@ const schema: Schema = {
     table("orders", 3000, [col("id", "integer", true), col("customer_id", "integer"), col("status", "text"), col("ordered_at", "text"), col("shipped_at", "text")], [
       { column: "customer_id", ref_table: "customers", ref_column: "id" },
     ]),
-    table("products", 120, [col("id", "integer", true), col("name", "text"), col("category_id", "integer"), col("price", "real"), col("stock", "integer")], [
+    table("products", 120, [col("id", "integer", true), col("name", "text"), col("category_id", "integer"),
+      // The video's doubtful note is about this column, renamed from `price`.
+      VIDEO ? col("price_cents", "integer") : col("price", "real"), col("stock", "integer")], [
       { column: "category_id", ref_table: "categories", ref_column: "id" },
     ]),
     { ...table("top_customers", -1, [col("customer_id", "integer"), col("total", "real")]), kind: "view" },
@@ -544,7 +546,19 @@ function auditAgents(): AuditAgent[] {
   ];
 }
 // What each connection's audit reads: a folder and a GitHub repository for analytics.
+// The video's audit of the demo store reads its code and its data docs.
 const knowledgeSources = new Map<string, KnowledgeSource[]>([
+  ...(VIDEO
+    ? ([
+        [
+          "demo",
+          [
+            { id: "src_shop", label: "shop", kind: { type: "local", path: "/Users/you/code/shop" }, lastFetch: Date.now() - 86_400_000, lastCommit: null, error: null },
+            { id: "src_docs", label: "docs", kind: { type: "url", url: "https://docs.example.com/shop/data/", crawl: true }, lastFetch: Date.now() - 86_400_000, lastCommit: "a1b2c3d4e5f6", error: null },
+          ],
+        ],
+      ] as [string, KnowledgeSource[]][])
+    : []),
   [
     "pg",
     [
@@ -567,9 +581,37 @@ let auditModel = "sonnet";
 // `?nocredits` in the mock's URL: no SayQL credit key saved.
 const mockCreditKey = typeof location === "undefined" || !location.search.includes("nocredits");
 
+// The video's audit of the demo store: its code and docs, two notes, and a doubtful note after.
+const VIDEO_AUDIT_STEPS: ["step" | "note", string][] = [
+  ["step", "Reading the schema, usage and saved notes"],
+  ["step", "Searching for “status” in shop/api/orders"],
+  ["step", "Reading api/orders/status.ts"],
+  ["note", "Suggested a note: orders.status 'paid' means paid, not yet shipped; shipping sets shipped_at"],
+  ["step", "Reading docs: Order statuses"],
+  ["note", "Suggested a note: order_items.unit_price is the price when ordered, not today's price"],
+];
+const VIDEO_AUDIT_SUMMARY = [
+  "## Audit of `Demo store`",
+  "**2 suggestions are waiting in SayQL.** Nothing is saved until you accept it.",
+  "- `orders.status` 'paid' is set by `api/orders/pay.ts`; `api/orders/ship.ts` sets `shipped_at`.\n- `order_items.unit_price` is copied from the product when the order is placed (docs: Order statuses).",
+].join("\n\n");
+const VIDEO_PRICE_NOTE: DbNote = {
+  id: "5d8e2f1a-3c4b-4a6d-9e7f-1a2b3c4d5e6f", connectionId: "demo", database: null, updatedAt: Date.now() - 60 * 86_400_000,
+  text: "products.price is in cents, not dollars", source: "Claude Code",
+  evidence: "api/products/format.ts divides price by 100",
+  anchors: [{ table: "products" }, { table: "products", column: "price" }],
+  suspect: { reason: "the column products.price was renamed to price_cents", since: Date.now() - 86_400_000 },
+};
+const VIDEO_PRICE_FIX: NoteSuggestion = {
+  id: "sug-price", connectionId: "demo", database: null, app: "SayQL", createdAt: Date.now(),
+  text: "products.price_cents is in cents, not dollars",
+  evidence: "products.price was renamed to price_cents; the note still holds under the new name.",
+  replaces: VIDEO_PRICE_NOTE.id, replacedText: VIDEO_PRICE_NOTE.text, remove: false,
+};
+
 /** A scripted audit: schema, searches, reads, two suggestions, a summary. */
 async function mockAuditRun(runId: string, connectionId: string, database: string | null, agent = "claude") {
-  const pause = () => new Promise((r) => setTimeout(r, 650));
+  const pause = () => new Promise((r) => setTimeout(r, VIDEO ? 420 : 650));
   if (agent === "opencode" && !openCodeDownloaded) {
     const total = 66_056_854;
     for (let received = 0; received < total; received += 8_000_000) {
@@ -587,7 +629,7 @@ async function mockAuditRun(runId: string, connectionId: string, database: strin
     await pause();
     s.lastFetch = Date.now();
   }
-  const steps: ["step" | "note" | "warn", string][] = [
+  const steps: ["step" | "note" | "warn", string][] = VIDEO ? VIDEO_AUDIT_STEPS : [
     ["step", "Started, with SayQL's tools"],
     ["step", "Reading the schema, usage and saved notes"],
     ["step", "Listing files matching **/*.{ts,sql}"],
@@ -613,6 +655,12 @@ async function mockAuditRun(runId: string, connectionId: string, database: strin
   const i = audits.findIndex((x) => x.connectionId === connectionId && x.database === database);
   if (i >= 0) audits.splice(i, 1);
   audits.push({ connectionId, database, app: "Claude Code", at: Date.now() });
+  if (VIDEO) {
+    // Then the note about products.price, whose column was renamed, shows as doubtful with SayQL's fix.
+    notes = [...notes.filter((n) => n.id !== VIDEO_PRICE_NOTE.id), VIDEO_PRICE_NOTE];
+    suggestions = [...suggestions.filter((x) => x.replaces !== VIDEO_PRICE_NOTE.id), VIDEO_PRICE_FIX];
+    return done({ outcome: "ok", suggested, summary: VIDEO_AUDIT_SUMMARY });
+  }
   return done({
     outcome: "ok",
     suggested,

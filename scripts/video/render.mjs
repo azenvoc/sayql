@@ -48,6 +48,9 @@ const EDITS = {
     // Investigate: the question and its plan, then the cited answer.
     { scene: "agent", trim: 3.0, max: 5.2 },
     { scene: "agent", trim: 13.1 },
+    // Knowledge: the audit suggests notes from the code and docs, then a doubtful note and its fix.
+    { scene: "knowledge", trim: 0.3, speed: 1.4 },
+    { scene: "notes", trim: 0.3, speed: 1.4 },
     { scene: "teams", until: "scope", speed: 1.5 },
     { scene: "scope", until: "audit", speed: 1.5 },
     { scene: "audit" },
@@ -341,6 +344,9 @@ if (cut === "stills") {
   // Where each part starts, for editing music or a voiceover in later, and the voiceover script.
   const rows = items.map((it) => {
     const caps = it.kind === "clip" ? events.filter((e) => e.type === "caption" && e.text && e.t >= it.from - 0.2 && e.t < it.to) : [];
+    // A clip cut into after its scene's caption still shows it (see captionAt).
+    const carried = it.kind === "clip" && !it.contiguous && !(caps[0]?.t <= it.from) && events.findLast((e) => e.type === "caption" && e.t < it.from - 0.2);
+    if (carried?.text) caps.unshift(carried);
     const capLines = caps.map((c) => `    - ${fmt(it.start + Math.max(0, c.t - it.from) / it.speed)} caption: “${c.text}”`);
     return [`- ${fmt(it.start)} ${it.card ? `${it.card} card` : it.scene}${it.contiguous ? " (continues, no cut)" : " (cut)"}`, ...capLines].join("\n");
   });

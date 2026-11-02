@@ -10,6 +10,7 @@
   { "id": "run", "scene": "run", "at": 0.3, "text": "It already knows your schema." },
   { "id": "safety", "scene": "safety", "at": 1.1, "text": "Anything that could change data asks first." },
   { "id": "agentMode", "scene": "agent", "at": 3.2, "text": "Bigger questions? Investigate works step by step, cites every query, and sends only what you allow." },
+  { "id": "knowledge", "scene": "knowledge", "at": 0.3, "text": "It learns your database from your code and docs, and keeps those notes true as your schema changes." },
   { "id": "teams", "scene": "teams", "at": 0.3, "text": "On a team server, each agent gets its own key, and only the databases you choose." },
   { "id": "scope", "scene": "scope", "at": 0.3, "text": "Limit it to certain tables, even certain rows." },
   { "id": "audit", "scene": "audit", "at": 0.3, "text": "And every query lands in a tamper-evident audit log." },
