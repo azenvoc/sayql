@@ -13,6 +13,7 @@ const demo: ConnectionConfig = {
   file: "/demo.sqlite",
   ssl: false,
   trustCert: false,
+  production: false,
 };
 
 function actions(connections: ConnectionConfig[] = [demo]) {
@@ -63,6 +64,7 @@ describe("applyHandoff", () => {
         file: "",
         ssl: false,
         trustCert: false,
+        production: false,
       },
       "From Claude (MCP)",
     );
@@ -75,6 +77,7 @@ describe("applyHandoff", () => {
       port: 1433,
       ssl: true,
       trustCert: false,
+      production: false,
     });
     expect(draftToConnection({ ...draft, kind: "mysql", port: 3307, ssl: true })).toMatchObject({
       host: "localhost",

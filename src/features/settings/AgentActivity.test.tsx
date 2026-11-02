@@ -18,6 +18,7 @@ const fresh = (): McpActivity[] => [
     status: "refused",
     detail: "never-send column email",
     maySee: "counts",
+    rows: null,
   },
   {
     at: 2,
@@ -28,6 +29,8 @@ const fresh = (): McpActivity[] => [
     sql: "SELECT COUNT(*) FROM orders",
     status: "ok",
     rows: 1,
+    detail: null,
+    maySee: null,
   },
   {
     at: 1,
@@ -39,6 +42,7 @@ const fresh = (): McpActivity[] => [
     status: "ok",
     rows: 12,
     maySee: "masked",
+    detail: null,
   },
 ];
 const mcpActivity = vi.fn(() => Promise.resolve(log));

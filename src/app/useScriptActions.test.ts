@@ -37,8 +37,14 @@ describe("useScriptActions", () => {
     localStorage.clear();
     vi.resetAllMocks();
     api.listScripts.mockResolvedValue([stored]);
-    api.deleteScript.mockResolvedValue(undefined);
-    api.saveScript.mockImplementation(async (s) => ({ ...s, id: s.id || "new", updatedAt: 2 }));
+    api.deleteScript.mockResolvedValue(null);
+    api.saveScript.mockImplementation(async (s) => ({
+      ...s,
+      database: s.database ?? null,
+      question: s.question ?? "",
+      id: s.id || "new",
+      updatedAt: 2,
+    }));
   });
 
   it("opens a script in a tab, and focuses that tab the second time", async () => {

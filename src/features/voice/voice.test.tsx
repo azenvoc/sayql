@@ -94,6 +94,7 @@ describe("voicePrompt", () => {
     nullable: true,
     primary_key: false,
     enum_values: null,
+    comment: null,
   });
   const table = (name: string, cols: string[]) => ({
     schema: null,
@@ -102,6 +103,8 @@ describe("voicePrompt", () => {
     columns: cols.map(col),
     foreign_keys: [],
     row_estimate: 1,
+    comment: null,
+    checks: [],
   });
   const schema = {
     dialect: "SQLite",

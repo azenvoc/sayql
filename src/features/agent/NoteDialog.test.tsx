@@ -10,6 +10,7 @@ const doubtful: DbNote = {
   database: null,
   text: "users.last_login_at is set on every sign-in",
   updatedAt: 0,
+  createdAt: 0,
   source: "Claude Code",
   evidence: "auth/session.ts sets it",
   anchors: [{ table: "users" }, { table: "users", column: "last_login_at" }],
@@ -33,6 +34,8 @@ const fix: NoteSuggestion = {
   app: "SayQL",
   createdAt: 0,
   replaces: "n1",
+  replacedText: null,
+  remove: false,
 };
 
 const base = { databaseName: "shop", onSave: vi.fn(), onClose: vi.fn() };
@@ -73,7 +76,7 @@ describe("NoteDialog", () => {
     render(
       <NoteDialog
         {...base}
-        note={{ ...doubtful, suspect: null }}
+        note={{ ...doubtful, suspect: undefined }}
         onSave={onSave}
         onCheck={onCheck}
       />,

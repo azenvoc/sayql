@@ -31,6 +31,7 @@ const access: AgentAccess = {
   apps: "counts",
   askBeforeSend: true,
   neverSend: [],
+  team: null,
 };
 vi.mock("../../api", async (orig) => ({
   ...(await orig<typeof import("../../api")>()),
@@ -61,6 +62,9 @@ const suggestion: NoteSuggestion = {
   evidence: "enum in api/",
   app: "Cursor",
   createdAt: 1,
+  replaces: null,
+  replacedText: null,
+  remove: false,
 };
 const api = (suggestions: NoteSuggestion[]): NoteSuggestionsApi => ({
   suggestions,

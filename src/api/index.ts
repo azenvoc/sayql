@@ -1,4 +1,5 @@
 export { commands } from "./commands";
+export type { ProviderChoice } from "./commands";
 export {
   AGENT_EVENT,
   AUDIT_EVENT,

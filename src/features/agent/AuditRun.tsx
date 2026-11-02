@@ -117,7 +117,7 @@ export function AuditButton({
   );
 }
 
-type Line = { kind: "step" | "note" | "warn"; text: string };
+type Line = Pick<Extract<AuditEvent, { type: "line" }>, "kind" | "text">;
 type Done = Extract<AuditEvent, { type: "done" }>;
 
 export interface AuditDialogProps {

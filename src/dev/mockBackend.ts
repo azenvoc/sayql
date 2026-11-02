@@ -4,15 +4,20 @@ import { emit } from "@tauri-apps/api/event";
 import { MAX_SOURCES_FREE, SOURCE_CAP_MESSAGE } from "../api/types";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import type {
+  CommandArgs,
+  CommandName,
+  CommandResult,
   MyActivity,
   AgentAccess,
   AgentReply,
   AgentStep,
   AiProvider,
   AuditAgent,
+  AuditModel,
   AuditRun,
   Bootstrap,
   KnowledgeSource,
+  McpActivity,
   DbNote,
   NoteSuggestion,
   QueryResult,
@@ -37,10 +42,30 @@ const FIRSTRUN = new URLSearchParams(window.location.search).has("firstrun");
 /** ?noplan: the Claude plan check says Claude Code isn't signed in. */
 const NOPLAN = new URLSearchParams(window.location.search).has("noplan");
 
+/**
+ * The preview's fixtures leave out what the backend sends as null, empty or false when unset;
+ * these fill it in the same way, so the UI sees the JSON the app would get.
+ */
+const myEntry = (
+  e: Omit<MyActivity, "database" | "rows" | "ms" | "detail" | "question"> & Partial<MyActivity>,
+): MyActivity => ({ database: null, rows: null, ms: null, detail: null, question: null, ...e });
+const note = (n: Omit<DbNote, "createdAt" | "source" | "anchors"> & Partial<DbNote>): DbNote => ({
+  createdAt: 0,
+  source: "",
+  anchors: [],
+  ...n,
+});
+const suggestion = (
+  s: Omit<NoteSuggestion, "replaces" | "replacedText" | "remove"> & Partial<NoteSuggestion>,
+): NoteSuggestion => ({ replaces: null, replacedText: null, remove: false, ...s });
+const appActivity = (
+  e: Omit<McpActivity, "detail" | "rows" | "maySee"> & Partial<McpActivity>,
+): McpActivity => ({ detail: null, rows: null, maySee: null, ...e });
+
 /** Your activity in the preview: a few queries from each place. */
 const MIN = 60_000;
 const myActivity: MyActivity[] = [
-  {
+  myEntry({
     at: Date.now() - 3 * MIN,
     connectionId: "demo",
     source: "ask",
@@ -49,8 +74,8 @@ const myActivity: MyActivity[] = [
     rows: 10,
     ms: 14,
     question: "Top 10 customers by total spend",
-  },
-  {
+  }),
+  myEntry({
     at: Date.now() - 9 * MIN,
     connectionId: "demo",
     source: "investigate",
@@ -60,16 +85,16 @@ const myActivity: MyActivity[] = [
     ms: 8,
     detail: "sent row count and column summaries",
     question: "why did paid orders drop last week?",
-  },
-  {
+  }),
+  myEntry({
     at: Date.now() - 26 * MIN,
     connectionId: "pg",
     source: "editor",
     sql: "SELECT * FROM signups WHERE signup_date > now() - interval '7 days';",
     status: "error",
     detail: 'column "signup_date" does not exist',
-  },
-  {
+  }),
+  myEntry({
     at: Date.now() - 2 * 24 * 60 * MIN,
     connectionId: "demo",
     source: "editor",
@@ -77,7 +102,7 @@ const myActivity: MyActivity[] = [
     status: "ok",
     rows: 1,
     ms: 3,
-  },
+  }),
 ];
 
 const col = (name: string, data_type: string, primary_key = false) => ({
@@ -86,6 +111,7 @@ const col = (name: string, data_type: string, primary_key = false) => ({
   nullable: !primary_key,
   primary_key,
   enum_values: null,
+  comment: null,
 });
 
 const table = (
@@ -100,6 +126,8 @@ const table = (
   columns,
   foreign_keys: fks,
   row_estimate: rows,
+  comment: null,
+  checks: [],
 });
 
 const schema: Schema = {
@@ -180,6 +208,7 @@ const provider = (id: string, label: string, extra: Partial<AiProvider> = {}): A
 });
 
 const settings: Settings = {
+  team: null,
   provider: "anthropic",
   typingModel: "claude-haiku-5-5",
   expertModel: "claude-opus-5-5",
@@ -266,6 +295,7 @@ const boot: Bootstrap = {
       file: "/demo.sqlite",
       ssl: false,
       trustCert: false,
+      production: false,
     },
     {
       id: "pg",
@@ -291,6 +321,7 @@ const boot: Bootstrap = {
       file: "",
       ssl: false,
       trustCert: false,
+      production: false,
     },
     {
       id: "ms",
@@ -303,6 +334,7 @@ const boot: Bootstrap = {
       file: "",
       ssl: true,
       trustCert: false,
+      production: false,
     },
   ],
   settings,
@@ -571,7 +603,14 @@ const agentAccess = new Map<string, AgentAccess>(
     ? [
         [
           "demo",
-          { enabled: true, results: "counts", apps: "counts", askBeforeSend: false, neverSend: [] },
+          {
+            enabled: true,
+            results: "counts",
+            apps: "counts",
+            askBeforeSend: false,
+            neverSend: [],
+            team: null,
+          },
         ],
       ]
     : [],
@@ -581,7 +620,7 @@ let notes: DbNote[] =
   VIDEO || FIRSTRUN
     ? []
     : [
-        {
+        note({
           id: "1f3a9c2e-5b7d-4e8f-9a01-2c3d4e5f6a7b",
           connectionId: "demo",
           database: null,
@@ -593,8 +632,8 @@ let notes: DbNote[] =
             last: { ok: true, at: Date.now() - 2 * 86_400_000 },
           },
           verifiedAt: Date.now() - 2 * 86_400_000,
-        },
-        {
+        }),
+        note({
           id: "7c2e1b4d-8a9f-4c3e-b2d1-0e9f8a7b6c5d",
           connectionId: "demo",
           database: null,
@@ -607,7 +646,7 @@ let notes: DbNote[] =
             reason: "the table legacy_orders no longer exists",
             since: Date.now() - 86_400_000,
           },
-        },
+        }),
       ];
 // When AI apps last fetched the audit prompt (none in the video).
 const audits: AuditRun[] =
@@ -626,7 +665,7 @@ let suggestions: NoteSuggestion[] = FIRSTRUN
   ? []
   : VIDEO
     ? [
-        {
+        suggestion({
           id: "sug-1",
           connectionId: "demo",
           database: null,
@@ -635,10 +674,10 @@ let suggestions: NoteSuggestion[] = FIRSTRUN
           text: "Refunds are orders.status = 'refunded'; there is no refunds table",
           evidence:
             "Checked api/orders/refund.ts (commit 4f2c1a9): it sets orders.status; describe_schema lists no refunds table.",
-        },
+        }),
       ]
     : [
-        {
+        suggestion({
           id: "sug-1",
           connectionId: "demo",
           database: null,
@@ -647,8 +686,8 @@ let suggestions: NoteSuggestion[] = FIRSTRUN
           text: "reviews.rating is 1 to 5; 0 means the review was removed",
           evidence:
             "api/reviews/moderate.ts sets rating = 0 on removal (commit 9b1e2d4, 2026-09-14); a CHECK in the migration allows 0 to 5.",
-        },
-        {
+        }),
+        suggestion({
           id: "sug-2",
           connectionId: "demo",
           database: null,
@@ -656,8 +695,8 @@ let suggestions: NoteSuggestion[] = FIRSTRUN
           createdAt: Date.now() - 900_000,
           text: "categories.parent_id is unused since the flat category redesign; ignore it",
           evidence: "No reads of parent_id in web/ or api/ since commit 51c0e7a (2026-06-02).",
-        },
-        {
+        }),
+        suggestion({
           id: "sug-3",
           connectionId: "demo",
           database: null,
@@ -669,8 +708,8 @@ let suggestions: NoteSuggestion[] = FIRSTRUN
           replaces: "1f3a9c2e-5b7d-4e8f-9a01-2c3d4e5f6a7b",
           replacedText: "orders.status 'pending' means awaiting payment",
           remove: false,
-        },
-        {
+        }),
+        suggestion({
           id: "sug-4",
           connectionId: "demo",
           database: null,
@@ -682,7 +721,7 @@ let suggestions: NoteSuggestion[] = FIRSTRUN
           replaces: "7c2e1b4d-8a9f-4c3e-b2d1-0e9f8a7b6c5d",
           replacedText: "Use legacy_orders for orders before 2024",
           remove: true,
-        },
+        }),
       ];
 const waiting = new Map<string, (r: AgentReply) => void>();
 const stopped = new Set<string>();
@@ -693,11 +732,11 @@ const mcpBlocked = new Set<string>();
 const mcpApproved = new Set<string>();
 let mcpOnlyApproved = false;
 // The video's log matches its terminal scene: Claude Code gets a count, then is refused a private column.
-const mcpActivity = FIRSTRUN
+const mcpActivity: McpActivity[] = FIRSTRUN
   ? []
   : VIDEO
     ? [
-        {
+        appActivity({
           at: Date.now() - 30_000,
           app: "Claude Code",
           tool: "run_query",
@@ -707,8 +746,8 @@ const mcpActivity = FIRSTRUN
           status: "refused",
           detail: "never-send column email",
           maySee: "counts",
-        },
-        {
+        }),
+        appActivity({
           at: Date.now() - 75_000,
           app: "Claude Code",
           tool: "run_query",
@@ -718,8 +757,8 @@ const mcpActivity = FIRSTRUN
           status: "ok",
           rows: 1,
           maySee: "counts",
-        },
-        {
+        }),
+        appActivity({
           at: Date.now() - 600_000,
           app: "Cursor",
           tool: "run_query",
@@ -729,10 +768,10 @@ const mcpActivity = FIRSTRUN
           status: "refused",
           detail: "could change data",
           maySee: "counts",
-        },
+        }),
       ]
     : [
-        {
+        appActivity({
           at: Date.now() - 30_000,
           app: "Claude Code",
           tool: "suggest_note",
@@ -741,8 +780,8 @@ const mcpActivity = FIRSTRUN
           sql: "",
           status: "ok",
           detail: "reviews.rating is 1 to 5; 0 means the review was removed",
-        },
-        {
+        }),
+        appActivity({
           at: Date.now() - 60_000,
           app: "Claude Code",
           tool: "run_query",
@@ -752,8 +791,8 @@ const mcpActivity = FIRSTRUN
           status: "ok",
           rows: 12,
           maySee: "counts",
-        },
-        {
+        }),
+        appActivity({
           at: Date.now() - 150_000,
           app: "Cursor",
           tool: "run_query",
@@ -763,8 +802,8 @@ const mcpActivity = FIRSTRUN
           status: "ok",
           rows: 48,
           maySee: "counts",
-        },
-        {
+        }),
+        appActivity({
           at: Date.now() - 240_000,
           app: "Cursor",
           tool: "run_query",
@@ -774,8 +813,8 @@ const mcpActivity = FIRSTRUN
           status: "refused",
           detail: "never-send column email",
           maySee: "counts",
-        },
-        {
+        }),
+        appActivity({
           at: Date.now() - 600_000,
           app: "Claude Code",
           tool: "run_query",
@@ -785,9 +824,9 @@ const mcpActivity = FIRSTRUN
           status: "refused",
           detail: "could change data",
           maySee: "counts",
-        },
+        }),
         // Refused while only approved apps were let in; it waits for approval.
-        {
+        appActivity({
           at: Date.now() - 900_000,
           app: "Windsurf",
           tool: "list_connections",
@@ -796,7 +835,7 @@ const mcpActivity = FIRSTRUN
           sql: "",
           status: "refused",
           detail: "not approved",
-        },
+        }),
       ];
 function mcpApps() {
   const names = new Set([...mcpActivity.map((e) => e.app), ...mcpBlocked, ...mcpApproved]);
@@ -1006,6 +1045,9 @@ function auditAgents(): AuditAgent[] {
       version: none ? null : old ? "2.0.14 (Claude Code)" : "2.1.267 (Claude Code)",
       supported: true,
       ready: !none && !old,
+      builtIn: false,
+      downloadBytes: null,
+      detail: null,
       installUrl: "https://code.claude.com/docs/en/setup",
       problem: old
         ? "Claude Code 2.0.14 is too old to run read-only from SayQL. Update it to 2.1.259 or later: run `claude update` in a terminal."
@@ -1018,6 +1060,9 @@ function auditAgents(): AuditAgent[] {
       version: null,
       supported: false,
       ready: false,
+      builtIn: false,
+      downloadBytes: null,
+      detail: null,
       installUrl: "https://developers.openai.com/codex/cli",
       problem: none
         ? null
@@ -1030,6 +1075,9 @@ function auditAgents(): AuditAgent[] {
       version: null,
       supported: false,
       ready: false,
+      builtIn: false,
+      downloadBytes: null,
+      detail: null,
       installUrl: "https://geminicli.com",
       problem: null,
     },
@@ -1040,6 +1088,9 @@ function auditAgents(): AuditAgent[] {
       version: null,
       supported: false,
       ready: false,
+      builtIn: false,
+      downloadBytes: null,
+      detail: null,
       installUrl: "https://cursor.com/cli",
       problem: null,
     },
@@ -1127,7 +1178,7 @@ const addSource = (id: unknown, source: KnowledgeSource) => {
   return source;
 };
 const auditStops = new Set<string>();
-let auditModel = "sonnet";
+let auditModel: AuditModel = "sonnet";
 // `?nocredits` in the mock's URL: no SayQL credit key saved.
 const mockCreditKey = typeof location === "undefined" || !location.search.includes("nocredits");
 
@@ -1148,7 +1199,7 @@ const VIDEO_AUDIT_SUMMARY = [
   "**2 suggestions are waiting in SayQL.** Nothing is saved until you accept it.",
   "- `orders.status` 'paid' is set by `api/orders/pay.ts`; `api/orders/ship.ts` sets `shipped_at`.\n- `order_items.unit_price` is copied from the product when the order is placed (docs: Order statuses).",
 ].join("\n\n");
-const VIDEO_PRICE_NOTE: DbNote = {
+const VIDEO_PRICE_NOTE: DbNote = note({
   id: "5d8e2f1a-3c4b-4a6d-9e7f-1a2b3c4d5e6f",
   connectionId: "demo",
   database: null,
@@ -1161,7 +1212,7 @@ const VIDEO_PRICE_NOTE: DbNote = {
     reason: "the column products.price was renamed to price_cents",
     since: Date.now() - 86_400_000,
   },
-};
+});
 const VIDEO_PRICE_FIX: NoteSuggestion = {
   id: "sug-price",
   connectionId: "demo",
@@ -1227,7 +1278,7 @@ async function mockAuditRun(
       suggested += 1;
       suggestions = [
         ...suggestions,
-        {
+        suggestion({
           id: `sug-audit-${runId}-${suggested}`,
           connectionId,
           database,
@@ -1235,7 +1286,7 @@ async function mockAuditRun(
           createdAt: Date.now(),
           text: text.replace(/^Suggested a note: /, ""),
           evidence: "Found by the audit in the preview.",
-        },
+        }),
       ];
     }
   }
@@ -1260,6 +1311,584 @@ async function mockAuditRun(
   });
 }
 
+/** A fake for each Tauri command, typed by the generated bindings (`CommandArgs`, `CommandResult`). */
+type MockHandlers = {
+  [C in CommandName]: (a: CommandArgs<C>) => Promise<CommandResult<C>>;
+};
+
+const handlers: MockHandlers = {
+  init: async () => {
+    return boot;
+  },
+  open_database: async () => {
+    await new Promise((r) => setTimeout(r, 300));
+    return schema;
+  },
+  refresh_schema: async () => {
+    await new Promise((r) => setTimeout(r, 300));
+    return schema;
+  },
+  list_databases: async (a) => {
+    return a.id === "demo"
+      ? null
+      : { databases: ["analytics", "master", "sales", "staging"], current: "master" };
+  },
+  run_query: async (a) => {
+    if (String(a.sql).includes("first_nme"))
+      return Promise.reject(
+        VIDEO ? "no such column: first_nme" : "Invalid column name 'first_nme'.",
+      );
+    if (!isReadOnly(String(a.sql), boot.connections.find((c) => c.id === a.id)?.kind)) {
+      if (!a.allowWrite) return Promise.reject("WRITE_CONFIRM");
+      return { columns: [], rows: [], rowsAffected: 1, truncated: false, elapsedMs: 3 };
+    }
+    if (/from\s+orders\s*;?\s*$/i.test(String(a.sql))) return orders;
+    if (String(a.sql).includes("c.country IN")) return europe;
+    if (String(a.sql).includes("start of month")) return newCustomers;
+    if (String(a.sql).includes("'Japan'")) return japan;
+    return String(a.sql).includes("ORDER BY total_spend DESC") ? topCustomers : result;
+  },
+  generate_sql: async (a) => {
+    if (a.skill && !skills.some((s) => s.slug === a.skill))
+      return Promise.reject(`There's no skill called /${a.skill}. Create it in Settings.`);
+    void streamSql(
+      Number(a.reqId),
+      mockAnswer(
+        String(a.question),
+        a.task as { kind: string },
+        (a.skill as string | null) ?? null,
+      ),
+    );
+    return null;
+  },
+  cancel_generation: async () => {
+    return null;
+  },
+  cancel_query: async () => {
+    return null;
+  },
+  start_agent: async (a) => {
+    const access = agentAccess.get(String(a.id));
+    if (!access?.enabled)
+      return Promise.reject(
+        "Investigate is off for this connection. Turn it on in its Investigate settings first.",
+      );
+    void mockAgentRun(String(a.runId), String(a.question), access, a.auto === true);
+    return null;
+  },
+  stop_agent: async (a) => {
+    stopped.add(String(a.runId));
+    waiting.get(String(a.runId))?.({ type: "skip" });
+    return null;
+  },
+  reply_agent: async (a) => {
+    const resolve = waiting.get(String(a.runId));
+    waiting.delete(String(a.runId));
+    resolve?.(a.reply as AgentReply);
+    return null;
+  },
+  agent_access: async (a) => {
+    return (
+      agentAccess.get(String(a.id)) ?? {
+        enabled: false,
+        results: "off",
+        apps: "counts",
+        askBeforeSend: true,
+        neverSend: [],
+        team: null,
+      }
+    );
+  },
+  save_agent_access: async (a) => {
+    // What the backend saves: the choices, with its defaults for any left out.
+    const saved: AgentAccess = {
+      enabled: a.access.enabled ?? false,
+      results: a.access.results ?? "off",
+      apps: a.access.apps ?? "counts",
+      askBeforeSend: a.access.askBeforeSend ?? true,
+      neverSend: a.access.neverSend ?? [],
+      team: null,
+    };
+    agentAccess.set(a.id, saved);
+    return saved;
+  },
+  list_notes: async (a) => {
+    return notes.filter((n) => n.connectionId === a.id);
+  },
+  // The dev UI has no team server: every connection uses the notes saved here.
+  list_shared_notes: async () => {
+    return null;
+  },
+  suggest_note: async () => {
+    return "Sent to your team's knowledge owners for approval.";
+  },
+  save_note: async (a) => {
+    const note = a.note as DbNote;
+    if (/@|‹/.test(note.text))
+      return Promise.reject(
+        "A note describes the database, not the data in it. Remove the value (an email, number or name) from it.",
+      );
+    const saved = { ...note, id: note.id || crypto.randomUUID(), updatedAt: Date.now() };
+    notes = [...notes.filter((n) => n.id !== saved.id), saved];
+    return saved;
+  },
+  delete_note: async (a) => {
+    notes = notes.filter((n) => n.id !== a.id);
+    return null;
+  },
+  confirm_note: async (a) => {
+    notes = notes.map((n) => (n.id === a.id ? { ...n, suspect: undefined } : n));
+    return notes.find((n) => n.id === a.id) ?? Promise.reject("This note was deleted.");
+  },
+  check_note: async (a) => {
+    const at = Date.now();
+    notes = notes.map((n) =>
+      n.id === a.id && n.check
+        ? { ...n, check: { ...n.check, last: { ok: true, at } }, verifiedAt: at }
+        : n,
+    );
+    return notes.find((n) => n.id === a.id) ?? Promise.reject("This note was deleted.");
+  },
+  check_notes: async (a) => {
+    return notes.filter((n) => n.connectionId === a.id);
+  },
+  list_note_suggestions: async () => {
+    return suggestions;
+  },
+  accept_note_suggestion: async (a) => {
+    const s = suggestions.find((x) => x.id === a.id);
+    if (!s) return Promise.reject("This suggestion is no longer waiting.");
+    suggestions = suggestions.filter((x) => x.id !== a.id);
+    // A removal deletes the note it names; a replacement keeps that note's id.
+    if (s.remove) {
+      notes = notes.filter((n) => n.id !== s.replaces);
+      return null;
+    }
+    const id =
+      s.replaces && notes.some((n) => n.id === s.replaces) ? s.replaces : crypto.randomUUID();
+    const saved = note({
+      id,
+      connectionId: s.connectionId,
+      database: s.database,
+      text: s.text,
+      updatedAt: Date.now(),
+    });
+    notes = [...notes.filter((n) => n.id !== id), saved];
+    return saved;
+  },
+  mcp_audits: async () => {
+    return audits;
+  },
+  audit_prompt: async (a) => {
+    const c = boot.connections.find((x) => x.id === a.id);
+    if (!c) return Promise.reject("No saved connection has this id.");
+    const db = (a.database as string | null) ?? (c.database || null);
+    const where = db ? `, database "${db}"` : "";
+    return (
+      `Audit the database of the SayQL connection "${c.name}" (connection_id "${c.id}"${where}) against the code in this project, ` +
+      "and suggest notes that teach SayQL what the schema doesn't say.\n\n" +
+      "Use the SayQL MCP server's tools for this (describe_schema, suggest_note). (The app gives the full instructions; the browser preview shortens them.)"
+    );
+  },
+  audit_agents: async () => {
+    await new Promise((r) => setTimeout(r, 250));
+    return auditAgents();
+  },
+  knowledge_sources: async (a) => {
+    return sourcesOf(a.id).map((s) => ({ ...s }));
+  },
+  add_knowledge_folder: async (a) => {
+    const path = a.id === "demo" ? "/Users/you/code/shop" : "/Users/you/code/analytics";
+    if (sourcesOf(a.id).some((s) => s.kind.type === "local" && s.kind.path === path))
+      return Promise.reject("This connection already has that source.");
+    return addSource(a.id, {
+      id: `src_mock${++mockSourceId}`,
+      label: path.split("/").pop() ?? "code",
+      kind: { type: "local", path },
+      lastFetch: Date.now(),
+      lastCommit: null,
+      error: null,
+    });
+  },
+  add_knowledge_files: async (a) => {
+    return addSource(a.id, {
+      id: `src_mock${++mockSourceId}`,
+      label: "docs",
+      lastFetch: Date.now(),
+      lastCommit: "4e5f6a7b8c9d",
+      error: null,
+      kind: {
+        type: "files",
+        paths: ["/Users/you/Documents/billing-spec.pdf", "/Users/you/Documents/status-codes.md"],
+      },
+    });
+  },
+  add_knowledge_url: async (a) => {
+    const url = String(a.url ?? "").trim();
+    if (!/^https?:\/\/[^/]+/.test(url))
+      return Promise.reject("Enter the page's full address, starting with https://.");
+    if (/^https?:\/\/(localhost|127\.|10\.|192\.168\.)/.test(url))
+      return Promise.reject(
+        "SayQL reads public web pages only, and that address is on this computer or a private network.",
+      );
+    const label = url.replace(/^https?:\/\//, "").split(/[/:]/)[0] || "docs";
+    return addSource(a.id, {
+      id: `src_mock${++mockSourceId}`,
+      label,
+      lastFetch: Date.now(),
+      lastCommit: "a1b2c3d4e5f6",
+      error: null,
+      kind: { type: "url", url, crawl: !!a.crawl },
+    });
+  },
+  add_knowledge_repo: async (a) => {
+    await new Promise((r) => setTimeout(r, 250));
+    const url = String(a.url ?? "").trim();
+    if (!/^(https:\/\/|ssh:\/\/|git@)/.test(url))
+      return Promise.reject(
+        "Use the repository's https:// or SSH address (git@host:owner/repo.git), as its Clone button shows it.",
+      );
+    if (url.includes("private"))
+      return Promise.reject(
+        "github.com didn't accept the sign-in. Add a read-only token for this repository, or set up git's credential helper for github.com.",
+      );
+    const subdir = String(a.subdir ?? "").trim() || null;
+    const label =
+      (subdir ?? url)
+        .replace(/\.git$/, "")
+        .split(/[/:]/)
+        .pop() || "code";
+    return addSource(a.id, {
+      id: `src_mock${++mockSourceId}`,
+      label,
+      lastFetch: null,
+      lastCommit: null,
+      error: null,
+      kind: {
+        type: "git",
+        url,
+        branch: String(a.branch ?? "").trim(),
+        subdir,
+        hasToken: !!a.token,
+        tokenUser: (a.tokenUser as string | null) ?? null,
+      },
+    });
+  },
+  remove_knowledge_source: async (a) => {
+    knowledgeSources.set(
+      a.id as string,
+      sourcesOf(a.id).filter((s) => s.id !== a.sourceId),
+    );
+    return null;
+  },
+  refresh_knowledge_source: async (a) => {
+    await new Promise((r) => setTimeout(r, 150));
+    const s = sourcesOf(a.id).find((x) => x.id === a.sourceId);
+    if (!s) return Promise.reject("That source was removed.");
+    s.error = null;
+    if (s.kind.type === "files" || s.kind.type === "url") s.lastFetch = Date.now();
+    return { ...s };
+  },
+  start_audit: async (a) => {
+    const agent = auditAgents().find((x) => x.id === a.agent);
+    if (!agent?.ready)
+      return Promise.reject(
+        agent?.problem ?? "Claude Code isn't installed on this computer, or SayQL can't find it.",
+      );
+    if (sourcesOf(a.id).length === 0)
+      return Promise.reject(
+        "Add a code source first: a folder or repository with this database's code.",
+      );
+    void mockAuditRun(
+      a.runId as string,
+      a.id as string,
+      (a.database as string | null) ?? null,
+      a.agent as string,
+    );
+    return null;
+  },
+  audit_model: async () => {
+    return auditModel;
+  },
+  set_audit_model: async (a) => {
+    auditModel = a.model;
+    return null;
+  },
+  audit_payment: async () => {
+    // As the app: paying for the audit with credits is off, so it's always the person's own sign-in.
+    return { payment: "subscription", hasCreditKey: mockCreditKey };
+  },
+  set_audit_payment: async () => {
+    return null;
+  },
+  cancel_audit: async (a) => {
+    auditStops.add(a.runId as string);
+    return null;
+  },
+  open_audit_in_terminal: async () => {
+    return null;
+  },
+  dismiss_note_suggestion: async (a) => {
+    suggestions = suggestions.filter((x) => x.id !== a.id);
+    return null;
+  },
+  save_agent_settings: async (a) => {
+    Object.assign(settings, { agentModel: a.agentModel, agent: a.agent });
+    settings.providers = settings.providers.map((p) =>
+      p.id === settings.provider ? { ...p, agentModel: a.agentModel as string } : p,
+    );
+    return { ...settings };
+  },
+  choose_model: async (a) => {
+    const field = a.purpose === "agent" ? "agentModel" : "typingModel";
+    const chosen = settings.providers.find((p) => p.id === a.provider);
+    if (!chosen?.ready) return Promise.reject(`${chosen?.label ?? a.provider} isn't set up yet.`);
+    settings.providers = settings.providers.map((p) =>
+      p.id === a.provider ? { ...p, [field]: a.model as string } : p,
+    );
+    const p = settings.providers.find((q) => q.id === a.provider)!;
+    Object.assign(settings, {
+      provider: p.id,
+      typingModel: p.typingModel,
+      expertModel: p.expertModel,
+      agentModel: p.agentModel,
+    });
+    return { ...settings };
+  },
+  list_scripts: async () => {
+    return [];
+  },
+  save_script: async (a) => {
+    const script = a.script;
+    return {
+      ...script,
+      database: script.database ?? null,
+      question: script.question ?? "",
+      id: script.id || crypto.randomUUID(),
+      updatedAt: Date.now(),
+    };
+  },
+  delete_script: async () => {
+    return null;
+  },
+  list_skills: async () => {
+    return skills;
+  },
+  save_skill: async (a) => {
+    const original = (a.original as string | null) ?? null;
+    const raw = a.skill as Skill;
+    const problem = skillError(raw, skills, original);
+    if (problem) return Promise.reject(problem);
+    const skill = {
+      slug: raw.slug.trim().replace(/^\//, ""),
+      description: raw.description.trim(),
+      instruction: raw.instruction.trim(),
+    };
+    const i = skills.findIndex((s) => s.slug === original);
+    skills = i < 0 ? [...skills, skill] : skills.map((s, j) => (j === i ? skill : s));
+    return skill;
+  },
+  delete_skill: async (a) => {
+    skills = skills.filter((s) => s.slug !== a.slug);
+    return null;
+  },
+  app_info: async () => {
+    return { version, os: "macos", arch: "aarch64" };
+  },
+  install_update: async () => {
+    return Promise.reject("Updates aren't available in the browser preview.");
+  },
+  check_update: async () => {
+    return null;
+  },
+  take_handoffs: async () => {
+    return [];
+  },
+  // Signed out of SayQL Team: there is no team server in the browser preview.
+  team_status: async () => {
+    return null;
+  },
+  team_connections: async () => {
+    return [];
+  },
+  team_ai: async () => {
+    return null;
+  },
+  team_sign_out: async () => {
+    return null;
+  },
+  credits_balance: async () => {
+    return null;
+  },
+  team_sign_in: async () => {
+    return Promise.reject("Signing in to a team isn't available in the browser preview.");
+  },
+  team_sso_start: async () => {
+    return Promise.reject("Signing in to a team isn't available in the browser preview.");
+  },
+  team_sso_finish: async () => {
+    return Promise.reject("Signing in to a team isn't available in the browser preview.");
+  },
+  mcp_setup: async () => {
+    return MOCK_OS === "windows"
+      ? {
+          path: "C:\\Program Files\\SayQL\\sayql-mcp.exe",
+          exists: true,
+          appimage: false,
+          os: "windows",
+        }
+      : MOCK_OS === "linux"
+        ? { path: "/usr/bin/sayql-mcp", exists: true, appimage: false, os: "linux" }
+        : {
+            path: "/Applications/SayQL.app/Contents/MacOS/sayql-mcp",
+            exists: true,
+            appimage: false,
+            os: "macos",
+          };
+  },
+  installed_coding_agents: async () => {
+    return installedCodingAgents();
+  },
+  open_install_link: async (a) => {
+    // The browser preview can't open Cursor or VS Code; the real app asks the OS to.
+    // oxlint-disable-next-line no-console -- the browser preview shows the link it would open
+    console.info("open_install_link", a.url);
+    return null;
+  },
+  mcp_activity: async () => {
+    return mcpActivity;
+  },
+  mcp_apps: async () => {
+    return mcpApps();
+  },
+  set_mcp_app_blocked: async (a) => {
+    const name = String(a.name);
+    if (a.blocked) mcpBlocked.add(name);
+    else {
+      mcpBlocked.delete(name);
+      mcpApproved.add(name);
+    }
+    return mcpApps();
+  },
+  approve_mcp_app: async (a) => {
+    mcpApproved.add(String(a.name));
+    return mcpApps();
+  },
+  set_mcp_only_approved: async (a) => {
+    // Turning it on approves the apps already seen that aren't blocked, like the backend.
+    if (a.on && !mcpOnlyApproved)
+      for (const e of mcpActivity)
+        if (e.detail !== "not approved" && !mcpBlocked.has(e.app)) mcpApproved.add(e.app);
+    mcpOnlyApproved = !!a.on;
+    return mcpApps();
+  },
+  clear_mcp_activity: async () => {
+    mcpActivity.length = 0;
+    return null;
+  },
+  test_connection: async () => {
+    return "Connected. Found 6 tables and views.";
+  },
+  save_connection: async (a) => {
+    // The backend's defaults for fields the form left out.
+    const c = a.config;
+    return {
+      ...c,
+      host: c.host ?? "",
+      port: c.port ?? null,
+      database: c.database ?? "",
+      user: c.user ?? "",
+      file: c.file ?? "",
+      ssl: c.ssl ?? false,
+      trustCert: c.trustCert ?? false,
+      production: c.production ?? false,
+      id: c.id || crypto.randomUUID(),
+    };
+  },
+  delete_connection: async (a) => {
+    boot.connections = boot.connections.filter((c) => c.id !== a.id);
+    return null;
+  },
+  save_settings: async (a) => {
+    const id = a.provider as string;
+    const providers = settings.providers.map((p) =>
+      p.id === id
+        ? {
+            ...p,
+            typingModel: a.typingModel as string,
+            expertModel: a.expertModel as string,
+            baseUrl: a.baseUrl as string,
+            hasKey: p.hasKey || !!a.apiKey,
+          }
+        : p,
+    );
+    const chosen = providers.find((p) => p.id === id);
+    Object.assign(settings, {
+      provider: id,
+      typingModel: a.typingModel,
+      expertModel: (a.expertModel as string) || a.typingModel,
+      workspaceId: a.workspaceId,
+      providers,
+      // Like the backend: ready once the provider has what it needs (a key, unless it needs none).
+      aiReady: !!chosen && (chosen.key !== "required" || chosen.hasKey),
+    });
+    return { ...settings };
+  },
+  finish_onboarding: async () => {
+    settings.onboarded = true;
+    return { ...settings };
+  },
+  voice_status: async () => {
+    return { ready: voice.ready, downloading: voice.downloading, modelBytes: VOICE_BYTES };
+  },
+  voice_download: async () => {
+    await fakeDownload();
+    return null;
+  },
+  voice_cancel_download: async () => {
+    voice.cancel = true;
+    return null;
+  },
+  voice_delete_model: async () => {
+    voice.ready = false;
+    return null;
+  },
+  voice_start: async () => {
+    if (VOICE === "nomic") return Promise.reject("No microphone found.");
+    fakeMic();
+    return null;
+  },
+  voice_stop: async () => {
+    clearInterval(voice.meter);
+    await new Promise((r) => setTimeout(r, 600));
+    return "top ten customers by total spend";
+  },
+  voice_cancel: async () => {
+    clearInterval(voice.meter);
+    return null;
+  },
+  my_activity: async (a) => {
+    const id = a.connectionId as string | null;
+    return myActivity.filter((e) => !id || e.connectionId === id);
+  },
+  clear_my_activity: async () => {
+    myActivity.length = 0;
+    return null;
+  },
+  check_claude_plan: async () => {
+    await new Promise((r) => setTimeout(r, 500));
+    if (NOPLAN)
+      throw "Claude Code isn't signed in. Run `claude` in a terminal and sign in, then check again.";
+    return { version: "2.1.308", authMethod: "claude.ai", plan: "max" };
+  },
+  list_models: async (a) => {
+    if (a.provider === "anthropic") return settings.models.map((m) => m.id);
+    return a.provider === "ollama"
+      ? ["llama3.3:70b", "qwen3:32b", "sqlcoder:15b"]
+      : ["model-small", "model-large"];
+  },
+};
+
 export function installMockBackend() {
   // Before the app reads its remembered tabs: a first run remembers nothing.
   if (FIRSTRUN) setStorageNamespace("sayql-firstrun:", true);
@@ -1270,490 +1899,17 @@ export function installMockBackend() {
   }
   mockIPC(
     async (cmd, args) => {
-      const a = (args ?? {}) as Record<string, unknown>;
-      switch (cmd) {
-        case "init":
-          return boot;
-        case "open_database":
-        case "refresh_schema":
-          await new Promise((r) => setTimeout(r, 300));
-          return schema;
-        case "list_databases":
-          return a.id === "demo"
-            ? null
-            : { databases: ["analytics", "master", "sales", "staging"], current: "master" };
-        case "run_query":
-          if (String(a.sql).includes("first_nme"))
-            return Promise.reject(
-              VIDEO ? "no such column: first_nme" : "Invalid column name 'first_nme'.",
-            );
-          if (!isReadOnly(String(a.sql), boot.connections.find((c) => c.id === a.id)?.kind)) {
-            if (!a.allowWrite) return Promise.reject("WRITE_CONFIRM");
-            return { columns: [], rows: [], rowsAffected: 1, truncated: false, elapsedMs: 3 };
-          }
-          if (/from\s+orders\s*;?\s*$/i.test(String(a.sql))) return orders;
-          if (String(a.sql).includes("c.country IN")) return europe;
-          if (String(a.sql).includes("start of month")) return newCustomers;
-          if (String(a.sql).includes("'Japan'")) return japan;
-          return String(a.sql).includes("ORDER BY total_spend DESC") ? topCustomers : result;
-        case "generate_sql":
-          if (a.skill && !skills.some((s) => s.slug === a.skill))
-            return Promise.reject(`There's no skill called /${a.skill}. Create it in Settings.`);
-          void streamSql(
-            Number(a.reqId),
-            mockAnswer(
-              String(a.question),
-              a.task as { kind: string },
-              (a.skill as string | null) ?? null,
-            ),
-          );
-          return null;
-        case "cancel_generation":
-        case "cancel_query":
-          return null;
-        case "start_agent": {
-          const access = agentAccess.get(String(a.id));
-          if (!access?.enabled)
-            return Promise.reject(
-              "Investigate is off for this connection. Turn it on in its Investigate settings first.",
-            );
-          void mockAgentRun(String(a.runId), String(a.question), access, a.auto === true);
-          return null;
-        }
-        case "stop_agent":
-          stopped.add(String(a.runId));
-          waiting.get(String(a.runId))?.({ type: "skip" });
-          return null;
-        case "reply_agent": {
-          const resolve = waiting.get(String(a.runId));
-          waiting.delete(String(a.runId));
-          resolve?.(a.reply as AgentReply);
-          return null;
-        }
-        case "agent_access":
-          return (
-            agentAccess.get(String(a.id)) ?? {
-              enabled: false,
-              results: "off",
-              apps: "counts",
-              askBeforeSend: true,
-              neverSend: [],
-            }
-          );
-        case "save_agent_access":
-          agentAccess.set(String(a.id), a.access as AgentAccess);
-          return a.access;
-        case "list_notes":
-          return notes.filter((n) => n.connectionId === a.id);
-        // The dev UI has no team server: every connection uses the notes saved here.
-        case "list_shared_notes":
-          return null;
-        case "suggest_note":
-          return "Sent to your team's knowledge owners for approval.";
-        case "save_note": {
-          const note = a.note as DbNote;
-          if (/@|‹/.test(note.text))
-            return Promise.reject(
-              "A note describes the database, not the data in it. Remove the value (an email, number or name) from it.",
-            );
-          const saved = { ...note, id: note.id || crypto.randomUUID(), updatedAt: Date.now() };
-          notes = [...notes.filter((n) => n.id !== saved.id), saved];
-          return saved;
-        }
-        case "delete_note":
-          notes = notes.filter((n) => n.id !== a.id);
-          return null;
-        case "confirm_note": {
-          notes = notes.map((n) => (n.id === a.id ? { ...n, suspect: null } : n));
-          return notes.find((n) => n.id === a.id);
-        }
-        case "check_note": {
-          const at = Date.now();
-          notes = notes.map((n) =>
-            n.id === a.id && n.check
-              ? { ...n, check: { ...n.check, last: { ok: true, at } }, verifiedAt: at }
-              : n,
-          );
-          return notes.find((n) => n.id === a.id);
-        }
-        case "check_notes":
-          return notes.filter((n) => n.connectionId === a.id);
-        case "list_note_suggestions":
-          return suggestions;
-        case "accept_note_suggestion": {
-          const s = suggestions.find((x) => x.id === a.id);
-          if (!s) return Promise.reject("This suggestion is no longer waiting.");
-          suggestions = suggestions.filter((x) => x.id !== a.id);
-          // A removal deletes the note it names; a replacement keeps that note's id.
-          if (s.remove) {
-            notes = notes.filter((n) => n.id !== s.replaces);
-            return null;
-          }
-          const id =
-            s.replaces && notes.some((n) => n.id === s.replaces) ? s.replaces : crypto.randomUUID();
-          const saved: DbNote = {
-            id,
-            connectionId: s.connectionId,
-            database: s.database,
-            text: s.text,
-            updatedAt: Date.now(),
-          };
-          notes = [...notes.filter((n) => n.id !== id), saved];
-          return saved;
-        }
-        case "mcp_audits":
-          return audits;
-        case "audit_prompt": {
-          const c = boot.connections.find((x) => x.id === a.id);
-          if (!c) return Promise.reject("No saved connection has this id.");
-          const db = (a.database as string | null) ?? (c.database || null);
-          const where = db ? `, database "${db}"` : "";
-          return (
-            `Audit the database of the SayQL connection "${c.name}" (connection_id "${c.id}"${where}) against the code in this project, ` +
-            "and suggest notes that teach SayQL what the schema doesn't say.\n\n" +
-            "Use the SayQL MCP server's tools for this (describe_schema, suggest_note). (The app gives the full instructions; the browser preview shortens them.)"
-          );
-        }
-        case "audit_agents":
-          await new Promise((r) => setTimeout(r, 250));
-          return auditAgents();
-        case "knowledge_sources":
-          return sourcesOf(a.id).map((s) => ({ ...s }));
-        case "add_knowledge_folder": {
-          const path = a.id === "demo" ? "/Users/you/code/shop" : "/Users/you/code/analytics";
-          if (sourcesOf(a.id).some((s) => s.kind.type === "local" && s.kind.path === path))
-            return Promise.reject("This connection already has that source.");
-          return addSource(a.id, {
-            id: `src_mock${++mockSourceId}`,
-            label: path.split("/").pop() ?? "code",
-            kind: { type: "local", path },
-            lastFetch: Date.now(),
-            lastCommit: null,
-            error: null,
-          });
-        }
-        case "add_knowledge_files":
-          return addSource(a.id, {
-            id: `src_mock${++mockSourceId}`,
-            label: "docs",
-            lastFetch: Date.now(),
-            lastCommit: "4e5f6a7b8c9d",
-            error: null,
-            kind: {
-              type: "files",
-              paths: [
-                "/Users/you/Documents/billing-spec.pdf",
-                "/Users/you/Documents/status-codes.md",
-              ],
-            },
-          });
-        case "add_knowledge_url": {
-          const url = String(a.url ?? "").trim();
-          if (!/^https?:\/\/[^/]+/.test(url))
-            return Promise.reject("Enter the page's full address, starting with https://.");
-          if (/^https?:\/\/(localhost|127\.|10\.|192\.168\.)/.test(url))
-            return Promise.reject(
-              "SayQL reads public web pages only, and that address is on this computer or a private network.",
-            );
-          const label = url.replace(/^https?:\/\//, "").split(/[/:]/)[0] || "docs";
-          return addSource(a.id, {
-            id: `src_mock${++mockSourceId}`,
-            label,
-            lastFetch: Date.now(),
-            lastCommit: "a1b2c3d4e5f6",
-            error: null,
-            kind: { type: "url", url, crawl: !!a.crawl },
-          });
-        }
-        case "add_knowledge_repo": {
-          await new Promise((r) => setTimeout(r, 250));
-          const url = String(a.url ?? "").trim();
-          if (!/^(https:\/\/|ssh:\/\/|git@)/.test(url))
-            return Promise.reject(
-              "Use the repository's https:// or SSH address (git@host:owner/repo.git), as its Clone button shows it.",
-            );
-          if (url.includes("private"))
-            return Promise.reject(
-              "github.com didn't accept the sign-in. Add a read-only token for this repository, or set up git's credential helper for github.com.",
-            );
-          const subdir = String(a.subdir ?? "").trim() || null;
-          const label =
-            (subdir ?? url)
-              .replace(/\.git$/, "")
-              .split(/[/:]/)
-              .pop() || "code";
-          return addSource(a.id, {
-            id: `src_mock${++mockSourceId}`,
-            label,
-            lastFetch: null,
-            lastCommit: null,
-            error: null,
-            kind: {
-              type: "git",
-              url,
-              branch: String(a.branch ?? "").trim(),
-              subdir,
-              hasToken: !!a.token,
-              tokenUser: (a.tokenUser as string | null) ?? null,
-            },
-          });
-        }
-        case "remove_knowledge_source":
-          knowledgeSources.set(
-            a.id as string,
-            sourcesOf(a.id).filter((s) => s.id !== a.sourceId),
-          );
-          return null;
-        case "refresh_knowledge_source": {
-          await new Promise((r) => setTimeout(r, 150));
-          const s = sourcesOf(a.id).find((x) => x.id === a.sourceId);
-          if (!s) return Promise.reject("That source was removed.");
-          s.error = null;
-          if (s.kind.type === "files" || s.kind.type === "url") s.lastFetch = Date.now();
-          return { ...s };
-        }
-        case "start_audit": {
-          const agent = auditAgents().find((x) => x.id === a.agent);
-          if (!agent?.ready)
-            return Promise.reject(
-              agent?.problem ??
-                "Claude Code isn't installed on this computer, or SayQL can't find it.",
-            );
-          if (sourcesOf(a.id).length === 0)
-            return Promise.reject(
-              "Add a code source first: a folder or repository with this database's code.",
-            );
-          void mockAuditRun(
-            a.runId as string,
-            a.id as string,
-            (a.database as string | null) ?? null,
-            a.agent as string,
-          );
-          return null;
-        }
-        case "audit_model":
-          return auditModel;
-        case "set_audit_model":
-          auditModel = a.model as string;
-          return null;
-        case "audit_payment":
-          // As the app: paying for the audit with credits is off, so it's always the person's own sign-in.
-          return { payment: "subscription", hasCreditKey: mockCreditKey };
-        case "set_audit_payment":
-          return null;
-        case "cancel_audit":
-          auditStops.add(a.runId as string);
-          return null;
-        case "open_audit_in_terminal":
-          return null;
-        case "dismiss_note_suggestion":
-          suggestions = suggestions.filter((x) => x.id !== a.id);
-          return null;
-        case "save_agent_settings":
-          Object.assign(settings, { agentModel: a.agentModel, agent: a.agent });
-          settings.providers = settings.providers.map((p) =>
-            p.id === settings.provider ? { ...p, agentModel: a.agentModel as string } : p,
-          );
-          return { ...settings };
-        case "choose_model": {
-          const field = a.purpose === "agent" ? "agentModel" : "typingModel";
-          const chosen = settings.providers.find((p) => p.id === a.provider);
-          if (!chosen?.ready)
-            return Promise.reject(`${chosen?.label ?? a.provider} isn't set up yet.`);
-          settings.providers = settings.providers.map((p) =>
-            p.id === a.provider ? { ...p, [field]: a.model as string } : p,
-          );
-          const p = settings.providers.find((q) => q.id === a.provider)!;
-          Object.assign(settings, {
-            provider: p.id,
-            typingModel: p.typingModel,
-            expertModel: p.expertModel,
-            agentModel: p.agentModel,
-          });
-          return { ...settings };
-        }
-        case "list_scripts":
-          return [];
-        case "save_script": {
-          const script = a.script as { id: string };
-          return { ...script, id: script.id || crypto.randomUUID(), updatedAt: Date.now() };
-        }
-        case "delete_script":
-          return null;
-        case "list_skills":
-          return skills;
-        case "save_skill": {
-          const original = (a.original as string | null) ?? null;
-          const raw = a.skill as Skill;
-          const problem = skillError(raw, skills, original);
-          if (problem) return Promise.reject(problem);
-          const skill = {
-            slug: raw.slug.trim().replace(/^\//, ""),
-            description: raw.description.trim(),
-            instruction: raw.instruction.trim(),
-          };
-          const i = skills.findIndex((s) => s.slug === original);
-          skills = i < 0 ? [...skills, skill] : skills.map((s, j) => (j === i ? skill : s));
-          return skill;
-        }
-        case "delete_skill":
-          skills = skills.filter((s) => s.slug !== a.slug);
-          return null;
-        case "app_info":
-          return { version, os: "macos", arch: "aarch64" };
-        case "install_update":
-          return Promise.reject("Updates aren't available in the browser preview.");
-        case "plugin:opener|open_url":
-          window.open(String(a.url), "_blank");
-          return null;
-        case "check_update":
-          return null;
-        case "take_handoffs":
-          return [];
-        // Signed out of SayQL Team: there is no team server in the browser preview.
-        case "team_status":
-          return null;
-        case "team_connections":
-          return [];
-        case "team_ai":
-          return null;
-        case "team_sign_out":
-          return null;
-        case "credits_balance":
-          return null;
-        case "team_sign_in":
-        case "team_sso_start":
-        case "team_sso_finish":
-          return Promise.reject("Signing in to a team isn't available in the browser preview.");
-        case "mcp_setup":
-          return MOCK_OS === "windows"
-            ? {
-                path: "C:\\Program Files\\SayQL\\sayql-mcp.exe",
-                exists: true,
-                appimage: false,
-                os: "windows",
-              }
-            : MOCK_OS === "linux"
-              ? { path: "/usr/bin/sayql-mcp", exists: true, appimage: false, os: "linux" }
-              : {
-                  path: "/Applications/SayQL.app/Contents/MacOS/sayql-mcp",
-                  exists: true,
-                  appimage: false,
-                  os: "macos",
-                };
-        case "installed_coding_agents":
-          return installedCodingAgents();
-        case "open_install_link":
-          // The browser preview can't open Cursor or VS Code; the real app asks the OS to.
-          // oxlint-disable-next-line no-console -- the browser preview shows the link it would open
-          console.info("open_install_link", a.url);
-          return null;
-        case "mcp_activity":
-          return mcpActivity;
-        case "mcp_apps":
-          return mcpApps();
-        case "set_mcp_app_blocked": {
-          const name = String(a.name);
-          if (a.blocked) mcpBlocked.add(name);
-          else {
-            mcpBlocked.delete(name);
-            mcpApproved.add(name);
-          }
-          return mcpApps();
-        }
-        case "approve_mcp_app":
-          mcpApproved.add(String(a.name));
-          return mcpApps();
-        case "set_mcp_only_approved":
-          // Turning it on approves the apps already seen that aren't blocked, like the backend.
-          if (a.on && !mcpOnlyApproved)
-            for (const e of mcpActivity)
-              if (e.detail !== "not approved" && !mcpBlocked.has(e.app)) mcpApproved.add(e.app);
-          mcpOnlyApproved = !!a.on;
-          return mcpApps();
-        case "clear_mcp_activity":
-          mcpActivity.length = 0;
-          return null;
-        case "test_connection":
-          return "Connected. Found 6 tables and views.";
-        case "save_connection":
-          return {
-            ...(a.config as object),
-            id: (a.config as { id: string }).id || crypto.randomUUID(),
-          };
-        case "delete_connection":
-          boot.connections = boot.connections.filter((c) => c.id !== a.id);
-          return null;
-        case "save_settings": {
-          const id = a.provider as string;
-          const providers = settings.providers.map((p) =>
-            p.id === id
-              ? {
-                  ...p,
-                  typingModel: a.typingModel as string,
-                  expertModel: a.expertModel as string,
-                  baseUrl: a.baseUrl as string,
-                  hasKey: p.hasKey || !!a.apiKey,
-                }
-              : p,
-          );
-          const chosen = providers.find((p) => p.id === id);
-          Object.assign(settings, {
-            provider: id,
-            typingModel: a.typingModel,
-            expertModel: (a.expertModel as string) || a.typingModel,
-            workspaceId: a.workspaceId,
-            providers,
-            // Like the backend: ready once the provider has what it needs (a key, unless it needs none).
-            aiReady: !!chosen && (chosen.key !== "required" || chosen.hasKey),
-          });
-          return { ...settings };
-        }
-        case "finish_onboarding":
-          settings.onboarded = true;
-          return { ...settings };
-        case "voice_status":
-          return { ready: voice.ready, downloading: voice.downloading, modelBytes: VOICE_BYTES };
-        case "voice_download":
-          return fakeDownload();
-        case "voice_cancel_download":
-          voice.cancel = true;
-          return null;
-        case "voice_delete_model":
-          voice.ready = false;
-          return null;
-        case "voice_start":
-          if (VOICE === "nomic") return Promise.reject("No microphone found.");
-          fakeMic();
-          return null;
-        case "voice_stop":
-          clearInterval(voice.meter);
-          await new Promise((r) => setTimeout(r, 600));
-          return "top ten customers by total spend";
-        case "voice_cancel":
-          clearInterval(voice.meter);
-          return null;
-        case "my_activity": {
-          const id = a.connectionId as string | null;
-          return myActivity.filter((e) => !id || e.connectionId === id);
-        }
-        case "clear_my_activity":
-          myActivity.length = 0;
-          return null;
-        case "check_claude_plan":
-          await new Promise((r) => setTimeout(r, 500));
-          if (NOPLAN)
-            throw "Claude Code isn't signed in. Run `claude` in a terminal and sign in, then check again.";
-          return { version: "2.1.308", authMethod: "claude.ai", plan: "max" };
-        case "list_models":
-          if (a.provider === "anthropic") return settings.models.map((m) => m.id);
-          return a.provider === "ollama"
-            ? ["llama3.3:70b", "qwen3:32b", "sqlcoder:15b"]
-            : ["model-small", "model-large"];
-        default:
-          // Fail loudly so a command added to src/api/commands.ts without a mock here shows up.
-          throw new Error(`mockBackend: no mock for command "${cmd}"`);
+      if (cmd === "plugin:opener|open_url") {
+        window.open(String((args as { url?: unknown } | undefined)?.url), "_blank");
+        return null;
       }
+      if (!(cmd in handlers)) {
+        // Every command has a handler (TypeScript checks `handlers` against the generated
+        // command list), so this is a plugin command the preview doesn't fake.
+        throw new Error(`mockBackend: no mock for command "${cmd}"`);
+      }
+      const handler = handlers[cmd as CommandName] as (a: unknown) => Promise<unknown>;
+      return handler(args ?? {});
     },
     { shouldMockEvents: true },
   );

@@ -7,6 +7,8 @@ const table = (name: string, cols: string[], schema: string | null = null): Tabl
   name,
   kind: "table",
   row_estimate: null,
+  comment: null,
+  checks: [],
   foreign_keys: [],
   columns: cols.map((c, i) => ({
     name: c,
@@ -14,6 +16,7 @@ const table = (name: string, cols: string[], schema: string | null = null): Tabl
     nullable: true,
     primary_key: i === 0,
     enum_values: null,
+    comment: null,
   })),
 });
 

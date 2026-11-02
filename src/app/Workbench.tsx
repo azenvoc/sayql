@@ -7,6 +7,7 @@ import {
   type Bootstrap,
   type ConnectionConfig,
   type DbNote,
+  type DbNoteInput,
   type Script,
   type Table,
   type TeamAccount,
@@ -981,7 +982,7 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
               setNotesVersion((v) => v + 1);
               return sent;
             }
-            const base: DbNote = dialog.note ?? {
+            const base: DbNoteInput = dialog.note ?? {
               id: "",
               connectionId: target.connectionId,
               database: target.database,

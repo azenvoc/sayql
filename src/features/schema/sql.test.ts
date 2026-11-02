@@ -8,6 +8,7 @@ const col = (name: string, data_type: string, primary_key = false): Column => ({
   nullable: !primary_key,
   primary_key,
   enum_values: null,
+  comment: null,
 });
 
 const customers: Table = {
@@ -17,6 +18,8 @@ const customers: Table = {
   columns: [col("id", "integer", true), col("name", "text"), col("order", "text")],
   foreign_keys: [],
   row_estimate: 10,
+  comment: null,
+  checks: [],
 };
 
 describe("templateSql", () => {

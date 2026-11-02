@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { Check, Copy, Pencil } from "lucide-react";
-import { commands, type AgentAccess, type AppResults, type ConnectionConfig } from "../../api";
+import {
+  commands,
+  type AgentAccess,
+  type AgentAccessSettings,
+  type AppResults,
+  type ConnectionConfig,
+} from "../../api";
 import { Alert, Badge, Button, Select } from "../../components/ui";
 import { cx } from "../../lib/cx";
 import { errorText } from "../../lib/errors";
@@ -64,7 +70,7 @@ export function AppAccessList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [local.map((c) => c.id).join("\n")]);
 
-  const save = (id: string, next: AgentAccess) =>
+  const save = (id: string, next: AgentAccessSettings) =>
     saveAgentAccess(id, next).then((saved) => setAccess((all) => ({ ...all, [id]: saved })));
 
   const choose = (id: string, apps: AppResults) => {

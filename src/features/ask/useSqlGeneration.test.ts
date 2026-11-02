@@ -26,9 +26,18 @@ const schema: Schema = {
       name: "customers",
       kind: "table",
       row_estimate: null,
+      comment: null,
+      checks: [],
       foreign_keys: [],
       columns: [
-        { name: "id", data_type: "integer", nullable: false, primary_key: true, enum_values: null },
+        {
+          name: "id",
+          data_type: "integer",
+          nullable: false,
+          primary_key: true,
+          enum_values: null,
+          comment: null,
+        },
       ],
     },
   ],
@@ -64,7 +73,7 @@ describe("useSqlGeneration", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.mocked(commands.cancelGeneration).mockResolvedValue(undefined);
-    generateSql.mockResolvedValue(undefined);
+    generateSql.mockResolvedValue(null);
   });
   afterEach(() => {
     vi.useRealTimers();

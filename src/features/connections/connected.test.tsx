@@ -77,7 +77,12 @@ describe("the production tag", () => {
   it("reads a connection saved before the tag existed as not production", () => {
     const { production: _, ...old } = prod;
     render(
-      <ConnectionDialog initial={old} onClose={() => {}} onSaved={() => {}} onDeleted={() => {}} />,
+      <ConnectionDialog
+        initial={old as typeof prod}
+        onClose={() => {}}
+        onSaved={() => {}}
+        onDeleted={() => {}}
+      />,
     );
     expect(
       (screen.getByLabelText("This is a production database") as HTMLInputElement).checked,

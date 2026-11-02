@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import type { AgentAccess, Column, Schema } from "../../api";
+import type { AgentAccess, AgentAccessSettings, Column, Schema } from "../../api";
 import { AgentAccessDialog } from "./AgentAccessDialog";
 import { NeverSendPicker } from "./NeverSendPicker";
 import { sensitiveKind, suggestedColumns } from "./neverSend";
@@ -13,6 +13,7 @@ const col = (name: string, data_type = "text"): Column => ({
   nullable: true,
   primary_key: false,
   enum_values: null,
+  comment: null,
 });
 const schema: Schema = {
   dialect: "SQLite",
@@ -23,6 +24,8 @@ const schema: Schema = {
       kind: "table",
       foreign_keys: [],
       row_estimate: 8,
+      comment: null,
+      checks: [],
       columns: [col("id", "integer"), col("name")],
     },
     {
@@ -31,6 +34,8 @@ const schema: Schema = {
       kind: "table",
       foreign_keys: [],
       row_estimate: 500,
+      comment: null,
+      checks: [],
       columns: [
         col("id", "integer"),
         col("first_name"),
@@ -45,6 +50,8 @@ const schema: Schema = {
       kind: "table",
       foreign_keys: [],
       row_estimate: 5,
+      comment: null,
+      checks: [],
       columns: [col("id", "integer"), col("diagnosis"), col("notes")],
     },
   ],
@@ -216,7 +223,7 @@ it("saves the picked columns in the stored format, keeping the team admin's out 
     neverSend: ["diagnosis", "customers.email"],
     team: { maxResults: "rows", neverSend: ["customers.email"] },
   };
-  const onSave = vi.fn((_a: AgentAccess) => Promise.resolve());
+  const onSave = vi.fn((_a: AgentAccessSettings) => Promise.resolve());
   render(
     <AgentAccessDialog
       connectionName="Clinic"

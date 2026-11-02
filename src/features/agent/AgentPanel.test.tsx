@@ -55,6 +55,8 @@ describe("AgentPanel", () => {
         notes: [],
         proposedSql: "DELETE FROM customers WHERE email LIKE '%test%'",
         proposedChangesData: true,
+        notesQueued: false,
+        notesShared: false,
         cannotAnswer: false,
         unverified: ["12"],
         model: "m",
