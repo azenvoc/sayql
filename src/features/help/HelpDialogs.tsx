@@ -6,7 +6,12 @@ import styles from "./HelpDialogs.module.css";
 /** Every keyboard shortcut, opened with `?` (outside a text field), the Help menu or Settings → About. */
 export function ShortcutSheet({ onClose }: { onClose: () => void }) {
   return (
-    <Dialog title="Keyboard shortcuts" size="lg" onClose={onClose} actions={<Button onClick={onClose}>Done</Button>}>
+    <Dialog
+      title="Keyboard shortcuts"
+      size="lg"
+      onClose={onClose}
+      actions={<Button onClick={onClose}>Done</Button>}
+    >
       <div className={styles.groups}>
         {SHORTCUTS.map((g) => (
           <section key={g.title} aria-label={g.title}>
@@ -34,7 +39,15 @@ export function ShortcutSheet({ onClose }: { onClose: () => void }) {
 export function WhatsNewDialog({ version, onClose }: { version: string; onClose: () => void }) {
   const entry = whatsNewFor(version) ?? WHATS_NEW[0];
   return (
-    <Dialog title={`What's new in SayQL ${entry.version}`} onClose={onClose} actions={<Button variant="primary" onClick={onClose}>Got it</Button>}>
+    <Dialog
+      title={`What's new in SayQL ${entry.version}`}
+      onClose={onClose}
+      actions={
+        <Button variant="primary" onClick={onClose}>
+          Got it
+        </Button>
+      }
+    >
       <ul className={styles.news}>
         {entry.items.map((it) => (
           <li key={it.title}>
@@ -42,7 +55,9 @@ export function WhatsNewDialog({ version, onClose }: { version: string; onClose:
           </li>
         ))}
       </ul>
-      <p className={styles.more}>Every change is listed in the changelog (CHANGELOG.md in SayQL&apos;s source).</p>
+      <p className={styles.more}>
+        Every change is listed in the changelog (CHANGELOG.md in SayQL&apos;s source).
+      </p>
     </Dialog>
   );
 }

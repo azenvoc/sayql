@@ -10,8 +10,16 @@ import styles from "./ClaudeIntegration.module.css";
 /** How much of the log to read; the backend keeps more. */
 const LOG_LIMIT = 300;
 const ALL = "";
-const SOURCE: Record<MyActivity["source"], string> = { editor: "Editor", ask: "Ask box", investigate: "Investigate" };
-const STATUS: Record<MyActivity["status"], string> = { ok: "OK", error: "Error", cancelled: "Cancelled" };
+const SOURCE: Record<MyActivity["source"], string> = {
+  editor: "Editor",
+  ask: "Ask box",
+  investigate: "Investigate",
+};
+const STATUS: Record<MyActivity["status"], string> = {
+  ok: "OK",
+  error: "Error",
+  cancelled: "Cancelled",
+};
 
 type SourceFilter = "all" | MyActivity["source"];
 
@@ -20,12 +28,21 @@ function short(ms: number): string {
   const d = new Date(ms);
   return d.toDateString() === new Date().toDateString()
     ? d.toLocaleTimeString(undefined, { timeStyle: "short" })
-    : d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    : d.toLocaleString(undefined, {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
 }
 
 function result(e: MyActivity): string {
-  const rows = e.status === "ok" && e.rows != null ? ` · ${e.rows} ${e.rows === 1 ? "row" : "rows"}` : "";
-  const ms = e.status === "ok" && e.ms != null ? ` · ${e.ms < 1000 ? `${e.ms} ms` : `${(e.ms / 1000).toFixed(1)} s`}` : "";
+  const rows =
+    e.status === "ok" && e.rows != null ? ` · ${e.rows} ${e.rows === 1 ? "row" : "rows"}` : "";
+  const ms =
+    e.status === "ok" && e.ms != null
+      ? ` · ${e.ms < 1000 ? `${e.ms} ms` : `${(e.ms / 1000).toFixed(1)} s`}`
+      : "";
   return `${STATUS[e.status]}${rows}${ms}`;
 }
 
@@ -67,7 +84,8 @@ export function MyActivityLog({ connections, connectionId, onOpenSql }: MyActivi
 
   const name = (id: string) => connections.find((c) => c.id === id)?.name ?? "Deleted connection";
   const clear = () => {
-    if (!window.confirm("Delete your activity log? Your saved queries and tabs aren't affected.")) return;
+    if (!window.confirm("Delete your activity log? Your saved queries and tabs aren't affected."))
+      return;
     commands.clearMyActivity().then(load, (e) => setError(errorText(e)));
   };
   const toggle = (i: number) =>
@@ -80,15 +98,20 @@ export function MyActivityLog({ connections, connectionId, onOpenSql }: MyActivi
   const ids = [...new Set(log.map((e) => e.connectionId))];
   const rows = log
     .map((e, i) => ({ e, i }))
-    .filter(({ e }) => (connection === ALL || e.connectionId === connection) && (source === "all" || e.source === source));
+    .filter(
+      ({ e }) =>
+        (connection === ALL || e.connectionId === connection) &&
+        (source === "all" || e.source === source),
+    );
   const columns = connectionId ? 4 : 5;
 
   return (
     <div className={styles.activity}>
       <p className={styles.intro}>
-        The queries you ran in SayQL{connectionId ? " on this connection" : ""}: from the editor, the Ask box and Investigate. It
-        stays on this computer and keeps the SQL and how many rows came back, never the rows. For Investigate, it also says what
-        went to the AI. Click a row for the full SQL.
+        The queries you ran in SayQL{connectionId ? " on this connection" : ""}: from the editor,
+        the Ask box and Investigate. It stays on this computer and keeps the SQL and how many rows
+        came back, never the rows. For Investigate, it also says what went to the AI. Click a row
+        for the full SQL.
       </p>
       <div className={styles.filters}>
         {!connectionId && (
@@ -96,7 +119,10 @@ export function MyActivityLog({ connections, connectionId, onOpenSql }: MyActivi
             aria-label="Connection"
             className={styles.filter}
             value={connection}
-            options={[{ value: ALL, label: "All connections" }, ...ids.map((id) => ({ value: id, label: name(id) }))]}
+            options={[
+              { value: ALL, label: "All connections" },
+              ...ids.map((id) => ({ value: id, label: name(id) })),
+            ]}
             onChange={setConnection}
           />
         )}
@@ -148,7 +174,11 @@ export function MyActivityLog({ connections, connectionId, onOpenSql }: MyActivi
                   return (
                     <Fragment key={`${e.at}-${i}`}>
                       <tr
-                        className={cx(styles.logRow, e.status === "error" && styles.notOk, expanded && styles.expandedRow)}
+                        className={cx(
+                          styles.logRow,
+                          e.status === "error" && styles.notOk,
+                          expanded && styles.expandedRow,
+                        )}
                         tabIndex={0}
                         aria-expanded={expanded}
                         onClick={() => toggle(i)}
@@ -161,12 +191,17 @@ export function MyActivityLog({ connections, connectionId, onOpenSql }: MyActivi
                       >
                         <td title={when(e.at)}>
                           <span className={styles.whenCell}>
-                            <ChevronRight size={12} className={cx(styles.chevron, expanded && styles.chevronOpen)} />
+                            <ChevronRight
+                              size={12}
+                              className={cx(styles.chevron, expanded && styles.chevronOpen)}
+                            />
                             {short(e.at)}
                           </span>
                         </td>
                         <td className={styles.ellipsis}>{SOURCE[e.source]}</td>
-                        {!connectionId && <td className={styles.ellipsis}>{name(e.connectionId)}</td>}
+                        {!connectionId && (
+                          <td className={styles.ellipsis}>{name(e.connectionId)}</td>
+                        )}
                         <td className={styles.ellipsis}>{result(e)}</td>
                         <td className={styles.sql}>{e.sql}</td>
                       </tr>
@@ -197,7 +232,10 @@ export function MyActivityLog({ connections, connectionId, onOpenSql }: MyActivi
                               )}
                             </dl>
                             {onOpenSql && (
-                              <Button size="sm" onClick={() => onOpenSql(e.connectionId, e.database ?? null, e.sql)}>
+                              <Button
+                                size="sm"
+                                onClick={() => onOpenSql(e.connectionId, e.database ?? null, e.sql)}
+                              >
                                 Open in a new tab
                               </Button>
                             )}

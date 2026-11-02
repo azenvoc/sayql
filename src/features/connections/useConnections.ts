@@ -1,5 +1,11 @@
 import { useCallback, useRef, useState } from "react";
-import { commands, type ConnectionConfig, type DatabaseList, type Schema, type Target } from "../../api";
+import {
+  commands,
+  type ConnectionConfig,
+  type DatabaseList,
+  type Schema,
+  type Target,
+} from "../../api";
 import { errorText } from "../../lib/errors";
 import { targetKey } from "./target";
 
@@ -95,7 +101,9 @@ export function useConnections(initial: ConnectionConfig[]): ConnectionsState {
     const prefix = `${id}/`;
     requested.current.forEach((k) => k.startsWith(prefix) && requested.current.delete(k));
     listed.current.delete(id);
-    setSchemas((all) => Object.fromEntries(Object.entries(all).filter(([k]) => !k.startsWith(prefix))));
+    setSchemas((all) =>
+      Object.fromEntries(Object.entries(all).filter(([k]) => !k.startsWith(prefix))),
+    );
     setDatabases((all) => {
       const { [id]: _, ...rest } = all;
       return rest;
@@ -115,7 +123,9 @@ export function useConnections(initial: ConnectionConfig[]): ConnectionsState {
     },
     databaseName: (t) => (t ? (t.database ?? databases[t.connectionId]?.current ?? null) : null),
     upsert: (c) => {
-      setConnections((all) => (all.some((x) => x.id === c.id) ? all.map((x) => (x.id === c.id ? c : x)) : [...all, c]));
+      setConnections((all) =>
+        all.some((x) => x.id === c.id) ? all.map((x) => (x.id === c.id ? c : x)) : [...all, c],
+      );
       forget(c.id);
     },
     remove: (id) => {

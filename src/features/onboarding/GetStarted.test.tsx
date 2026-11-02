@@ -3,7 +3,13 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GetStarted, type ChecklistItem } from "./GetStarted";
 
-const item = (id: string, done: boolean): ChecklistItem => ({ id, title: `Step ${id}`, done, action: `Do ${id}`, onAction: vi.fn() });
+const item = (id: string, done: boolean): ChecklistItem => ({
+  id,
+  title: `Step ${id}`,
+  done,
+  action: `Do ${id}`,
+  onAction: vi.fn(),
+});
 
 describe("Get started", () => {
   afterEach(cleanup);

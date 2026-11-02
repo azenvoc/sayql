@@ -22,7 +22,14 @@ const FOCUSABLE =
  * Modal dialog. Closes on Escape or a click on the backdrop. Escape closes only the dialog, not
  * the page behind it, and Tab stays inside the dialog until it closes.
  */
-export function Dialog({ title, onClose, children, actions, secondaryActions, size = "md" }: DialogProps) {
+export function Dialog({
+  title,
+  onClose,
+  children,
+  actions,
+  secondaryActions,
+  size = "md",
+}: DialogProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

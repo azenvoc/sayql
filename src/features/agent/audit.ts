@@ -45,7 +45,9 @@ export function auditStale(at: number | null, now = Date.now()): boolean {
 }
 
 /** Copies the audit instructions for `target` (for AI apps without MCP prompts). */
-export async function copyAuditPrompt(target: Pick<AuditTarget, "connectionId" | "database">): Promise<void> {
+export async function copyAuditPrompt(
+  target: Pick<AuditTarget, "connectionId" | "database">,
+): Promise<void> {
   const text = await commands.auditPrompt(target.connectionId, target.database);
   await navigator.clipboard.writeText(text);
 }

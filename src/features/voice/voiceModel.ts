@@ -15,7 +15,15 @@ export interface VoiceModel {
   error: string | null;
 }
 
-let model: VoiceModel = { known: false, ready: false, downloading: false, received: 0, total: 0, bytes: 81_781_811, error: null };
+let model: VoiceModel = {
+  known: false,
+  ready: false,
+  downloading: false,
+  received: 0,
+  total: 0,
+  bytes: 81_781_811,
+  error: null,
+};
 const listeners = new Set<() => void>();
 let canceled = false;
 let listening: Promise<unknown> | null = null;
@@ -34,7 +42,13 @@ function subscribe(l: () => void) {
 export function refreshVoiceModel() {
   listening ??= subscribeToVoice({ progress: ({ received, total }) => set({ received, total }) });
   commands.voiceStatus().then(
-    (s) => set({ known: true, ready: s.ready, downloading: s.downloading || model.downloading, bytes: s.modelBytes }),
+    (s) =>
+      set({
+        known: true,
+        ready: s.ready,
+        downloading: s.downloading || model.downloading,
+        bytes: s.modelBytes,
+      }),
     () => set({ known: true }),
   );
 }

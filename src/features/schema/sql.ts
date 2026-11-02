@@ -2,8 +2,27 @@
 import type { Dialect, Table } from "../../api";
 
 const RESERVED = new Set([
-  "user", "order", "group", "table", "select", "where", "from", "limit", "offset", "desc", "asc",
-  "key", "index", "check", "default", "column", "values", "references", "primary", "case", "end",
+  "user",
+  "order",
+  "group",
+  "table",
+  "select",
+  "where",
+  "from",
+  "limit",
+  "offset",
+  "desc",
+  "asc",
+  "key",
+  "index",
+  "check",
+  "default",
+  "column",
+  "values",
+  "references",
+  "primary",
+  "case",
+  "end",
 ]);
 
 /** The schema that needs no qualifier in each dialect. */
@@ -69,7 +88,12 @@ export function templateSql(t: Table, dialect: Dialect, kind: SqlTemplate): stri
   const keys = cols.filter((c) => c.primary_key);
   /** `lines` joined with commas, each followed by its own comment. */
   const list = (lines: string[], comments: string[]) =>
-    lines.map((l, i) => `  ${l}${i < lines.length - 1 ? "," : ""}${comments[i] ? ` -- ${comments[i]}` : ""}`).join("\n");
+    lines
+      .map(
+        (l, i) =>
+          `  ${l}${i < lines.length - 1 ? "," : ""}${comments[i] ? ` -- ${comments[i]}` : ""}`,
+      )
+      .join("\n");
   const where = (verb: string) =>
     keys.length
       ? `WHERE ${keys.map((k) => `${q(k.name)} = NULL`).join(" AND ")}; -- the row to ${verb}`
@@ -79,17 +103,29 @@ export function templateSql(t: Table, dialect: Dialect, kind: SqlTemplate): stri
     case "select": {
       const top = dialect === "SQL Server" ? " TOP 100" : "";
       const limit = dialect === "SQL Server" ? "" : "\nLIMIT 100";
-      return `SELECT${top}\n${list(cols.map((c) => q(c.name)), [])}\nFROM ${from}${limit};`;
+      return `SELECT${top}\n${list(
+        cols.map((c) => q(c.name)),
+        [],
+      )}\nFROM ${from}${limit};`;
     }
     case "insert":
       return (
-        `INSERT INTO ${from} (\n${list(cols.map((c) => q(c.name)), [])}\n) VALUES (\n` +
-        `${list(cols.map(() => "NULL"), cols.map((c) => `${c.name}: ${c.data_type}`))}\n);`
+        `INSERT INTO ${from} (\n${list(
+          cols.map((c) => q(c.name)),
+          [],
+        )}\n) VALUES (\n` +
+        `${list(
+          cols.map(() => "NULL"),
+          cols.map((c) => `${c.name}: ${c.data_type}`),
+        )}\n);`
       );
     case "update": {
       const set = cols.filter((c) => !c.primary_key);
       const targets = set.length ? set : cols;
-      return `UPDATE ${from}\nSET\n${list(targets.map((c) => `${q(c.name)} = NULL`), targets.map((c) => c.data_type))}\n${where("change")}`;
+      return `UPDATE ${from}\nSET\n${list(
+        targets.map((c) => `${q(c.name)} = NULL`),
+        targets.map((c) => c.data_type),
+      )}\n${where("change")}`;
     }
     case "delete":
       return `DELETE FROM ${from}\n${where("delete")}`;

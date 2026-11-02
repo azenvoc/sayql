@@ -1,4 +1,10 @@
-import { forwardRef, useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
+import {
+  forwardRef,
+  useId,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+} from "react";
 import { cx } from "../../lib/cx";
 import styles from "./Form.module.css";
 
@@ -39,7 +45,14 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
   { mono, className, ...rest },
   ref,
 ) {
-  return <input ref={ref} className={cx(styles.control, mono && styles.mono, className)} spellCheck={false} {...rest} />;
+  return (
+    <input
+      ref={ref}
+      className={cx(styles.control, mono && styles.mono, className)}
+      spellCheck={false}
+      {...rest}
+    />
+  );
 });
 
 export interface SelectOption<T extends string> {
@@ -49,15 +62,29 @@ export interface SelectOption<T extends string> {
   disabled?: boolean;
 }
 
-export interface SelectProps<T extends string> extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "onChange" | "value"> {
+export interface SelectProps<T extends string> extends Omit<
+  SelectHTMLAttributes<HTMLSelectElement>,
+  "onChange" | "value"
+> {
   value: T;
   options: SelectOption<T>[];
   onChange: (value: T) => void;
 }
 
-export function Select<T extends string>({ value, options, onChange, className, ...rest }: SelectProps<T>) {
+export function Select<T extends string>({
+  value,
+  options,
+  onChange,
+  className,
+  ...rest
+}: SelectProps<T>) {
   return (
-    <select className={cx(styles.control, className)} value={value} onChange={(e) => onChange(e.target.value as T)} {...rest}>
+    <select
+      className={cx(styles.control, className)}
+      value={value}
+      onChange={(e) => onChange(e.target.value as T)}
+      {...rest}
+    >
       {options.map((o) => (
         <option key={o.value} value={o.value} disabled={o.disabled}>
           {o.label}
@@ -67,7 +94,15 @@ export function Select<T extends string>({ value, options, onChange, className, 
   );
 }
 
-export function Checkbox({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+export function Checkbox({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <label className={styles.checkbox}>
       <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
@@ -83,7 +118,12 @@ export interface SegmentedControlProps<T extends string> {
   ariaLabel: string;
 }
 
-export function SegmentedControl<T extends string>({ value, options, onChange, ariaLabel }: SegmentedControlProps<T>) {
+export function SegmentedControl<T extends string>({
+  value,
+  options,
+  onChange,
+  ariaLabel,
+}: SegmentedControlProps<T>) {
   return (
     <div className={styles.segmented} role="radiogroup" aria-label={ariaLabel}>
       {options.map((o) => (

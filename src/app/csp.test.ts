@@ -33,7 +33,8 @@ describe("content security policy", () => {
     for (const policy of [csp, devCsp]) {
       for (const [name, sources] of Object.entries(directives(policy))) {
         for (const s of sources) {
-          const remote = /^(https?|wss?):/.test(s) && !/^(https?|wss?):\/\/(ipc\.)?localhost(:\d+)?$/.test(s);
+          const remote =
+            /^(https?|wss?):/.test(s) && !/^(https?|wss?):\/\/(ipc\.)?localhost(:\d+)?$/.test(s);
           expect(remote, `${name} ${s}`).toBe(false);
           expect(s, name).not.toBe("*");
         }

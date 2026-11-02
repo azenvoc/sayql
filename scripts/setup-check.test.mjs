@@ -29,7 +29,10 @@ async function ask(query, ip = "203.0.113.5", method = "GET") {
   };
   await handler({ method, query, headers: { "x-real-ip": ip } }, res);
   const fields = Object.fromEntries(
-    body.trim().split("\n").map((l) => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1)]),
+    body
+      .trim()
+      .split("\n")
+      .map((l) => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1)]),
   );
   return { status, body, fields };
 }
@@ -50,9 +53,16 @@ it("says whether a domain points at the caller", async () => {
   records.set("sayql.acme.com", ["203.0.113.5"]);
   records.set("old.acme.com", ["198.51.100.7", "198.51.100.8"]);
   const here = await ask({ domain: "SayQL.Acme.com." });
-  expect(here.fields).toMatchObject({ domain: "sayql.acme.com", addresses: "203.0.113.5", points_here: "yes" });
+  expect(here.fields).toMatchObject({
+    domain: "sayql.acme.com",
+    addresses: "203.0.113.5",
+    points_here: "yes",
+  });
   const elsewhere = await ask({ domain: "old.acme.com" });
-  expect(elsewhere.fields).toMatchObject({ addresses: "198.51.100.7 198.51.100.8", points_here: "no" });
+  expect(elsewhere.fields).toMatchObject({
+    addresses: "198.51.100.7 198.51.100.8",
+    points_here: "no",
+  });
   const nowhere = await ask({ domain: "new.acme.com" });
   expect(nowhere.fields).toMatchObject({ addresses: "", points_here: "no" });
 });

@@ -4,7 +4,16 @@ import { commands, type DatabaseList, type Schema, type Table, type Target } fro
 import { Alert, Button, Select, Spinner, TextInput } from "../../components/ui";
 import { cx } from "../../lib/cx";
 import { errorText } from "../../lib/errors";
-import { addEntries, entryFor, inSchema, namesColumn, parseEntry, splitTyped, suggestedColumns, type NeverSendEntry } from "./neverSend";
+import {
+  addEntries,
+  entryFor,
+  inSchema,
+  namesColumn,
+  parseEntry,
+  splitTyped,
+  suggestedColumns,
+  type NeverSendEntry,
+} from "./neverSend";
 import styles from "./NeverSendPicker.module.css";
 
 export interface NeverSendPickerProps {
@@ -21,12 +30,20 @@ export interface NeverSendPickerProps {
   autoFocus?: boolean;
 }
 
-type Loaded = { state: "loading" } | { state: "ready"; schema: Schema } | { state: "failed"; error: string };
+type Loaded =
+  { state: "loading" } | { state: "ready"; schema: Schema } | { state: "failed"; error: string };
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
 /** Picks the columns that never leave SayQL from the database's tables, with likely personal ones suggested. */
-export function NeverSendPicker({ target, value, onChange, locked = [], label, autoFocus = false }: NeverSendPickerProps) {
+export function NeverSendPicker({
+  target,
+  value,
+  onChange,
+  locked = [],
+  label,
+  autoFocus = false,
+}: NeverSendPickerProps) {
   const [database, setDatabase] = useState<string | null>(target.database);
   const [databases, setDatabases] = useState<DatabaseList | null>(null);
   const [loaded, setLoaded] = useState<Loaded>({ state: "loading" });
@@ -51,7 +68,13 @@ export function NeverSendPicker({ target, value, onChange, locked = [], label, a
     Promise.resolve()
       .then(() => commands.openDatabase({ connectionId: target.connectionId, database }))
       .then(
-        (schema) => live && setLoaded(schema && Array.isArray(schema.tables) ? { state: "ready", schema } : { state: "failed", error: "No schema" }),
+        (schema) =>
+          live &&
+          setLoaded(
+            schema && Array.isArray(schema.tables)
+              ? { state: "ready", schema }
+              : { state: "failed", error: "No schema" },
+          ),
         (e) => live && setLoaded({ state: "failed", error: errorText(e) }),
       );
     return () => {
@@ -62,7 +85,8 @@ export function NeverSendPicker({ target, value, onChange, locked = [], label, a
   const entries = useMemo(() => value.map(parseEntry), [value]);
   const lockedEntries = useMemo(() => locked.map(parseEntry), [locked]);
 
-  if (loaded.state === "failed") return <TypedFallback label={label} value={value} onChange={onChange} error={loaded.error} />;
+  if (loaded.state === "failed")
+    return <TypedFallback label={label} value={value} onChange={onChange} error={loaded.error} />;
 
   const schema = loaded.state === "ready" ? loaded.schema : null;
   const remove = (raw: string) => onChange(value.filter((v) => v !== raw));
@@ -80,7 +104,9 @@ export function NeverSendPicker({ target, value, onChange, locked = [], label, a
             options={databases.databases.map((d) => ({ value: d, label: d }))}
             onChange={setDatabase}
           />
-          <span className={styles.subtle}>Never send applies to every database on this connection.</span>
+          <span className={styles.subtle}>
+            Never send applies to every database on this connection.
+          </span>
         </div>
       )}
       {!schema ? (
@@ -88,37 +114,67 @@ export function NeverSendPicker({ target, value, onChange, locked = [], label, a
           <Spinner size={14} /> Loading tables…
         </div>
       ) : (
-        <SchemaLists schema={schema} entries={entries} locked={lockedEntries} value={value} onChange={onChange} autoFocus={autoFocus} />
+        <SchemaLists
+          schema={schema}
+          entries={entries}
+          locked={lockedEntries}
+          value={value}
+          onChange={onChange}
+          autoFocus={autoFocus}
+        />
       )}
       <BareNameInput onAdd={(name) => onChange(addEntries(value, [name]))} />
       <p className={styles.subtle}>
-        A picked column is kept out of that table only; a name added for every table is kept out wherever it appears.
-        Queries that use one are refused.
+        A picked column is kept out of that table only; a name added for every table is kept out
+        wherever it appears. Queries that use one are refused.
       </p>
     </div>
   );
 }
 
 /** The chosen entries as removable chips. */
-function ChipList({ label, entries, schema, onRemove }: { label: string; entries: NeverSendEntry[]; schema: Schema | null; onRemove: (raw: string) => void }) {
+function ChipList({
+  label,
+  entries,
+  schema,
+  onRemove,
+}: {
+  label: string;
+  entries: NeverSendEntry[];
+  schema: Schema | null;
+  onRemove: (raw: string) => void;
+}) {
   return (
     <div className={styles.chipsBlock}>
       <span className={styles.label} id="never-send-chips">
         {label} <span className={styles.subtle}>({entries.length})</span>
       </span>
       <ul className={styles.chips} aria-labelledby="never-send-chips">
-        {entries.length === 0 && <li className={styles.subtle}>None yet. Tick columns below, or add the suggested ones.</li>}
+        {entries.length === 0 && (
+          <li className={styles.subtle}>
+            None yet. Tick columns below, or add the suggested ones.
+          </li>
+        )}
         {entries.map((e) => {
           const missing = schema !== null && !inSchema(e, schema);
           return (
             <li key={e.raw} className={cx(styles.chip, missing && styles.chipMissing)}>
               <EntryLabel entry={e} />
               {missing && (
-                <span className={styles.chipNote} title="No such column in this database. Kept: it may be in another database, or added later.">
+                <span
+                  className={styles.chipNote}
+                  title="No such column in this database. Kept: it may be in another database, or added later."
+                >
                   not found
                 </span>
               )}
-              <button type="button" className={styles.chipRemove} aria-label={`Remove ${e.raw}`} title="Remove" onClick={() => onRemove(e.raw)}>
+              <button
+                type="button"
+                className={styles.chipRemove}
+                aria-label={`Remove ${e.raw}`}
+                title="Remove"
+                onClick={() => onRemove(e.raw)}
+              >
                 <X size={12} />
               </button>
             </li>
@@ -163,16 +219,28 @@ function SchemaLists({
 
   // How a column stands: picked here, covered by a bare name or the team admin, or free.
   const status = (table: string, column: string): { checked: boolean; lockedBy: string | null } => {
-    const admin = locked.find((e) => (e.table === null || same(e.table, table)) && same(e.column, column));
+    const admin = locked.find(
+      (e) => (e.table === null || same(e.table, table)) && same(e.column, column),
+    );
     if (admin) return { checked: true, lockedBy: "Set by your team admin" };
-    if (entries.some((e) => namesColumn(e, table, column))) return { checked: true, lockedBy: null };
+    if (entries.some((e) => namesColumn(e, table, column)))
+      return { checked: true, lockedBy: null };
     const bare = entries.find((e) => e.table === null && same(e.column, column));
     if (bare) return { checked: true, lockedBy: `Kept out in every table by “${bare.column}”` };
     return { checked: false, lockedBy: null };
   };
   const setColumns = (cols: { table: string; column: string }[], on: boolean) => {
-    if (on) onChange(addEntries(value, cols.map((c) => entryFor(c.table, c.column))));
-    else onChange(value.filter((raw) => !cols.some((c) => namesColumn(parseEntry(raw), c.table, c.column))));
+    if (on)
+      onChange(
+        addEntries(
+          value,
+          cols.map((c) => entryFor(c.table, c.column)),
+        ),
+      );
+    else
+      onChange(
+        value.filter((raw) => !cols.some((c) => namesColumn(parseEntry(raw), c.table, c.column))),
+      );
   };
 
   const open_ = (key: string, on: boolean) =>
@@ -204,8 +272,15 @@ function SchemaLists({
             </h3>
             <span className={styles.subtle}>Likely personal or sensitive, by name</span>
             <span className={styles.spacer} />
-            <Button size="sm" icon={Plus} disabled={pending.length === 0} onClick={() => setColumns(pending, true)}>
-              {pending.length === 0 ? "All suggested added" : `Add all suggested (${pending.length})`}
+            <Button
+              size="sm"
+              icon={Plus}
+              disabled={pending.length === 0}
+              onClick={() => setColumns(pending, true)}
+            >
+              {pending.length === 0
+                ? "All suggested added"
+                : `Add all suggested (${pending.length})`}
             </Button>
           </div>
           <ul className={cx(styles.list, styles.suggested)}>
@@ -253,7 +328,13 @@ function SchemaLists({
           />
         </div>
         <ul className={cx(styles.list, styles.tables)} aria-label="Tables">
-          {shown.length === 0 && <li className={cx(styles.subtle, styles.empty)}>{schema.tables.length ? "No tables or columns match." : "This database has no tables."}</li>}
+          {shown.length === 0 && (
+            <li className={cx(styles.subtle, styles.empty)}>
+              {schema.tables.length
+                ? "No tables or columns match."
+                : "This database has no tables."}
+            </li>
+          )}
           {shown.map(({ t, cols, byColumn }) => {
             const key = t.schema ? `${t.schema}.${t.name}` : t.name;
             const expanded = byColumn || open.has(key);
@@ -278,13 +359,27 @@ function SchemaLists({
                     checked={all}
                     mixed={picked > 0 && !all}
                     disabled={free.length === 0}
-                    onChange={(on) => setColumns(free.map((c) => ({ table: t.name, column: c.name })), on)}
+                    onChange={(on) =>
+                      setColumns(
+                        free.map((c) => ({ table: t.name, column: c.name })),
+                        on,
+                      )
+                    }
                   />
-                  <button type="button" className={styles.tableLabel} onClick={() => open_(key, !expanded)} tabIndex={-1}>
-                    <span className={cx(styles.mono, t.kind !== "table" && styles.view)}>{key}</span>
+                  <button
+                    type="button"
+                    className={styles.tableLabel}
+                    onClick={() => open_(key, !expanded)}
+                    tabIndex={-1}
+                  >
+                    <span className={cx(styles.mono, t.kind !== "table" && styles.view)}>
+                      {key}
+                    </span>
                     {t.kind !== "table" && <span className={styles.type}>{t.kind}</span>}
                   </button>
-                  <span className={styles.count}>{picked ? `${picked} of ${t.columns.length}` : t.columns.length}</span>
+                  <span className={styles.count}>
+                    {picked ? `${picked} of ${t.columns.length}` : t.columns.length}
+                  </span>
                 </div>
                 {expanded && (
                   <ul className={styles.columns}>
@@ -332,18 +427,43 @@ function ColumnRow({
   onChange: (on: boolean) => void;
 }) {
   return (
-    <label className={cx(styles.columnRow, lockedBy && styles.lockedRow)} title={lockedBy ?? undefined}>
-      <input type="checkbox" aria-label={aria} checked={checked} disabled={!!lockedBy} onChange={(e) => onChange(e.target.checked)} />
+    <label
+      className={cx(styles.columnRow, lockedBy && styles.lockedRow)}
+      title={lockedBy ?? undefined}
+    >
+      <input
+        type="checkbox"
+        aria-label={aria}
+        checked={checked}
+        disabled={!!lockedBy}
+        onChange={(e) => onChange(e.target.checked)}
+      />
       <span className={styles.mono}>{label}</span>
       {kind && <span className={styles.kind}>{kind}</span>}
       <span className={styles.spacer} />
-      {lockedBy && <span className={styles.lockedNote}>{lockedBy.startsWith("Set") ? "team admin" : "any table"}</span>}
+      {lockedBy && (
+        <span className={styles.lockedNote}>
+          {lockedBy.startsWith("Set") ? "team admin" : "any table"}
+        </span>
+      )}
       <span className={styles.type}>{type}</span>
     </label>
   );
 }
 
-function TriCheckbox({ label, checked, mixed, disabled, onChange }: { label: string; checked: boolean; mixed: boolean; disabled: boolean; onChange: (on: boolean) => void }) {
+function TriCheckbox({
+  label,
+  checked,
+  mixed,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  mixed: boolean;
+  disabled: boolean;
+  onChange: (on: boolean) => void;
+}) {
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (ref.current) ref.current.indeterminate = mixed;
@@ -395,12 +515,24 @@ function BareNameInput({ onAdd }: { onAdd: (name: string) => void }) {
 }
 
 /** When the tables can't be loaded (the connection is offline): type the columns, as before. */
-function TypedFallback({ label, value, onChange, error }: { label: string; value: string[]; onChange: (v: string[]) => void; error: string }) {
+function TypedFallback({
+  label,
+  value,
+  onChange,
+  error,
+}: {
+  label: string;
+  value: string[];
+  onChange: (v: string[]) => void;
+  error: string;
+}) {
   // Keep the text as typed; the list updates on every change.
   const [text, setText] = useState(value.join("\n"));
   return (
     <div className={styles.picker}>
-      <Alert tone="info">SayQL couldn't load this connection's tables ({error}), so type the columns instead.</Alert>
+      <Alert tone="info">
+        SayQL couldn't load this connection's tables ({error}), so type the columns instead.
+      </Alert>
       <label className={styles.label} htmlFor="never-send-typed">
         {label}
       </label>
@@ -415,7 +547,9 @@ function TypedFallback({ label, value, onChange, error }: { label: string; value
           onChange(splitTyped(e.target.value));
         }}
       />
-      <span className={styles.subtle}>One per line, as column (every table) or table.column. Queries that use them are refused.</span>
+      <span className={styles.subtle}>
+        One per line, as column (every table) or table.column. Queries that use them are refused.
+      </span>
     </div>
   );
 }

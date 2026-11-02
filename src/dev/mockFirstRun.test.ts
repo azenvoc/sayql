@@ -33,7 +33,12 @@ describe("mock backend ?firstrun", () => {
     const boot = (await handler("init")) as Bootstrap;
     expect(boot.settings.providers.some((p) => p.id === "sayql")).toBe(true);
     const saved = (await handler("save_settings", {
-      provider: "anthropic", typingModel: "claude-haiku-5-5", expertModel: "claude-opus-5-5", baseUrl: "", apiKey: "sk-ant-test", workspaceId: "",
+      provider: "anthropic",
+      typingModel: "claude-haiku-5-5",
+      expertModel: "claude-opus-5-5",
+      baseUrl: "",
+      apiKey: "sk-ant-test",
+      workspaceId: "",
     })) as Bootstrap["settings"];
     expect(saved.aiReady).toBe(true);
   });

@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { commands, subscribeToAi, type GenerationTask, type PreviousQuery, type Schema, type Skill, type Target } from "../../api";
+import {
+  commands,
+  subscribeToAi,
+  type GenerationTask,
+  type PreviousQuery,
+  type Schema,
+  type Skill,
+  type Target,
+} from "../../api";
 import { useLatest } from "../../hooks/useLatest";
 import { errorText } from "../../lib/errors";
 import { targetKey } from "../connections";
@@ -73,11 +81,20 @@ export function useSqlGeneration(options: SqlGenerationOptions) {
   const buffer = useRef("");
   const firstTokenMs = useRef<number | null>(null);
   /** `text` is the whole question, with any "/command"; `question` is what's sent. */
-  const inFlight = useRef<{ text: string; question: string; task: GenerationTask; skill: string | null } | null>(null);
+  const inFlight = useRef<{
+    text: string;
+    question: string;
+    task: GenerationTask;
+    skill: string | null;
+  } | null>(null);
   const runWhenReady = useRef(false);
   const debounce = useRef<number | undefined>(undefined);
 
-  const plan = (text: string): Plan => planRequest(text, opts.current.skills, { previous: opts.current.previous, sql: opts.current.sql });
+  const plan = (text: string): Plan =>
+    planRequest(text, opts.current.skills, {
+      previous: opts.current.previous,
+      sql: opts.current.sql,
+    });
 
   // The previous query is part of the key: "remove the middle name" means something else after each query.
   // So is a skill's instruction, which can be edited under the same name.
@@ -155,7 +172,12 @@ export function useSqlGeneration(options: SqlGenerationOptions) {
         const { text, task } = inFlight.current;
         if (task.kind === "explain") {
           setExplanation(buffer.current.trim());
-          setStatus({ kind: "done", task: task.kind, firstTokenMs: firstTokenMs.current, totalMs: e.totalMs });
+          setStatus({
+            kind: "done",
+            task: task.kind,
+            firstTokenMs: firstTokenMs.current,
+            totalMs: e.totalMs,
+          });
           return;
         }
         const sql = cleanSql(buffer.current).trimEnd();
@@ -163,7 +185,12 @@ export function useSqlGeneration(options: SqlGenerationOptions) {
         if (task.kind === "draft") answers.set(cacheKey(text), sql);
         // Still typing: a newer draft is about to start, so stay in "writing".
         if (debounce.current !== undefined) return;
-        setStatus({ kind: "done", task: task.kind, firstTokenMs: firstTokenMs.current, totalMs: e.totalMs });
+        setStatus({
+          kind: "done",
+          task: task.kind,
+          firstTokenMs: firstTokenMs.current,
+          totalMs: e.totalMs,
+        });
         if (runWhenReady.current) {
           runWhenReady.current = false;
           opts.current.onRunRequested(sql, task.kind);
@@ -183,7 +210,12 @@ export function useSqlGeneration(options: SqlGenerationOptions) {
       const p = plan(text);
       // Nothing to draft: an empty question, a command still being picked from the menu, or
       // explain, fix and improve, which wait for ↵. Stop any draft, but not a fix or explanation.
-      if (p.kind === "action" || p.kind === "agent" || !p.question.trim() || menuQuery(text) !== null) {
+      if (
+        p.kind === "action" ||
+        p.kind === "agent" ||
+        !p.question.trim() ||
+        menuQuery(text) !== null
+      ) {
         const s = statusRef.current;
         if (s.kind === "writing" && s.task !== "draft") return;
         cancel();
@@ -244,9 +276,21 @@ export function useSqlGeneration(options: SqlGenerationOptions) {
 
   // An API key was just added: retry the request that was waiting for it.
   useEffect(() => {
-    if (options.aiReady && statusRef.current.kind === "error" && statusRef.current.fixInSettings) retry();
+    if (options.aiReady && statusRef.current.kind === "error" && statusRef.current.fixInSettings)
+      retry();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options.aiReady]);
 
-  return { question, setQuestion, status, requestRun, act, fix, improve, retry, explanation, dismissExplanation: () => setExplanation(null) };
+  return {
+    question,
+    setQuestion,
+    status,
+    requestRun,
+    act,
+    fix,
+    improve,
+    retry,
+    explanation,
+    dismissExplanation: () => setExplanation(null),
+  };
 }

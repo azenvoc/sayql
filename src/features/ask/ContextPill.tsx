@@ -15,7 +15,10 @@ export function ContextPill({ tables, enabled, onEnabledChange, onClear }: Conte
   const label = tables.length <= 2 ? tables.join(", ") : `${tables.length} tables`;
   const list = tables.join("\n");
   return (
-    <span className={cx(styles.pill, !enabled && styles.off)} title={enabled ? `The AI builds on:\n${list}` : `Hidden from the AI:\n${list}`}>
+    <span
+      className={cx(styles.pill, !enabled && styles.off)}
+      title={enabled ? `The AI builds on:\n${list}` : `Hidden from the AI:\n${list}`}
+    >
       <Table2 size={12} />
       <span className={styles.label}>{label}</span>
       <button
@@ -28,7 +31,13 @@ export function ContextPill({ tables, enabled, onEnabledChange, onClear }: Conte
       >
         {enabled ? <Eye size={12} /> : <EyeOff size={12} />}
       </button>
-      <button type="button" className={styles.button} aria-label="Clear the selected tables" title="Clear selection" onClick={onClear}>
+      <button
+        type="button"
+        className={styles.button}
+        aria-label="Clear the selected tables"
+        title="Clear selection"
+        onClick={onClear}
+      >
         <X size={12} />
       </button>
     </span>

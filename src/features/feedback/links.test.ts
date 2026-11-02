@@ -36,6 +36,11 @@ describe("feedback links", () => {
 
   it("adds the version and OS to the private form", () => {
     const url = new URL(privateFormUrl("https://tally.so/r/abc?ref=app", "bug", mac));
-    expect(Object.fromEntries(url.searchParams)).toEqual({ ref: "app", kind: "bug", version: "0.1.1", os: "macOS (Apple silicon)" });
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      ref: "app",
+      kind: "bug",
+      version: "0.1.1",
+      os: "macOS (Apple silicon)",
+    });
   });
 });

@@ -5,26 +5,72 @@ import type { ConnectionConfig, Schema, Table } from "../../api";
 import { DatabaseNavigator } from "./DatabaseNavigator";
 
 const conn: ConnectionConfig = {
-  id: "c1", name: "Shop", kind: "sqlite", host: "", port: null, database: "", user: "", file: "/shop.sqlite", ssl: false, trustCert: false,
+  id: "c1",
+  name: "Shop",
+  kind: "sqlite",
+  host: "",
+  port: null,
+  database: "",
+  user: "",
+  file: "/shop.sqlite",
+  ssl: false,
+  trustCert: false,
 };
 
 const table = (name: string, kind: Table["kind"]): Table => ({
-  schema: null, name, kind, columns: [], foreign_keys: [], row_estimate: null,
+  schema: null,
+  name,
+  kind,
+  columns: [],
+  foreign_keys: [],
+  row_estimate: null,
 });
 
 describe("DatabaseNavigator", () => {
   afterEach(cleanup);
 
   it("lists materialized views with the views", () => {
-    const schema: Schema = { dialect: "SQLite", tables: [table("events", "table"), table("daily_totals", "materialized view")] };
+    const schema: Schema = {
+      dialect: "SQLite",
+      tables: [table("events", "table"), table("daily_totals", "materialized view")],
+    };
     render(
       <DatabaseNavigator
-        connections={[conn]} activeId="c1" databases={{ c1: null }} databaseName={null} schema={schema} loading={false} connected onConnect={vi.fn()}
-        onOpen={vi.fn()} onOpenDatabase={vi.fn()} onAdd={vi.fn()} onEdit={vi.fn()} onDeleteConnection={vi.fn()} onRefresh={vi.fn()}
-        onPreviewTable={vi.fn()} onNewTab={vi.fn()} onOpenSql={vi.fn()} selectedTables={[]} onSelectTables={vi.fn()}
-        scripts={[]} onOpenScript={vi.fn()} onDeleteScript={vi.fn()}
-        notes={[{ id: "n1", connectionId: "c1", database: null, text: "status 3 = cancelled", updatedAt: 0 }]}
-        onEditNote={vi.fn()} onDeleteNote={vi.fn()} onAgentSettings={vi.fn()} onOverview={vi.fn()}
+        connections={[conn]}
+        activeId="c1"
+        databases={{ c1: null }}
+        databaseName={null}
+        schema={schema}
+        loading={false}
+        connected
+        onConnect={vi.fn()}
+        onOpen={vi.fn()}
+        onOpenDatabase={vi.fn()}
+        onAdd={vi.fn()}
+        onEdit={vi.fn()}
+        onDeleteConnection={vi.fn()}
+        onRefresh={vi.fn()}
+        onPreviewTable={vi.fn()}
+        onNewTab={vi.fn()}
+        onOpenSql={vi.fn()}
+        selectedTables={[]}
+        onSelectTables={vi.fn()}
+        scripts={[]}
+        onOpenScript={vi.fn()}
+        onDeleteScript={vi.fn()}
+        notes={[
+          {
+            id: "n1",
+            connectionId: "c1",
+            database: null,
+            text: "status 3 = cancelled",
+            updatedAt: 0,
+          },
+        ]}
+        onEditNote={vi.fn()}
+        onDeleteNote={vi.fn()}
+        onAgentSettings={vi.fn()}
+        onOverview={vi.fn()}
       />,
     );
     expect(screen.getByText("Notes")).toBeTruthy();
@@ -39,13 +85,27 @@ describe("DatabaseNavigator", () => {
     const onEditNote = vi.fn();
     const onCheckNotes = vi.fn();
     const doubtful = {
-      id: "n2", connectionId: "c1", database: null, text: "users.last_login_at is set on sign-in", updatedAt: 0,
+      id: "n2",
+      connectionId: "c1",
+      database: null,
+      text: "users.last_login_at is set on sign-in",
+      updatedAt: 0,
       suspect: { reason: "the column users.last_login_at no longer exists", since: 0 },
     };
     render(
       <DatabaseNavigator
         {...props({ schema, onEditNote, onCheckNotes })}
-        notes={[{ id: "n1", connectionId: "c1", database: null, text: "status 3 = cancelled", updatedAt: 0, verifiedAt: Date.now() }, doubtful]}
+        notes={[
+          {
+            id: "n1",
+            connectionId: "c1",
+            database: null,
+            text: "status 3 = cancelled",
+            updatedAt: 0,
+            verifiedAt: Date.now(),
+          },
+          doubtful,
+        ]}
       />,
     );
     expect(screen.getByLabelText("Checked")).toBeTruthy();
@@ -59,21 +119,50 @@ describe("DatabaseNavigator", () => {
 
   it("shows a team's shared notes read-only, with the same marks, and offers only a suggestion", () => {
     const schema: Schema = { dialect: "PostgreSQL", tables: [table("orders", "table")] };
-    const team: ConnectionConfig = { ...conn, id: "team:c_1", name: "Production", kind: "postgres", team: { database: "app", notes: "" } };
+    const team: ConnectionConfig = {
+      ...conn,
+      id: "team:c_1",
+      name: "Production",
+      kind: "postgres",
+      team: { database: "app", notes: "" },
+    };
     const onEditNote = vi.fn();
     const onCheckNotes = vi.fn();
     const doubtful = {
-      id: "kn_2", connectionId: "team:c_1", database: null, text: "users.last_login_at is set on sign-in", updatedAt: 0,
+      id: "kn_2",
+      connectionId: "team:c_1",
+      database: null,
+      text: "users.last_login_at is set on sign-in",
+      updatedAt: 0,
       suspect: { reason: "the column users.last_login_at no longer exists", since: 0 },
     };
     render(
       <DatabaseNavigator
-        {...props({ connections: [team], activeId: "team:c_1", databases: { "team:c_1": null }, schema, onEditNote, onCheckNotes })}
+        {...props({
+          connections: [team],
+          activeId: "team:c_1",
+          databases: { "team:c_1": null },
+          schema,
+          onEditNote,
+          onCheckNotes,
+        })}
         sharedNotes
-        notes={[{ id: "kn_1", connectionId: "team:c_1", database: null, text: "orders.status 3 means refunded", updatedAt: 0, verifiedAt: Date.now() }, doubtful]}
+        notes={[
+          {
+            id: "kn_1",
+            connectionId: "team:c_1",
+            database: null,
+            text: "orders.status 3 means refunded",
+            updatedAt: 0,
+            verifiedAt: Date.now(),
+          },
+          doubtful,
+        ]}
       />,
     );
-    expect(screen.getByText("Shared by your team. Owners approve changes on the team server.")).toBeTruthy();
+    expect(
+      screen.getByText("Shared by your team. Owners approve changes on the team server."),
+    ).toBeTruthy();
     expect(screen.getByLabelText("Checked")).toBeTruthy();
     expect(screen.getByLabelText("May be out of date")).toBeTruthy();
     // No checking or editing here.
@@ -89,12 +178,34 @@ describe("DatabaseNavigator", () => {
   });
 
   const props = (over: Partial<Parameters<typeof DatabaseNavigator>[0]> = {}) => ({
-    connections: [conn], activeId: "c1", databases: { c1: null }, databaseName: null, schema: null, loading: false,
-    connected: true, onConnect: vi.fn(),
-    onOpen: vi.fn(), onOpenDatabase: vi.fn(), onAdd: vi.fn(), onEdit: vi.fn(), onDeleteConnection: vi.fn(), onRefresh: vi.fn(),
-    onPreviewTable: vi.fn(), onNewTab: vi.fn(), onOpenSql: vi.fn(), selectedTables: [], onSelectTables: vi.fn(),
-    scripts: [], onOpenScript: vi.fn(), onDeleteScript: vi.fn(), notes: [], onEditNote: vi.fn(), onDeleteNote: vi.fn(),
-    onAgentSettings: vi.fn(), onOverview: vi.fn(), ...over,
+    connections: [conn],
+    activeId: "c1",
+    databases: { c1: null },
+    databaseName: null,
+    schema: null,
+    loading: false,
+    connected: true,
+    onConnect: vi.fn(),
+    onOpen: vi.fn(),
+    onOpenDatabase: vi.fn(),
+    onAdd: vi.fn(),
+    onEdit: vi.fn(),
+    onDeleteConnection: vi.fn(),
+    onRefresh: vi.fn(),
+    onPreviewTable: vi.fn(),
+    onNewTab: vi.fn(),
+    onOpenSql: vi.fn(),
+    selectedTables: [],
+    onSelectTables: vi.fn(),
+    scripts: [],
+    onOpenScript: vi.fn(),
+    onDeleteScript: vi.fn(),
+    notes: [],
+    onEditNote: vi.fn(),
+    onDeleteNote: vi.fn(),
+    onAgentSettings: vi.fn(),
+    onOverview: vi.fn(),
+    ...over,
   });
 
   it("shows a restored, unconnected connection with a Connect button instead of its tables", () => {

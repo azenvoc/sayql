@@ -8,7 +8,11 @@ export function licenceText(s: TeamServerInfo): string {
   if (!s.licensed) return "No valid licence: queries can't run until your team admin adds one";
   const plan = s.plan ? s.plan[0].toUpperCase() + s.plan.slice(1) : "Team";
   // A server without a key runs its built-in trial, licensed to "Free trial".
-  const parts = [s.licensee === "Free trial" ? "Free trial" : `${plan} plan${s.licensee ? ` for ${s.licensee}` : ""}`];
+  const parts = [
+    s.licensee === "Free trial"
+      ? "Free trial"
+      : `${plan} plan${s.licensee ? ` for ${s.licensee}` : ""}`,
+  ];
   if (s.users != null && s.userLimit != null) parts.push(`${s.users} of ${s.userLimit} seats`);
   if (s.expires) parts.push(`until ${s.expires}`);
   return parts.join(" · ");
@@ -24,7 +28,9 @@ export function tokens(n: number): string {
 /** "120k of 2M tokens", or "120k tokens" with no limit. */
 export function usageText(u: TeamAiUsage | null): string {
   if (!u) return "Unknown";
-  return u.limit == null ? `${tokens(u.tokens)} tokens (no limit)` : `${tokens(u.tokens)} of ${tokens(u.limit)} tokens`;
+  return u.limit == null
+    ? `${tokens(u.tokens)} tokens (no limit)`
+    : `${tokens(u.tokens)} of ${tokens(u.limit)} tokens`;
 }
 
 /** "Anthropic Claude" or "an OpenAI-compatible service": the team's AI, for people. */
@@ -66,5 +72,8 @@ export function serverHost(server: string): string {
 
 /** Where agent mode's sends go on a team connection with team AI, as the agent settings say it. */
 export function teamAiDestination(ai: TeamAiStatus): { label: string; local: boolean } {
-  return { label: `your team's AI (${teamAiName(ai)}, through your company's SayQL server)`, local: false };
+  return {
+    label: `your team's AI (${teamAiName(ai)}, through your company's SayQL server)`,
+    local: false,
+  };
 }

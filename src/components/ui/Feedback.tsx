@@ -5,7 +5,15 @@ import styles from "./Feedback.module.css";
 
 export type Tone = "neutral" | "accent" | "ai" | "success" | "warning" | "danger";
 
-export function Badge({ tone = "neutral", children, title }: { tone?: Tone; children: ReactNode; title?: string }) {
+export function Badge({
+  tone = "neutral",
+  children,
+  title,
+}: {
+  tone?: Tone;
+  children: ReactNode;
+  title?: string;
+}) {
   return (
     <span className={cx(styles.badge, styles[`badge-${tone}`])} title={title}>
       {children}
@@ -21,10 +29,21 @@ const ALERT_ICON: Record<AlertTone, LucideIcon> = {
   danger: XCircle,
 };
 
-export function Alert({ tone, children, actions }: { tone: AlertTone; children: ReactNode; actions?: ReactNode }) {
+export function Alert({
+  tone,
+  children,
+  actions,
+}: {
+  tone: AlertTone;
+  children: ReactNode;
+  actions?: ReactNode;
+}) {
   const Icon = ALERT_ICON[tone];
   return (
-    <div className={cx(styles.alert, styles[`alert-${tone}`])} role={tone === "danger" ? "alert" : "status"}>
+    <div
+      className={cx(styles.alert, styles[`alert-${tone}`])}
+      role={tone === "danger" ? "alert" : "status"}
+    >
       <span className={styles.alertIcon}>
         <Icon size={15} />
       </span>

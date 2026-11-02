@@ -25,13 +25,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => q.removeEventListener("change", onChange);
   }, []);
 
-  const resolved: ResolvedTheme = preference === "system" ? (systemDark ? "dark" : "light") : preference;
+  const resolved: ResolvedTheme =
+    preference === "system" ? (systemDark ? "dark" : "light") : preference;
 
   useEffect(() => {
     document.documentElement.dataset.theme = resolved;
   }, [resolved]);
 
-  const value = useMemo(() => ({ preference, resolved, setPreference }), [preference, resolved, setPreference]);
+  const value = useMemo(
+    () => ({ preference, resolved, setPreference }),
+    [preference, resolved, setPreference],
+  );
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 

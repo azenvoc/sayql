@@ -34,7 +34,9 @@
   color: var(--color-text);
   font-size: var(--font-size-md);
   outline: none;
-  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+  transition:
+    border-color var(--duration-fast),
+    box-shadow var(--duration-fast);
 }
 .control::placeholder {
   color: var(--color-text-subtle);

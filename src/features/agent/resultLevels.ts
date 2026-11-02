@@ -26,7 +26,8 @@ export const LEVELS: Record<ResultLevel, LevelText> = {
   nothing: {
     label: "Nothing (names and row counts only)",
     short: "nothing (names and row counts only)",
-    detail: "Table and column names and how many rows a query returned. No values from your tables.",
+    detail:
+      "Table and column names and how many rows a query returned. No values from your tables.",
   },
   counts: {
     label: "Counts and summaries",
@@ -43,14 +44,24 @@ export const LEVELS: Record<ResultLevel, LevelText> = {
   all: {
     label: "All rows",
     short: "all rows",
-    detail: "Rows as they are, and CSV export. Never-send columns are still left out. For data you're happy to share with that app.",
+    detail:
+      "Rows as they are, and CSV export. Never-send columns are still left out. For data you're happy to share with that app.",
   },
 };
 
 /** Agent mode's stored values, as levels. Its `rows` is masked rows, at most 20 per query. */
-export const AGENT_LEVEL: Record<AgentResults, ResultLevel> = { off: "nothing", counts: "counts", rows: "masked" };
+export const AGENT_LEVEL: Record<AgentResults, ResultLevel> = {
+  off: "nothing",
+  counts: "counts",
+  rows: "masked",
+};
 /** AI apps' stored values, as levels. */
-export const APP_LEVEL: Record<AppResults, ResultLevel> = { off: "nothing", counts: "counts", masked: "masked", all: "all" };
+export const APP_LEVEL: Record<AppResults, ResultLevel> = {
+  off: "nothing",
+  counts: "counts",
+  masked: "masked",
+  all: "all",
+};
 
 /** What agent mode starts with on a connection (`Results::default()`). */
 export const AGENT_DEFAULT: AgentResults = "off";
@@ -67,34 +78,47 @@ export interface LevelOption<T extends string> {
 }
 
 /** Agent mode's choices, in order. */
-export const AGENT_OPTIONS: LevelOption<AgentResults>[] = (["off", "counts", "rows"] as const).map((value) => {
-  const level = AGENT_LEVEL[value];
+export const AGENT_OPTIONS: LevelOption<AgentResults>[] = (["off", "counts", "rows"] as const).map(
+  (value) => {
+    const level = AGENT_LEVEL[value];
+    return {
+      value,
+      level,
+      label: value === "rows" ? `${LEVELS.masked.label} (up to 20 per query)` : LEVELS[level].label,
+      detail:
+        value === "rows"
+          ? `${LEVELS.masked.detail} SayQL fills the real values back in on your screen.`
+          : value === "off"
+            ? "The AI sees your question, the schema and how many rows each query returned. No values from your tables."
+            : LEVELS[level].detail,
+      isDefault: value === AGENT_DEFAULT,
+    };
+  },
+);
+
+/** AI apps' choices, in order. */
+export const APP_OPTIONS: LevelOption<AppResults>[] = (
+  ["off", "counts", "masked", "all"] as const
+).map((value) => {
+  const level = APP_LEVEL[value];
   return {
     value,
     level,
-    label: value === "rows" ? `${LEVELS.masked.label} (up to 20 per query)` : LEVELS[level].label,
-    detail:
-      value === "rows"
-        ? `${LEVELS.masked.detail} SayQL fills the real values back in on your screen.`
-        : value === "off"
-          ? "The AI sees your question, the schema and how many rows each query returned. No values from your tables."
-          : LEVELS[level].detail,
-    isDefault: value === AGENT_DEFAULT,
+    label: LEVELS[level].label,
+    detail: LEVELS[level].detail,
+    isDefault: value === APP_DEFAULT,
   };
 });
 
-/** AI apps' choices, in order. */
-export const APP_OPTIONS: LevelOption<AppResults>[] = (["off", "counts", "masked", "all"] as const).map((value) => {
-  const level = APP_LEVEL[value];
-  return { value, level, label: LEVELS[level].label, detail: LEVELS[level].detail, isDefault: value === APP_DEFAULT };
-});
-
 /** A choice's label with "(default)" after the default one, for pickers. */
-export const withDefault = (o: LevelOption<string>) => (o.isDefault ? `${o.label} · default` : o.label);
+export const withDefault = (o: LevelOption<string>) =>
+  o.isDefault ? `${o.label} · default` : o.label;
 
 /** "Results to AI: counts and summaries", for agent mode's status line. */
 export function agentLevelShort(results: AgentResults): string {
-  return results === "rows" ? `${LEVELS.masked.short} (up to 20 per query)` : LEVELS[AGENT_LEVEL[results]].short;
+  return results === "rows"
+    ? `${LEVELS.masked.short} (up to 20 per query)`
+    : LEVELS[AGENT_LEVEL[results]].short;
 }
 
 /** For AI apps' status or activity lines. */
@@ -130,21 +154,37 @@ export interface PrivacySummary {
  * Team connections aren't served to AI apps on this computer (src-tauri/src/mcp.rs serves the
  * connections saved here); AI agents reach them only through the team's agent gateway.
  */
-export function privacySummary(a: AgentAccess, provider: { label: string; local: boolean } | null): PrivacySummary {
+export function privacySummary(
+  a: AgentAccess,
+  provider: { label: string; local: boolean } | null,
+): PrivacySummary {
   const team = !!a.team;
   const investigate: ResultLevel = a.enabled ? AGENT_LEVEL[a.results] : "nothing";
   const apps: ResultLevel = team ? "nothing" : APP_LEVEL[a.apps];
   const level = ORDER[Math.max(ORDER.indexOf(investigate), ORDER.indexOf(apps))];
-  const to = provider ? (provider.local ? `${provider.label}, on this computer` : provider.label) : "your AI provider";
+  const to = provider
+    ? provider.local
+      ? `${provider.label}, on this computer`
+      : provider.label
+    : "your AI provider";
   const lines = [
     `Ask box: your question, table and column names and notes go to ${to}. No rows.`,
-    a.enabled ? `Investigate: ${agentLevelShort(a.results)}, to ${to}${team ? " (your team admin's limit applies)" : ""}.` : "Investigate: off.",
+    a.enabled
+      ? `Investigate: ${agentLevelShort(a.results)}, to ${to}${team ? " (your team admin's limit applies)" : ""}.`
+      : "Investigate: off.",
     team
       ? "AI apps on this computer: not on team connections. AI agents reach them only through your team's agent gateway, under its rules."
       : `AI apps over MCP: ${appLevelShort(a.apps)}.`,
   ];
   if (a.neverSend.length)
-    lines.push(`${a.neverSend.length} never-send column${a.neverSend.length === 1 ? "" : "s"}: never sent to any AI.`);
-  const label = { nothing: "No rows to AI", counts: "Counts to AI", masked: "Masked rows to AI", all: "All rows to AI apps" }[level];
+    lines.push(
+      `${a.neverSend.length} never-send column${a.neverSend.length === 1 ? "" : "s"}: never sent to any AI.`,
+    );
+  const label = {
+    nothing: "No rows to AI",
+    counts: "Counts to AI",
+    masked: "Masked rows to AI",
+    all: "All rows to AI apps",
+  }[level];
   return { label, level, lines };
 }

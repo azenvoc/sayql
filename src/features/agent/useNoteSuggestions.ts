@@ -8,7 +8,11 @@ const REFRESH_MS = 20_000;
 
 /** Whether a suggestion is for the database open in `target`. */
 export function suggestionFor(s: NoteSuggestion, target: Target | null): boolean {
-  return !!target && s.connectionId === target.connectionId && (s.database ?? null) === (target.database ?? null);
+  return (
+    !!target &&
+    s.connectionId === target.connectionId &&
+    (s.database ?? null) === (target.database ?? null)
+  );
 }
 
 /**

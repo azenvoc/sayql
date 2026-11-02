@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import { createPortal } from "react-dom";
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import { cx } from "../../lib/cx";
@@ -63,7 +70,10 @@ export function ContextMenu({ at, items, onClose }: ContextMenuProps) {
     };
   }, [onClose]);
 
-  return createPortal(<MenuList items={items} at={at} onClose={onClose} onBack={onClose} autoFocus />, document.body);
+  return createPortal(
+    <MenuList items={items} at={at} onClose={onClose} onBack={onClose} autoFocus />,
+    document.body,
+  );
 }
 
 interface MenuListProps {
@@ -91,8 +101,10 @@ function MenuList({ items, at, flipFrom, onClose, onBack, autoFocus }: MenuListP
     const margin = 6;
     let x = at.x;
     let y = at.y;
-    if (x + width > window.innerWidth - margin) x = flipFrom != null ? flipFrom - width : window.innerWidth - margin - width;
-    if (y + height > window.innerHeight - margin) y = Math.max(margin, window.innerHeight - margin - height);
+    if (x + width > window.innerWidth - margin)
+      x = flipFrom != null ? flipFrom - width : window.innerWidth - margin - width;
+    if (y + height > window.innerHeight - margin)
+      y = Math.max(margin, window.innerHeight - margin - height);
     setPos({ x: Math.max(margin, x), y });
   }, [at.x, at.y, flipFrom]);
 
@@ -105,7 +117,12 @@ function MenuList({ items, at, flipFrom, onClose, onBack, autoFocus }: MenuListP
   const move = (delta: number) => {
     const current = itemRefs.current.findIndex((b) => b === document.activeElement);
     const index = enabled.indexOf(current);
-    const next = index < 0 ? (delta > 0 ? 0 : enabled.length - 1) : (index + delta + enabled.length) % enabled.length;
+    const next =
+      index < 0
+        ? delta > 0
+          ? 0
+          : enabled.length - 1
+        : (index + delta + enabled.length) % enabled.length;
     focusItem(enabled[next]);
   };
 
@@ -133,7 +150,12 @@ function MenuList({ items, at, flipFrom, onClose, onBack, autoFocus }: MenuListP
         focusItem(enabled[enabled.length - 1]);
         break;
       case "ArrowRight":
-        if (current >= 0 && items[current] !== "separator" && (items[current] as { submenu?: unknown }).submenu) setOpenSub(current);
+        if (
+          current >= 0 &&
+          items[current] !== "separator" &&
+          (items[current] as { submenu?: unknown }).submenu
+        )
+          setOpenSub(current);
         else return;
         break;
       case "ArrowLeft":
@@ -165,7 +187,8 @@ function MenuList({ items, at, flipFrom, onClose, onBack, autoFocus }: MenuListP
       onContextMenu={(e) => e.preventDefault()}
     >
       {items.map((it, i) => {
-        if (it === "separator") return <div key={`sep-${i}`} className={styles.separator} role="separator" />;
+        if (it === "separator")
+          return <div key={`sep-${i}`} className={styles.separator} role="separator" />;
         const Icon = it.icon;
         const sub = openSub === i && it.submenu;
         return (
@@ -209,8 +232,27 @@ function MenuList({ items, at, flipFrom, onClose, onBack, autoFocus }: MenuListP
   );
 }
 
-function SubMenu({ items, anchor, onClose, onBack }: { items: MenuEntry[]; anchor: HTMLElement | null; onClose: () => void; onBack: () => void }) {
+function SubMenu({
+  items,
+  anchor,
+  onClose,
+  onBack,
+}: {
+  items: MenuEntry[];
+  anchor: HTMLElement | null;
+  onClose: () => void;
+  onBack: () => void;
+}) {
   if (!anchor) return null;
   const r = anchor.getBoundingClientRect();
-  return <MenuList items={items} at={{ x: r.right + 2, y: r.top - 4 }} flipFrom={r.left - 2} onClose={onClose} onBack={onBack} autoFocus />;
+  return (
+    <MenuList
+      items={items}
+      at={{ x: r.right + 2, y: r.top - 4 }}
+      flipFrom={r.left - 2}
+      onClose={onClose}
+      onBack={onBack}
+      autoFocus
+    />
+  );
 }

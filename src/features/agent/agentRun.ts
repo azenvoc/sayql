@@ -1,7 +1,8 @@
 // The state of one agent run in a tab, built from the backend's `agent://event`s.
 import type { AgentAnswer, AgentEvent, AgentStep, AgentUsage } from "../../api";
 
-export type AgentPhase = "idle" | "starting" | "running" | "plan" | "send" | "question" | "done" | "error" | "stopped";
+export type AgentPhase =
+  "idle" | "starting" | "running" | "plan" | "send" | "question" | "done" | "error" | "stopped";
 
 export type AgentPending =
   | { kind: "plan"; steps: string[] }
@@ -54,9 +55,17 @@ export function agentReducer(state: AgentRunState, action: AgentAction): AgentRu
   switch (action.type) {
     case "start":
       // A follow-up keeps the earlier steps on screen; their numbers carry on.
-      return { ...IDLE, runId: action.runId, question: action.question, phase: "starting", steps: action.keepSteps ? state.steps : [] };
+      return {
+        ...IDLE,
+        runId: action.runId,
+        question: action.question,
+        phase: "starting",
+        steps: action.keepSteps ? state.steps : [],
+      };
     case "failed":
-      return action.runId === state.runId ? { ...state, phase: "error", error: action.error, pending: null } : state;
+      return action.runId === state.runId
+        ? { ...state, phase: "error", error: action.error, pending: null }
+        : state;
     case "replied":
       return state.pending ? { ...state, pending: null, phase: "running" } : state;
     case "restore":
@@ -81,9 +90,17 @@ function onEvent(state: AgentRunState, e: AgentEvent): AgentRunState {
       return { ...state, steps, phase: state.pending ? state.phase : "running" };
     }
     case "send":
-      return { ...state, phase: "send", pending: { kind: "send", stepId: e.stepId, payload: e.payload } };
+      return {
+        ...state,
+        phase: "send",
+        pending: { kind: "send", stepId: e.stepId, payload: e.payload },
+      };
     case "question":
-      return { ...state, phase: "question", pending: { kind: "question", stepId: e.stepId, question: e.question, choices: e.choices } };
+      return {
+        ...state,
+        phase: "question",
+        pending: { kind: "question", stepId: e.stepId, question: e.question, choices: e.choices },
+      };
     case "progress": {
       const { runId: _, type: __, ...progress } = e;
       return { ...state, progress };
@@ -96,13 +113,16 @@ function onEvent(state: AgentRunState, e: AgentEvent): AgentRunState {
         error: e.error,
         phase: e.stopped ? "stopped" : e.error ? "error" : "done",
         // Steps cut short by Stop show as stopped, not running forever.
-        steps: state.steps.map((s) => (s.status === "running" ? { ...s, status: "error", error: s.error ?? "Stopped." } : s)),
+        steps: state.steps.map((s) =>
+          s.status === "running" ? { ...s, status: "error", error: s.error ?? "Stopped." } : s,
+        ),
       };
   }
 }
 
 /** The run is going: the model or a query is working, or it waits for the person. */
-export const isActive = (s: AgentRunState) => ["starting", "running", "plan", "send", "question"].includes(s.phase);
+export const isActive = (s: AgentRunState) =>
+  ["starting", "running", "plan", "send", "question"].includes(s.phase);
 
 /** What a tab keeps of a finished run across restarts: the queries and the answer, never rows. */
 export function forStorage(s: AgentRunState): AgentRunState {

@@ -1,10 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { AGENTS, agentById, agentForClient, base64, cursorLink, preselectAgent, promptArgs, shellQuote, vscodeLink, type AgentId } from "./agents";
+import {
+  AGENTS,
+  agentById,
+  agentForClient,
+  base64,
+  cursorLink,
+  preselectAgent,
+  promptArgs,
+  shellQuote,
+  vscodeLink,
+  type AgentId,
+} from "./agents";
 
 const MAC = "/Applications/SayQL.app/Contents/MacOS/sayql-mcp";
 const SPACED = "/Users/me/My Apps/SayQL.app/Contents/MacOS/sayql-mcp";
 const WIN = "C:\\Program Files\\SayQL\\sayql-mcp.exe";
-const setup = (id: AgentId, path = MAC, os: "macos" | "windows" | "linux" = "macos") => agentById(id)!.setup({ path, os });
+const setup = (id: AgentId, path = MAC, os: "macos" | "windows" | "linux" = "macos") =>
+  agentById(id)!.setup({ path, os });
 
 describe("shellQuote", () => {
   it("leaves plain paths alone and quotes the rest for the shell", () => {
@@ -19,8 +31,12 @@ describe("shellQuote", () => {
 describe("setup commands", () => {
   it("are the documented commands with the path quoted", () => {
     expect(setup("claude-code").command).toBe(`claude mcp add --scope user sayql -- ${MAC}`);
-    expect(setup("claude-code", SPACED).command).toBe(`claude mcp add --scope user sayql -- '${SPACED}'`);
-    expect(setup("claude-code", WIN, "windows").command).toBe(`claude mcp add --scope user sayql -- "${WIN}"`);
+    expect(setup("claude-code", SPACED).command).toBe(
+      `claude mcp add --scope user sayql -- '${SPACED}'`,
+    );
+    expect(setup("claude-code", WIN, "windows").command).toBe(
+      `claude mcp add --scope user sayql -- "${WIN}"`,
+    );
     expect(setup("codex").command).toBe(`codex mcp add sayql -- ${MAC}`);
     expect(setup("gemini", SPACED).command).toBe(`gemini mcp add -s user sayql '${SPACED}'`);
     expect(setup("copilot-cli").command).toBe(`copilot mcp add sayql -- ${MAC}`);
@@ -28,13 +44,28 @@ describe("setup commands", () => {
   });
 
   it("gives VS Code's --add-mcp its JSON in single quotes, and no command on Windows", () => {
-    expect(setup("vscode").command).toBe(`code --add-mcp '{"name":"sayql","type":"stdio","command":"${MAC}"}'`);
-    expect(setup("vscode", "/x/it's").command).toBe(`code --add-mcp '{"name":"sayql","type":"stdio","command":"/x/it'\\''s"}'`);
+    expect(setup("vscode").command).toBe(
+      `code --add-mcp '{"name":"sayql","type":"stdio","command":"${MAC}"}'`,
+    );
+    expect(setup("vscode", "/x/it's").command).toBe(
+      `code --add-mcp '{"name":"sayql","type":"stdio","command":"/x/it'\\''s"}'`,
+    );
     expect(setup("vscode", WIN, "windows").command).toBeUndefined();
   });
 
   it("has no one-line command for agents that need a config file", () => {
-    for (const id of ["cursor", "opencode", "windsurf", "zed", "cline", "roo", "continue", "jetbrains", "claude-desktop", "other"] as AgentId[]) {
+    for (const id of [
+      "cursor",
+      "opencode",
+      "windsurf",
+      "zed",
+      "cline",
+      "roo",
+      "continue",
+      "jetbrains",
+      "claude-desktop",
+      "other",
+    ] as AgentId[]) {
       expect(setup(id).command, id).toBeUndefined();
       expect(setup(id).config, id).toBeDefined();
     }
@@ -45,14 +76,22 @@ describe("config snippets", () => {
   it("escape Windows paths in JSON and TOML", () => {
     const json = JSON.parse(setup("claude-desktop", WIN, "windows").config!.text);
     expect(json).toEqual({ mcpServers: { sayql: { command: WIN, args: [] } } });
-    expect(setup("codex", WIN, "windows").config!.text).toBe(`[mcp_servers.sayql]\ncommand = "C:\\\\Program Files\\\\SayQL\\\\sayql-mcp.exe"\nargs = []`);
+    expect(setup("codex", WIN, "windows").config!.text).toBe(
+      `[mcp_servers.sayql]\ncommand = "C:\\\\Program Files\\\\SayQL\\\\sayql-mcp.exe"\nargs = []`,
+    );
     expect(setup("codex", 'a"b').config!.text).toContain('command = "a\\"b"');
   });
 
   it("use each app's own keys", () => {
-    expect(JSON.parse(setup("vscode").config!.text)).toEqual({ servers: { sayql: { type: "stdio", command: MAC, args: [] } } });
-    expect(JSON.parse(setup("zed").config!.text)).toEqual({ context_servers: { sayql: { command: MAC, args: [], env: {} } } });
-    expect(JSON.parse(setup("opencode").config!.text).mcp).toEqual({ sayql: { type: "local", command: [MAC], enabled: true } });
+    expect(JSON.parse(setup("vscode").config!.text)).toEqual({
+      servers: { sayql: { type: "stdio", command: MAC, args: [] } },
+    });
+    expect(JSON.parse(setup("zed").config!.text)).toEqual({
+      context_servers: { sayql: { command: MAC, args: [], env: {} } },
+    });
+    expect(JSON.parse(setup("opencode").config!.text).mcp).toEqual({
+      sayql: { type: "local", command: [MAC], enabled: true },
+    });
     expect(JSON.parse(setup("copilot-cli").config!.text).mcpServers.sayql.type).toBe("local");
     expect(Object.keys(JSON.parse(setup("amp").config!.text))).toEqual(["amp.mcpServers"]);
     for (const a of AGENTS) {
@@ -62,13 +101,19 @@ describe("config snippets", () => {
   });
 
   it("point at the file for this OS", () => {
-    expect(setup("claude-desktop").config!.file).toBe("~/Library/Application Support/Claude/claude_desktop_config.json");
-    expect(setup("claude-desktop", WIN, "windows").config!.file).toBe("%APPDATA%\\Claude\\claude_desktop_config.json");
+    expect(setup("claude-desktop").config!.file).toBe(
+      "~/Library/Application Support/Claude/claude_desktop_config.json",
+    );
+    expect(setup("claude-desktop", WIN, "windows").config!.file).toBe(
+      "%APPDATA%\\Claude\\claude_desktop_config.json",
+    );
     // No documented path on Linux: open it from the app.
     expect(setup("claude-desktop", MAC, "linux").config!.file).toBeNull();
     expect(setup("claude-desktop", MAC, "linux").config!.open).toContain("Edit Config");
     expect(setup("windsurf").config!.file).toBe("~/.config/devin/mcp_config.json");
-    expect(setup("windsurf", WIN, "windows").config!.file).toBe("%APPDATA%\\devin\\mcp_config.json");
+    expect(setup("windsurf", WIN, "windows").config!.file).toBe(
+      "%APPDATA%\\devin\\mcp_config.json",
+    );
     expect(setup("windsurf").also).toContain("~/.codeium/windsurf/mcp_config.json");
     expect(setup("cursor").config!.file).toBe("~/.cursor/mcp.json");
   });
@@ -77,10 +122,14 @@ describe("config snippets", () => {
 describe("install links", () => {
   it("Cursor's carries the server config as base64 JSON", () => {
     const link = cursorLink(MAC);
-    expect(link.startsWith("cursor://anysphere.cursor-deeplink/mcp/install?name=sayql&config=")).toBe(true);
+    expect(
+      link.startsWith("cursor://anysphere.cursor-deeplink/mcp/install?name=sayql&config="),
+    ).toBe(true);
     const config = new URL(link).searchParams.get("config")!;
     // The docs' own example for this path.
-    expect(config).toBe("eyJjb21tYW5kIjoiL0FwcGxpY2F0aW9ucy9TYXlRTC5hcHAvQ29udGVudHMvTWFjT1Mvc2F5cWwtbWNwIn0=");
+    expect(config).toBe(
+      "eyJjb21tYW5kIjoiL0FwcGxpY2F0aW9ucy9TYXlRTC5hcHAvQ29udGVudHMvTWFjT1Mvc2F5cWwtbWNwIn0=",
+    );
     expect(JSON.parse(atob(config))).toEqual({ command: MAC });
   });
 
@@ -98,11 +147,17 @@ describe("install links", () => {
     const link = vscodeLink(SPACED);
     expect(link.startsWith("vscode:mcp/install?%7B%22name%22%3A%22sayql%22")).toBe(true);
     expect(link).not.toMatch(/[ "{}]/);
-    expect(JSON.parse(decodeURIComponent(link.slice("vscode:mcp/install?".length)))).toEqual({ name: "sayql", type: "stdio", command: SPACED });
+    expect(JSON.parse(decodeURIComponent(link.slice("vscode:mcp/install?".length)))).toEqual({
+      name: "sayql",
+      type: "stdio",
+      command: SPACED,
+    });
   });
 
   it("only Cursor and VS Code have one", () => {
-    expect(AGENTS.filter((a) => a.setup({ path: MAC, os: "macos" }).link).map((a) => a.id)).toEqual(["cursor", "vscode"]);
+    expect(AGENTS.filter((a) => a.setup({ path: MAC, os: "macos" }).link).map((a) => a.id)).toEqual(
+      ["cursor", "vscode"],
+    );
   });
 });
 
@@ -127,7 +182,17 @@ describe("running the audit", () => {
 
   it("has agents without documented prompts paste the prompt", () => {
     const paste = AGENTS.filter((a) => a.audit.kind === "paste").map((a) => a.id);
-    expect(paste).toEqual(["codex", "copilot-cli", "windsurf", "zed", "cline", "roo", "amp", "jetbrains", "other"]);
+    expect(paste).toEqual([
+      "codex",
+      "copilot-cli",
+      "windsurf",
+      "zed",
+      "cline",
+      "roo",
+      "amp",
+      "jetbrains",
+      "other",
+    ]);
   });
 
   it("names a connection with spaces by id", () => {
@@ -153,7 +218,9 @@ describe("agentForClient", () => {
 describe("preselectAgent", () => {
   const app = (name: string, lastUsed: number | null) => ({ name, lastUsed });
   it("keeps the person's pick", () => {
-    expect(preselectAgent({ saved: "zed", installed: ["cursor"], apps: [app("Cursor", 5)] })).toBe("zed");
+    expect(preselectAgent({ saved: "zed", installed: ["cursor"], apps: [app("Cursor", 5)] })).toBe(
+      "zed",
+    );
   });
   it("ignores a pick SayQL no longer knows", () => {
     expect(preselectAgent({ saved: "gone", installed: [], apps: [] })).toBe("claude-code");
@@ -163,10 +230,17 @@ describe("preselectAgent", () => {
     expect(preselectAgent({ installed: ["claude-code", "cursor", "vscode"], apps })).toBe("vscode");
   });
   it("else the first installed, in the list's order", () => {
-    expect(preselectAgent({ installed: ["claude-desktop", "vscode", "cursor"], apps: [] })).toBe("cursor");
+    expect(preselectAgent({ installed: ["claude-desktop", "vscode", "cursor"], apps: [] })).toBe(
+      "cursor",
+    );
   });
   it("else the app that connected last", () => {
-    expect(preselectAgent({ installed: [], apps: [app("Cursor", 5), app("Zed", 7), app("Unknown", 9), app("Codex", null)] })).toBe("zed");
+    expect(
+      preselectAgent({
+        installed: [],
+        apps: [app("Cursor", 5), app("Zed", 7), app("Unknown", 9), app("Codex", null)],
+      }),
+    ).toBe("zed");
   });
   it("else Claude Code", () => {
     expect(preselectAgent({ installed: [], apps: [] })).toBe("claude-code");

@@ -38,7 +38,10 @@ export function statementRanges(sql: string, dialect?: Dialect): Range[] {
     const c = sql[i];
     const next = sql[i + 1];
     // MySQL needs blank space after `--` for a comment (`1--1` is arithmetic), and also has `#`.
-    if ((c === "-" && next === "-" && (!mysql || !next || /\s/.test(sql[i + 2] ?? " "))) || (c === "#" && mysql)) {
+    if (
+      (c === "-" && next === "-" && (!mysql || !next || /\s/.test(sql[i + 2] ?? " "))) ||
+      (c === "#" && mysql)
+    ) {
       const nl = sql.indexOf("\n", i);
       i = nl < 0 ? sql.length : nl + 1;
     } else if (c === "/" && next === "*") {
@@ -46,7 +49,12 @@ export function statementRanges(sql: string, dialect?: Dialect): Range[] {
       i = close < 0 ? sql.length : close + 2;
     } else if ((c === "'" || c === '"') && mysql) {
       i = skipEscaped(i + 1, c);
-    } else if (c === "'" && postgres && /[eE]/.test(sql[i - 1] ?? "") && !/[A-Za-z0-9_]/.test(sql[i - 2] ?? "")) {
+    } else if (
+      c === "'" &&
+      postgres &&
+      /[eE]/.test(sql[i - 1] ?? "") &&
+      !/[A-Za-z0-9_]/.test(sql[i - 2] ?? "")
+    ) {
       i = skipEscaped(i + 1, c);
     } else if (c === "'" || c === '"' || c === "`") {
       // A doubled quote inside is an escaped quote; the loop just reopens the string.
@@ -74,9 +82,12 @@ export function statementRanges(sql: string, dialect?: Dialect): Range[] {
 /** `sql` without the blank space and comments it starts with. */
 export function stripLeading(sql: string): string {
   let s = sql.trimStart();
-  for (let prev = ""; prev !== s; ) {
+  for (let prev = ""; prev !== s;) {
     prev = s;
-    s = s.replace(/^--[^\n]*(\n|$)/, "").replace(/^\/\*[\s\S]*?\*\//, "").trimStart();
+    s = s
+      .replace(/^--[^\n]*(\n|$)/, "")
+      .replace(/^\/\*[\s\S]*?\*\//, "")
+      .trimStart();
   }
   return s;
 }
@@ -86,6 +97,7 @@ export function stripLeading(sql: string): string {
  * definitions keep semicolons in their bodies, so text with one of those is sent whole.
  */
 export function splitForRun(sql: string, dialect?: Dialect): string[] {
-  if (/\bcreate\s+(or\s+(replace|alter)\s+)?(procedure|proc|function|trigger)\b/i.test(sql)) return sql.trim() ? [sql.trim()] : [];
+  if (/\bcreate\s+(or\s+(replace|alter)\s+)?(procedure|proc|function|trigger)\b/i.test(sql))
+    return sql.trim() ? [sql.trim()] : [];
   return statementRanges(sql, dialect).map((r) => sql.slice(r.start, r.end).trim());
 }

@@ -2,12 +2,24 @@ import { describe, expect, it } from "vitest";
 import type { Skill } from "../../api";
 import { BUILTIN_SLUGS, EXAMPLE_SKILLS, SKILL_LIMITS, skillError } from ".";
 
-const pii: Skill = { slug: "pii-safe", description: "Leave out personal data", instruction: "Never select email, phone or address columns." };
-const month: Skill = { slug: "this-month", description: "", instruction: "Only rows from this month." };
+const pii: Skill = {
+  slug: "pii-safe",
+  description: "Leave out personal data",
+  instruction: "Never select email, phone or address columns.",
+};
+const month: Skill = {
+  slug: "this-month",
+  description: "",
+  instruction: "Only rows from this month.",
+};
 const skills = [pii, month];
 
 describe("skillError", () => {
-  const skill = (slug: string, instruction = "Hide emails.") => ({ slug, description: "", instruction });
+  const skill = (slug: string, instruction = "Hide emails.") => ({
+    slug,
+    description: "",
+    instruction,
+  });
 
   it("accepts a valid skill, with or without a leading slash", () => {
     expect(skillError(skill("pii-2"), skills, null)).toBeNull();
@@ -38,7 +50,8 @@ describe("SKILL_LIMITS and EXAMPLE_SKILLS", () => {
   });
 
   it("every built-in slug is reserved", () => {
-    for (const slug of BUILTIN_SLUGS) expect(skillError({ slug, description: "", instruction: "x" }, [], null)).toMatch(/built-in/);
+    for (const slug of BUILTIN_SLUGS)
+      expect(skillError({ slug, description: "", instruction: "x" }, [], null)).toMatch(/built-in/);
   });
 
   it("the example skills are all valid", () => {

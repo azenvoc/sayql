@@ -15,7 +15,14 @@ export interface TopBarProps {
   pendingSuggestions?: number;
 }
 
-export function TopBar({ active, databaseName, schema, onNewConnection, onOpenSettings, pendingSuggestions = 0 }: TopBarProps) {
+export function TopBar({
+  active,
+  databaseName,
+  schema,
+  onNewConnection,
+  onOpenSettings,
+  pendingSuggestions = 0,
+}: TopBarProps) {
   return (
     <header className={styles.topbar}>
       <div className={styles.brand}>
@@ -26,10 +33,15 @@ export function TopBar({ active, databaseName, schema, onNewConnection, onOpenSe
         New connection
       </Button>
       {active && (
-        <div className={styles.activeConnection} title={active.kind === "sqlite" ? active.file : `${active.host}:${active.port}`}>
+        <div
+          className={styles.activeConnection}
+          title={active.kind === "sqlite" ? active.file : `${active.host}:${active.port}`}
+        >
           <Database size={14} color={DATABASE_KINDS[active.kind].color} />
           <span className={styles.activeName}>{active.name}</span>
-          {databaseName && active.kind !== "sqlite" && <span className={styles.activeDatabase}>{databaseName}</span>}
+          {databaseName && active.kind !== "sqlite" && (
+            <span className={styles.activeDatabase}>{databaseName}</span>
+          )}
           {schema && <Badge>{schema.dialect}</Badge>}
           <ProdBadge connection={active} />
         </div>

@@ -8,7 +8,8 @@ type Tabs = ReturnType<typeof useTabs>;
 /** Saving tabs as scripts, opening scripts in tabs, and deleting scripts without losing open SQL. */
 export function useScriptActions(scripts: Scripts, tabs: Tabs) {
   /** The saved script a tab edits, if it still exists. */
-  const scriptOf = (t: EditorTab) => (t.scriptId ? (scripts.scripts.find((s) => s.id === t.scriptId) ?? null) : null);
+  const scriptOf = (t: EditorTab) =>
+    t.scriptId ? (scripts.scripts.find((s) => s.id === t.scriptId) ?? null) : null;
 
   /** Saves the tab as a script (named `name`, or keeping its script's name) and marks it saved. */
   const saveTab = async (t: EditorTab, name?: string) => {
@@ -42,7 +43,9 @@ export function useScriptActions(scripts: Scripts, tabs: Tabs) {
   const deleteScript = async (s: Script) => {
     await scripts.remove(s.id);
     // Open tabs keep their SQL, now unsaved, so nothing is lost by accident.
-    tabs.tabs.filter((t) => t.scriptId === s.id).forEach((t) => tabs.update(t.id, { scriptId: undefined, savedSql: undefined }));
+    tabs.tabs
+      .filter((t) => t.scriptId === s.id)
+      .forEach((t) => tabs.update(t.id, { scriptId: undefined, savedSql: undefined }));
   };
 
   return { scriptOf, saveTab, openScript, deleteScript };

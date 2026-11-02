@@ -29,16 +29,33 @@ export function currentModel(settings: Settings, purpose: "typing" | "agent"): s
 }
 
 /** A small button in the Ask box that switches the model, and the provider, without opening Settings. */
-export function ModelPicker({ settings, purpose, onChange, onError, onOpenSettings, team }: ModelPickerProps) {
+export function ModelPicker({
+  settings,
+  purpose,
+  onChange,
+  onError,
+  onOpenSettings,
+  team,
+}: ModelPickerProps) {
   const menu = useContextMenu();
   if (team) return <TeamModels team={team} purpose={purpose} />;
-  return <OwnModels settings={settings} purpose={purpose} onChange={onChange} onError={onError} onOpenSettings={onOpenSettings} menu={menu} />;
+  return (
+    <OwnModels
+      settings={settings}
+      purpose={purpose}
+      onChange={onChange}
+      onError={onError}
+      onOpenSettings={onOpenSettings}
+      menu={menu}
+    />
+  );
 }
 
 /** The team's models: the one in use, and the admin's list, which can't be changed here. */
 function TeamModels({ team, purpose }: { team: TeamAiStatus; purpose: "typing" | "agent" }) {
   const menu = useContextMenu();
-  const current = (purpose === "typing" ? team.fastModel || team.defaultModel : team.defaultModel) ?? "";
+  const current =
+    (purpose === "typing" ? team.fastModel || team.defaultModel : team.defaultModel) ?? "";
   const items: MenuEntry[] = [
     { label: "Set by your team admin", disabled: true, onSelect: () => {} },
     "separator",
@@ -89,7 +106,10 @@ function OwnModels({
   const items: MenuEntry[] = [
     ...(ready.length === 1
       ? entries(ready[0])
-      : ready.map((p): MenuEntry => ({ label: p.id === settings.provider ? `${p.label} (in use)` : p.label, submenu: entries(p) }))),
+      : ready.map((p): MenuEntry => ({
+          label: p.id === settings.provider ? `${p.label} (in use)` : p.label,
+          submenu: entries(p),
+        }))),
     "separator",
     { label: "More models and providers…", icon: SettingsIcon, onSelect: onOpenSettings },
   ];
@@ -100,7 +120,11 @@ function OwnModels({
       <button
         type="button"
         className={styles.picker}
-        title={purpose === "agent" ? "The model that investigates. Click to switch." : "The model that writes SQL as you type. Click to switch."}
+        title={
+          purpose === "agent"
+            ? "The model that investigates. Click to switch."
+            : "The model that writes SQL as you type. Click to switch."
+        }
         onClick={(e) => menu.open(e, items)}
       >
         {modelLabel(settings, current)}

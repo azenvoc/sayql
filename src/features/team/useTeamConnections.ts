@@ -26,7 +26,10 @@ export function useTeamConnections(
         if (!live) return;
         latest.current.apply(list);
         // Fetched with the list on the server side; this just reads what it said.
-        commands.teamAi().then((ai) => live && latest.current.onAi(ai), () => live && latest.current.onAi(null));
+        commands.teamAi().then(
+          (ai) => live && latest.current.onAi(ai),
+          () => live && latest.current.onAi(null),
+        );
       },
       (e) => live && latest.current.onError(errorText(e)),
     );

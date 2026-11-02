@@ -12,7 +12,8 @@ afterEach(cleanup);
 describe("shortcut sheet", () => {
   it("lists the app's shortcuts, ⌘W and ⌘, included", () => {
     render(<ShortcutSheet onClose={() => {}} />);
-    for (const group of ["Anywhere", "Ask box", "SQL editor", "Navigator"]) expect(screen.getByRole("region", { name: group })).toBeTruthy();
+    for (const group of ["Anywhere", "Ask box", "SQL editor", "Navigator"])
+      expect(screen.getByRole("region", { name: group })).toBeTruthy();
     expect(screen.getByText("Close the tab")).toBeTruthy();
     expect(screen.getByText("Open Settings")).toBeTruthy();
     expect(screen.getByText(/Show these shortcuts/)).toBeTruthy();
@@ -78,7 +79,11 @@ describe("What's new", () => {
 
 describe("docs links", () => {
   it("point at pages and headings the docs site has", () => {
-    const pages = import.meta.glob("../../../docs-site/pages/*.html", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
+    const pages = import.meta.glob("../../../docs-site/pages/*.html", {
+      query: "?raw",
+      import: "default",
+      eager: true,
+    }) as Record<string, string>;
     const slugs = new Map<string, string>();
     expect(Object.keys(pages).length).toBeGreaterThan(10);
     for (const raw of Object.values(pages)) {
@@ -91,7 +96,10 @@ describe("docs links", () => {
       expect(slugs.has(slug), `docs page ${slug}`).toBe(true);
       if (anchor) {
         const headings = [...slugs.get(slug)!.matchAll(/<h[23]>(.*?)<\/h[23]>/g)].map((m) =>
-          (new DOMParser().parseFromString(m[1], "text/html").body.textContent ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+          (new DOMParser().parseFromString(m[1], "text/html").body.textContent ?? "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, ""),
         );
         expect(headings, `#${anchor} on ${slug}`).toContain(anchor);
       }

@@ -25,7 +25,9 @@ const missing = files(src).flatMap((path) =>
 );
 
 if (missing.length) {
-  console.error(`Design tokens used but not defined in src/styles/tokens.css:\n${missing.join("\n")}`);
+  console.error(
+    `Design tokens used but not defined in src/styles/tokens.css:\n${missing.join("\n")}`,
+  );
   process.exit(1);
 }
 console.log(`Design tokens: ${defined.size} defined, every use matches.`);

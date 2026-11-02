@@ -30,7 +30,15 @@ export interface StatusBarProps {
  * What can reach an AI from the active connection, in a few words; the tooltip has a line each
  * for the Ask box, Investigate, AI apps and never-send columns. Click to change it.
  */
-function PrivacyChip({ connectionId, provider, onClick }: { connectionId: string; provider: StatusBarProps["provider"]; onClick: () => void }) {
+function PrivacyChip({
+  connectionId,
+  provider,
+  onClick,
+}: {
+  connectionId: string;
+  provider: StatusBarProps["provider"];
+  onClick: () => void;
+}) {
   const access = useAgentAccess(connectionId);
   if (!access) return null;
   const s = privacySummary(access, provider);
@@ -49,13 +57,37 @@ function PrivacyChip({ connectionId, provider, onClick }: { connectionId: string
   );
 }
 
-export function StatusBar({ active, databaseName, schema, loading, connected, onConnect, modelNames, aiReady, updates, onFeedback, provider, onPrivacy }: StatusBarProps) {
+export function StatusBar({
+  active,
+  databaseName,
+  schema,
+  loading,
+  connected,
+  onConnect,
+  modelNames,
+  aiReady,
+  updates,
+  onFeedback,
+  provider,
+  onPrivacy,
+}: StatusBarProps) {
   const columns = schema?.tables.reduce((n, t) => n + t.columns.length, 0) ?? 0;
-  const state = !active || !connected ? "Not connected" : loading ? "Connecting…" : schema ? "Connected" : "Disconnected";
+  const state =
+    !active || !connected
+      ? "Not connected"
+      : loading
+        ? "Connecting…"
+        : schema
+          ? "Connected"
+          : "Disconnected";
   return (
     <footer className={styles.statusbar}>
       <span className={styles.statusItem}>
-        <Circle size={8} className={cx(styles.dot, schema && !loading && styles.dotOk)} fill="currentColor" />
+        <Circle
+          size={8}
+          className={cx(styles.dot, schema && !loading && styles.dotOk)}
+          fill="currentColor"
+        />
         {state}
         {active && ` · ${active.name}`}
         {active && databaseName && active.kind !== "sqlite" && ` / ${databaseName}`}
@@ -63,7 +95,13 @@ export function StatusBar({ active, databaseName, schema, loading, connected, on
       </span>
       {active && <PrivacyChip connectionId={active.id} provider={provider} onClick={onPrivacy} />}
       {active && !connected && (
-        <Button size="sm" variant="ghost" icon={Plug} onClick={onConnect} title={`Connect to ${active.name}`}>
+        <Button
+          size="sm"
+          variant="ghost"
+          icon={Plug}
+          onClick={onConnect}
+          title={`Connect to ${active.name}`}
+        >
           Connect
         </Button>
       )}
@@ -73,7 +111,13 @@ export function StatusBar({ active, databaseName, schema, loading, connected, on
         </span>
       )}
       <span className={styles.spacer} />
-      <Button size="sm" variant="ghost" icon={MessageSquare} onClick={onFeedback} title="Send feedback">
+      <Button
+        size="sm"
+        variant="ghost"
+        icon={MessageSquare}
+        onClick={onFeedback}
+        title="Send feedback"
+      >
         Feedback
       </Button>
       {updates.update && (
@@ -90,7 +134,9 @@ export function StatusBar({ active, databaseName, schema, loading, connected, on
       )}
       <span className={styles.statusItem}>
         <Sparkles size={11} />
-        {aiReady ? `${modelNames.typing} while typing · ${modelNames.expert} for fixes` : "AI off — set up an AI provider in Settings"}
+        {aiReady
+          ? `${modelNames.typing} while typing · ${modelNames.expert} for fixes`
+          : "AI off — set up an AI provider in Settings"}
       </span>
     </footer>
   );

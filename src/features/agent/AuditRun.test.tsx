@@ -38,9 +38,13 @@ const shop: KnowledgeSource = {
 };
 let sources: KnowledgeSource[] = [];
 let emit: (e: AuditEvent) => void = () => {};
-const startAudit = vi.fn((_run: string, _agent: string, _id: string, _db: string | null) => Promise.resolve());
+const startAudit = vi.fn((_run: string, _agent: string, _id: string, _db: string | null) =>
+  Promise.resolve(),
+);
 const cancelAudit = vi.fn((_run: string) => Promise.resolve());
-const openAuditInTerminal = vi.fn((_agent: string, _id: string, _db: string | null) => Promise.resolve());
+const openAuditInTerminal = vi.fn((_agent: string, _id: string, _db: string | null) =>
+  Promise.resolve(),
+);
 const openUrl = vi.fn();
 let savedModel = "opus";
 const setAuditModel = vi.fn((m: string) => {
@@ -89,9 +93,15 @@ afterEach(cleanup);
 it("is called Run audit, and says in plain text what it runs", () => {
   expect(auditButtonLabel(null)).toBe("Run audit");
   expect(auditButtonLabel([claude(), codex])).toBe("Run audit");
-  expect(auditButtonTitle([claude(), codex])).toBe("Runs your installed Claude Code, read-only, over this database's code");
-  expect(auditButtonTitle([claude({ ready: false, problem: "too old" }), codex])).toBe("Runs your coding agent, read-only, over this database's code");
-  expect(auditButtonTitle(null)).toBe("Runs your coding agent, read-only, over this database's code");
+  expect(auditButtonTitle([claude(), codex])).toBe(
+    "Runs your installed Claude Code, read-only, over this database's code",
+  );
+  expect(auditButtonTitle([claude({ ready: false, problem: "too old" }), codex])).toBe(
+    "Runs your coding agent, read-only, over this database's code",
+  );
+  expect(auditButtonTitle(null)).toBe(
+    "Runs your coding agent, read-only, over this database's code",
+  );
 });
 
 it("opens the run dialog from the button, or hands it off", async () => {
@@ -105,7 +115,11 @@ it("opens the run dialog from the button, or hands it off", async () => {
   render(<AuditButton target={target} />);
   fireEvent.click(await screen.findByRole("button", { name: "Run audit on Shop" }));
   expect(await screen.findByRole("dialog", { name: "Run an audit" })).toBeTruthy();
-  expect(screen.getByText(/Runs your installed Claude Code, read-only, over this database's knowledge sources/)).toBeTruthy();
+  expect(
+    screen.getByText(
+      /Runs your installed Claude Code, read-only, over this database's knowledge sources/,
+    ),
+  ).toBeTruthy();
   expect(screen.getByText("Knowledge sources")).toBeTruthy();
   expect(screen.getByText(/SayQL never reads your Claude Code credentials/)).toBeTruthy();
 });
@@ -143,7 +157,8 @@ it("needs a code source, then streams progress and ends with the suggestions to 
       runId,
       outcome: "ok",
       suggested: 6,
-      summary: "## Audit\n\nI suggested **6 notes**.\n\n- `orders.status` codes\n- see [docs](https://example.com)\n\n<img src=x onerror=alert(1)>",
+      summary:
+        "## Audit\n\nI suggested **6 notes**.\n\n- `orders.status` codes\n- see [docs](https://example.com)\n\n<img src=x onerror=alert(1)>",
       error: null,
     }),
   );
@@ -168,9 +183,15 @@ it("runs on the saved model, Sonnet by default, and remembers a new choice", asy
   savedModel = "opus";
   setAuditModel.mockClear();
   render(<AuditDialog target={target} onClose={() => {}} />);
-  const select = (await screen.findByRole("combobox", { name: "Model for the audit" })) as HTMLSelectElement;
+  const select = (await screen.findByRole("combobox", {
+    name: "Model for the audit",
+  })) as HTMLSelectElement;
   await waitFor(() => expect(select.value).toBe("opus"));
-  expect([...select.options].map((o) => o.text)).toEqual(["Sonnet (cheaper)", "Opus", "My Claude Code default"]);
+  expect([...select.options].map((o) => o.text)).toEqual([
+    "Sonnet (cheaper)",
+    "Opus",
+    "My Claude Code default",
+  ]);
   expect(screen.getByText(/counts against your own Claude plan/)).toBeTruthy();
   fireEvent.change(select, { target: { value: "sonnet" } });
   await waitFor(() => expect(setAuditModel).toHaveBeenCalledWith("sonnet"));
@@ -182,10 +203,16 @@ it("always runs on the person's own sign-in: no choice to pay with SayQL AI cred
   sources = [shop];
   savedModel = "default";
   render(<AuditDialog target={target} onClose={() => {}} />);
-  const model = (await screen.findByRole("combobox", { name: "Model for the audit" })) as HTMLSelectElement;
+  const model = (await screen.findByRole("combobox", {
+    name: "Model for the audit",
+  })) as HTMLSelectElement;
   await waitFor(() => expect(model.value).toBe("default"));
   // Every model is offered, "my default" included, and nothing about paying with credits.
-  expect([...model.options].map((o) => o.text)).toEqual(["Sonnet (cheaper)", "Opus", "My Claude Code default"]);
+  expect([...model.options].map((o) => o.text)).toEqual([
+    "Sonnet (cheaper)",
+    "Opus",
+    "My Claude Code default",
+  ]);
   expect(screen.queryByRole("combobox", { name: /Pay/ })).toBeNull();
   expect(screen.queryByText(/SayQL AI credits/)).toBeNull();
   expect(screen.getByText(/uses your own Claude Code sign-in/)).toBeTruthy();
@@ -207,10 +234,22 @@ it("cancels a run, and shows why one couldn't start", async () => {
   const runId = startAudit.mock.calls[0][0];
   fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
   expect(cancelAudit).toHaveBeenCalledWith(runId);
-  act(() => emit({ type: "done", runId, outcome: "error", suggested: 0, summary: null, error: "Claude Code isn't signed in: run `claude` once in a terminal and sign in, then try again." }));
+  act(() =>
+    emit({
+      type: "done",
+      runId,
+      outcome: "error",
+      suggested: 0,
+      summary: null,
+      error:
+        "Claude Code isn't signed in: run `claude` once in a terminal and sign in, then try again.",
+    }),
+  );
   expect(screen.getByRole("alert").textContent).toContain("isn't signed in");
 
-  startAudit.mockImplementationOnce(() => Promise.reject("Claude Code is blocked from using SayQL."));
+  startAudit.mockImplementationOnce(() =>
+    Promise.reject("Claude Code is blocked from using SayQL."),
+  );
   fireEvent.click(screen.getByRole("button", { name: "Run again" }));
   fireEvent.click(screen.getByRole("button", { name: "Start audit" }));
   expect(await screen.findByText("Claude Code is blocked from using SayQL.")).toBeTruthy();
@@ -235,7 +274,9 @@ it("asks for the connection when it has none", async () => {
     { id: "team:t1", name: "Team DB" },
   ] as never;
   render(<AuditDialog connections={connections} onClose={() => {}} />);
-  const select = (await screen.findByRole("combobox", { name: "Connection to audit" })) as HTMLSelectElement;
+  const select = (await screen.findByRole("combobox", {
+    name: "Connection to audit",
+  })) as HTMLSelectElement;
   expect([...select.options].map((o) => o.text)).toEqual(["Shop", "Analytics"]);
   fireEvent.change(select, { target: { value: "c2" } });
   await screen.findByText("/Users/me/code/shop");
@@ -262,11 +303,16 @@ const builtIn = (patch: Partial<AuditAgent> = {}): AuditAgent => ({
 it("runs Claude Code when it's installed, and offers the built-in OpenCode beside it", async () => {
   agents = [claude(), codex, builtIn()];
   sources = [shop];
-  expect(auditButtonTitle(agents)).toBe("Runs your installed Claude Code, read-only, over this database's code");
+  expect(auditButtonTitle(agents)).toBe(
+    "Runs your installed Claude Code, read-only, over this database's code",
+  );
   render(<AuditDialog target={target} onClose={() => {}} />);
   const select = (await screen.findByRole("combobox", { name: "Audit with" })) as HTMLSelectElement;
   expect(select.value).toBe("claude");
-  expect([...select.options].map((o) => o.text)).toEqual(["Claude Code", "SayQL's built-in OpenCode"]);
+  expect([...select.options].map((o) => o.text)).toEqual([
+    "Claude Code",
+    "SayQL's built-in OpenCode",
+  ]);
   await screen.findByText("/Users/me/code/shop");
   fireEvent.click(screen.getByRole("button", { name: "Start audit" }));
   await waitFor(() => expect(startAudit).toHaveBeenCalled());
@@ -276,11 +322,15 @@ it("runs Claude Code when it's installed, and offers the built-in OpenCode besid
 it("without Claude Code it runs the built-in OpenCode, saying what it downloads and showing the download", async () => {
   agents = [claude({ path: null, version: null, ready: false }), codex, builtIn()];
   sources = [shop];
-  expect(auditButtonTitle(agents)).toBe("Runs SayQL's built-in OpenCode, read-only, over this database's code");
+  expect(auditButtonTitle(agents)).toBe(
+    "Runs SayQL's built-in OpenCode, read-only, over this database's code",
+  );
   render(<AuditDialog target={target} onClose={() => {}} />);
   expect(await screen.findByText(/Runs OpenCode 1.19.5, built into SayQL, read-only/)).toBeTruthy();
   expect(screen.getByText(/SayQL AI credits · claude-sonnet-5-5/)).toBeTruthy();
-  expect(screen.getByText(/Downloads OpenCode 1.19.5 and ripgrep, about 66 MB, once, from GitHub/)).toBeTruthy();
+  expect(
+    screen.getByText(/Downloads OpenCode 1.19.5 and ripgrep, about 66 MB, once, from GitHub/),
+  ).toBeTruthy();
   expect(screen.queryByRole("combobox", { name: "Model for the audit" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Open in Terminal" })).toBeNull();
   await screen.findByText("/Users/me/code/shop");
@@ -298,7 +348,10 @@ it("says why the built-in OpenCode can't run when nothing can", async () => {
   agents = [
     claude({ path: null, version: null, ready: false }),
     codex,
-    builtIn({ ready: false, problem: "Choose a model for OpenAI in Settings → AI provider to run the audit with it." }),
+    builtIn({
+      ready: false,
+      problem: "Choose a model for OpenAI in Settings → AI provider to run the audit with it.",
+    }),
   ];
   render(<AuditDialog target={target} onClose={() => {}} />);
   expect(await screen.findByText(/Choose a model for OpenAI/)).toBeTruthy();

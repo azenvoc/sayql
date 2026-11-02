@@ -23,7 +23,11 @@ export function exampleQuestions(schema: Schema | null, isDemo: boolean): string
   const [first, second] = tables;
   const out: string[] = [];
   const dated = first.columns.find((c) => looksLikeDate(c.data_type));
-  out.push(dated ? `Show the 10 most recent ${first.name} by ${dated.name}` : `Show 10 rows from ${first.name}`);
+  out.push(
+    dated
+      ? `Show the 10 most recent ${first.name} by ${dated.name}`
+      : `Show 10 rows from ${first.name}`,
+  );
   if (second) out.push(`How many ${second.name} are there?`);
   const linked = tables.find((t: Table) => t.foreign_keys.length > 0);
   if (linked) out.push(`List ${linked.name} with their ${linked.foreign_keys[0].ref_table}`);

@@ -21,7 +21,16 @@ describe("formatCell", () => {
 
 describe("toCsv", () => {
   it("escapes quotes, commas and newlines, and leaves NULL empty", () => {
-    const csv = toCsv(result(["name", "note"], [["Ann", 'said "hi", left'], ["Bo", null], ["Cy", "a\nb"]]));
+    const csv = toCsv(
+      result(
+        ["name", "note"],
+        [
+          ["Ann", 'said "hi", left'],
+          ["Bo", null],
+          ["Cy", "a\nb"],
+        ],
+      ),
+    );
     expect(csv).toBe('name,note\nAnn,"said ""hi"", left"\nBo,\nCy,"a\nb"');
   });
 });

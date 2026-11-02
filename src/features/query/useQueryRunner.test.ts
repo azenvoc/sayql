@@ -5,11 +5,19 @@ import { QUERY_CANCELLED, WRITE_CONFIRM, type QueryResult } from "../../api";
 import { commands } from "../../api/commands";
 import { useQueryRunner } from "./useQueryRunner";
 
-vi.mock("../../api/commands", () => ({ commands: { runQuery: vi.fn(), cancelQuery: vi.fn(async () => {}) } }));
+vi.mock("../../api/commands", () => ({
+  commands: { runQuery: vi.fn(), cancelQuery: vi.fn(async () => {}) },
+}));
 const runQuery = vi.mocked(commands.runQuery);
 const cancelQuery = vi.mocked(commands.cancelQuery);
 
-const result = (n: number): QueryResult => ({ columns: ["x"], rows: Array.from({ length: n }, (_, i) => [i]), rowsAffected: null, truncated: false, elapsedMs: 1 });
+const result = (n: number): QueryResult => ({
+  columns: ["x"],
+  rows: Array.from({ length: n }, (_, i) => [i]),
+  rowsAffected: null,
+  truncated: false,
+  elapsedMs: 1,
+});
 const target = { connectionId: "c", database: null };
 
 describe("useQueryRunner", () => {
@@ -48,7 +56,14 @@ describe("useQueryRunner", () => {
     act(() => r.current.confirmWrite());
     await waitFor(() => expect(r.current.running).toBe(false));
     expect(r.current.pendingWrite).toBeNull();
-    expect(runQuery).toHaveBeenLastCalledWith(target, "DELETE FROM t", true, expect.any(String), undefined, undefined);
+    expect(runQuery).toHaveBeenLastCalledWith(
+      target,
+      "DELETE FROM t",
+      true,
+      expect.any(String),
+      undefined,
+      undefined,
+    );
     expect(r.current.error).toBeNull();
   });
 

@@ -6,7 +6,9 @@ import { commands } from "../../api/commands";
 import type { AiEventHandlers } from "../../api/events";
 import { useSqlGeneration, type SqlGenerationOptions } from "./useSqlGeneration";
 
-vi.mock("../../api/commands", () => ({ commands: { generateSql: vi.fn(), cancelGeneration: vi.fn() } }));
+vi.mock("../../api/commands", () => ({
+  commands: { generateSql: vi.fn(), cancelGeneration: vi.fn() },
+}));
 let ai: AiEventHandlers;
 vi.mock("../../api/events", () => ({
   subscribeToAi: async (h: AiEventHandlers) => {
@@ -25,7 +27,9 @@ const schema: Schema = {
       kind: "table",
       row_estimate: null,
       foreign_keys: [],
-      columns: [{ name: "id", data_type: "integer", nullable: false, primary_key: true, enum_values: null }],
+      columns: [
+        { name: "id", data_type: "integer", nullable: false, primary_key: true, enum_values: null },
+      ],
     },
   ],
 };
@@ -88,7 +92,12 @@ describe("useSqlGeneration", () => {
     act(() => ai.delta({ reqId: id, text: "FROM customers;", firstTokenMs: null }));
     act(() => ai.done({ reqId: id, error: null, totalMs: 120, cacheReadTokens: 0 }));
     expect(onSql).toHaveBeenLastCalledWith("SELECT id FROM customers;");
-    expect(result.current.status).toEqual({ kind: "done", task: "draft", firstTokenMs: 40, totalMs: 120 });
+    expect(result.current.status).toEqual({
+      kind: "done",
+      task: "draft",
+      firstTokenMs: 40,
+      totalMs: 120,
+    });
   });
 
   it("a run requested while writing waits for the SQL, then runs it", async () => {
@@ -127,8 +136,14 @@ describe("useSqlGeneration", () => {
     const { result } = setup();
     act(() => result.current.setQuestion("customers who signed up last week"));
     await act(async () => vi.advanceTimersByTime(300));
-    act(() => ai.done({ reqId: lastReqId(), error: "rate limited", totalMs: 5, cacheReadTokens: 0 }));
-    expect(result.current.status).toEqual({ kind: "error", message: "rate limited", fixInSettings: false });
+    act(() =>
+      ai.done({ reqId: lastReqId(), error: "rate limited", totalMs: 5, cacheReadTokens: 0 }),
+    );
+    expect(result.current.status).toEqual({
+      kind: "error",
+      message: "rate limited",
+      fixInSettings: false,
+    });
   });
 
   it("refuses to improve an empty query", () => {

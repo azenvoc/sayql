@@ -11,7 +11,10 @@
   font-weight: var(--font-weight-medium);
   white-space: nowrap;
   cursor: pointer;
-  transition: background var(--duration-fast), border-color var(--duration-fast), color var(--duration-fast);
+  transition:
+    background var(--duration-fast),
+    border-color var(--duration-fast),
+    color var(--duration-fast);
 }
 .button:disabled {
   opacity: 0.5;

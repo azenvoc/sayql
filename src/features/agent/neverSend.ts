@@ -29,7 +29,9 @@ export function namesColumn(entry: NeverSendEntry, table: string, column: string
 /** Whether the schema has the column an entry names: any table's for a bare name. */
 export function inSchema(entry: NeverSendEntry, schema: Schema): boolean {
   return schema.tables.some(
-    (t) => (entry.table === null || same(entry.table, t.name)) && t.columns.some((c) => same(c.name, entry.column)),
+    (t) =>
+      (entry.table === null || same(entry.table, t.name)) &&
+      t.columns.some((c) => same(c.name, entry.column)),
   );
 }
 
@@ -39,7 +41,8 @@ export const entryFor = (table: string, column: string) => `${table}.${column}`;
 /** Adds entries not already present (case-insensitive), keeping order. */
 export function addEntries(list: string[], add: string[]): string[] {
   const out = [...list];
-  for (const a of add.map((x) => x.trim()).filter(Boolean)) if (!out.some((x) => same(x, a))) out.push(a);
+  for (const a of add.map((x) => x.trim()).filter(Boolean))
+    if (!out.some((x) => same(x, a))) out.push(a);
   return out;
 }
 
@@ -79,12 +82,74 @@ export function nameWords(name: string): string[] {
 
 /** Words before `name` that make it a thing's name rather than a person's: `product_name`. */
 const THING_NAMES = new Set([
-  "table", "column", "schema", "product", "category", "file", "host", "db", "database", "event", "status", "role",
-  "plan", "type", "country", "city", "state", "company", "org", "organization", "organisation", "tenant", "team",
-  "brand", "app", "service", "job", "feature", "department", "dept", "device", "browser", "os", "model", "item",
-  "sku", "field", "key", "index", "constraint", "view", "project", "group", "region", "workspace", "account",
-  "clinic", "facility", "site", "store", "shop", "domain", "metric", "tag", "label", "permission", "queue", "topic",
-  "channel", "bucket", "test", "step", "stage", "task", "drug", "medication", "procedure", "diagnosis",
+  "table",
+  "column",
+  "schema",
+  "product",
+  "category",
+  "file",
+  "host",
+  "db",
+  "database",
+  "event",
+  "status",
+  "role",
+  "plan",
+  "type",
+  "country",
+  "city",
+  "state",
+  "company",
+  "org",
+  "organization",
+  "organisation",
+  "tenant",
+  "team",
+  "brand",
+  "app",
+  "service",
+  "job",
+  "feature",
+  "department",
+  "dept",
+  "device",
+  "browser",
+  "os",
+  "model",
+  "item",
+  "sku",
+  "field",
+  "key",
+  "index",
+  "constraint",
+  "view",
+  "project",
+  "group",
+  "region",
+  "workspace",
+  "account",
+  "clinic",
+  "facility",
+  "site",
+  "store",
+  "shop",
+  "domain",
+  "metric",
+  "tag",
+  "label",
+  "permission",
+  "queue",
+  "topic",
+  "channel",
+  "bucket",
+  "test",
+  "step",
+  "stage",
+  "task",
+  "drug",
+  "medication",
+  "procedure",
+  "diagnosis",
 ]);
 
 /** A short label for the kind of personal data a column holds, judged by its name; `null` if none. */
@@ -99,7 +164,11 @@ export function sensitiveKind(name: string): string | null {
   const contains = (list: string[]) => list.some((w) => joined.includes(w));
 
   if (joined.includes("email") || has(["mail"])) return "email";
-  if (joined.includes("phone") || has(["mobile", "cell", "tel", "telephone", "fax", "msisdn", "whatsapp"])) return "phone";
+  if (
+    joined.includes("phone") ||
+    has(["mobile", "cell", "tel", "telephone", "fax", "msisdn", "whatsapp"])
+  )
+    return "phone";
   if (joined.includes("ipaddress") || has(["ip", "ipv4", "ipv6"])) return "IP address";
   if (
     contains(["password", "passwd", "passphrase", "apikey", "secret", "credential"]) ||
@@ -120,17 +189,54 @@ export function sensitiveKind(name: string): string | null {
   )
     return "card or bank";
   if (has(["birth", "dob", "birthday", "birthdate", "born"])) return "birth date";
-  if (has(["mrn", "medical", "insurance", "chart", "patient", "diagnosis", "health", "condition", "allergy", "prescription", "symptom"]))
+  if (
+    has([
+      "mrn",
+      "medical",
+      "insurance",
+      "chart",
+      "patient",
+      "diagnosis",
+      "health",
+      "condition",
+      "allergy",
+      "prescription",
+      "symptom",
+    ])
+  )
     return "health";
   if (
     joined.includes("address") ||
-    has(["addr", "street", "zip", "zipcode", "postcode", "postal", "geo", "latitude", "longitude", "lat", "lng", "lon"])
+    has([
+      "addr",
+      "street",
+      "zip",
+      "zipcode",
+      "postcode",
+      "postal",
+      "geo",
+      "latitude",
+      "longitude",
+      "lat",
+      "lng",
+      "lon",
+    ])
   )
     return "address";
   if (
     has([
-      "firstname", "lastname", "fullname", "surname", "forename", "nickname", "username", "displayname", "maidenname",
-      "handle", "signature", "initials",
+      "firstname",
+      "lastname",
+      "fullname",
+      "surname",
+      "forename",
+      "nickname",
+      "username",
+      "displayname",
+      "maidenname",
+      "handle",
+      "signature",
+      "initials",
     ]) ||
     joined === "firstname" ||
     joined === "lastname" ||
@@ -140,7 +246,8 @@ export function sensitiveKind(name: string): string | null {
   )
     return "name";
   if (has(["salary", "wage", "wages", "income", "compensation", "payroll", "bonus"])) return "pay";
-  if (has(["note", "comment", "remark", "message", "memo", "narrative", "transcript"])) return "free text";
+  if (has(["note", "comment", "remark", "message", "memo", "narrative", "transcript"]))
+    return "free text";
   return null;
 }
 

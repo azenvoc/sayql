@@ -21,7 +21,9 @@ const customers: Table = {
 
 describe("templateSql", () => {
   it("writes a limited SELECT of every column, quoting reserved names", () => {
-    expect(templateSql(customers, "PostgreSQL", "select")).toBe('SELECT\n  id,\n  name,\n  "order"\nFROM customers\nLIMIT 100;');
+    expect(templateSql(customers, "PostgreSQL", "select")).toBe(
+      'SELECT\n  id,\n  name,\n  "order"\nFROM customers\nLIMIT 100;',
+    );
     expect(templateSql({ ...customers, schema: "dbo" }, "SQL Server", "select")).toBe(
       "SELECT TOP 100\n  id,\n  name,\n  [order]\nFROM dbo.customers;",
     );
@@ -37,7 +39,9 @@ describe("templateSql", () => {
     const update = templateSql(customers, "MySQL", "update");
     expect(update).toContain("SET\n  name = NULL, -- text\n  `order` = NULL -- text");
     expect(update.endsWith("WHERE id = NULL; -- the row to change")).toBe(true);
-    expect(templateSql(customers, "MySQL", "delete")).toBe("DELETE FROM customers\nWHERE id = NULL; -- the row to delete");
+    expect(templateSql(customers, "MySQL", "delete")).toBe(
+      "DELETE FROM customers\nWHERE id = NULL; -- the row to delete",
+    );
   });
 
   it("uses a WHERE that matches no rows when there's no primary key", () => {
@@ -49,5 +53,7 @@ describe("templateSql", () => {
 });
 
 it("counts rows", () => {
-  expect(countRowsSql(customers, "PostgreSQL")).toBe("SELECT COUNT(*) AS row_count\nFROM customers;");
+  expect(countRowsSql(customers, "PostgreSQL")).toBe(
+    "SELECT COUNT(*) AS row_count\nFROM customers;",
+  );
 });

@@ -23,7 +23,14 @@ export interface ResultsPanelProps {
 }
 
 /** The results of the last run; a tab per statement when it had several. */
-export function ResultsPanel({ outcomes, total, running, errorHint, errorAction, note }: ResultsPanelProps) {
+export function ResultsPanel({
+  outcomes,
+  total,
+  running,
+  errorHint,
+  errorAction,
+  note,
+}: ResultsPanelProps) {
   const [copied, setCopied] = useState(false);
   // Shows the statement that stopped the run, else the first, until the person picks a tab.
   const [picked, setPicked] = useState<number | null>(null);
@@ -53,12 +60,15 @@ export function ResultsPanel({ outcomes, total, running, errorHint, errorAction,
         <>
           {running && (
             <span className={styles.meta}>
-              <Spinner size={12} /> {many ? `Running ${Math.min(outcomes.length + 1, total)} of ${total}…` : "Running…"}
+              <Spinner size={12} />{" "}
+              {many ? `Running ${Math.min(outcomes.length + 1, total)} of ${total}…` : "Running…"}
             </span>
           )}
           {!running && result && (
             <span className={styles.meta}>
-              {hasGrid ? plural(result.rows.length, "row") : plural(result.rowsAffected ?? 0, "row") + " affected"}
+              {hasGrid
+                ? plural(result.rows.length, "row")
+                : plural(result.rowsAffected ?? 0, "row") + " affected"}
               {" · "}
               {result.elapsedMs} ms
               {result.truncated && <Badge tone="warning">first 5,000 rows</Badge>}
@@ -75,7 +85,10 @@ export function ResultsPanel({ outcomes, total, running, errorHint, errorAction,
             </Badge>
           )}
           {note && (
-            <Badge tone="accent" title="Part of a statement was selected, so the whole statement ran. It's highlighted in the editor.">
+            <Badge
+              tone="accent"
+              title="Part of a statement was selected, so the whole statement ran. It's highlighted in the editor."
+            >
               {note}
             </Badge>
           )}
@@ -98,7 +111,11 @@ export function ResultsPanel({ outcomes, total, running, errorHint, errorAction,
               role="tab"
               aria-selected={i === index}
               title={o.sql}
-              className={cx(styles.tab, i === index && styles.active, (o.error || o.cancelled) && styles.failed)}
+              className={cx(
+                styles.tab,
+                i === index && styles.active,
+                (o.error || o.cancelled) && styles.failed,
+              )}
               onClick={() => setPicked(i)}
             >
               <span className={styles.number}>{i + 1}</span> {statementLabel(o.sql)}
@@ -108,7 +125,8 @@ export function ResultsPanel({ outcomes, total, running, errorHint, errorAction,
       )}
       {shown?.error === QUERY_CANCELLED ? (
         <EmptyState icon={Ban} title="Query cancelled">
-          SayQL stopped it on the server{index + 1 < total ? ", and the statements after it didn't run" : ""}.
+          SayQL stopped it on the server
+          {index + 1 < total ? ", and the statements after it didn't run" : ""}.
         </EmptyState>
       ) : shown?.error ? (
         <div className={styles.error}>
@@ -127,7 +145,8 @@ export function ResultsPanel({ outcomes, total, running, errorHint, errorAction,
         </div>
       ) : shown?.cancelled ? (
         <EmptyState icon={Ban} title="Not run">
-          You cancelled this statement{index + 1 < total ? ", so the ones after it didn't run either" : ""}.
+          You cancelled this statement
+          {index + 1 < total ? ", so the ones after it didn't run either" : ""}.
         </EmptyState>
       ) : hasGrid ? (
         <DataGrid key={index} result={result} />

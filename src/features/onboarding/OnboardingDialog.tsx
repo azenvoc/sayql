@@ -1,5 +1,19 @@
 import { useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Bot, Check, Database, HardDrive, MessageSquareText, Minus, Plug, Plus, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Bot,
+  Check,
+  Database,
+  HardDrive,
+  MessageSquareText,
+  Minus,
+  Plug,
+  Plus,
+  ShieldCheck,
+  Sparkles,
+  Wand2,
+} from "lucide-react";
 import { commands, type AiProvider, type Settings } from "../../api";
 import { Alert, BrandMark, Button, Dialog, Field, Select, TextInput } from "../../components/ui";
 import { cx } from "../../lib/cx";
@@ -40,7 +54,12 @@ export interface OnboardingDialogProps {
 /** First-run setup: what SayQL is, how to use AI, pick a database, ask a first question. */
 export function OnboardingDialog(p: OnboardingDialogProps) {
   const index = STEPS.indexOf(p.step);
-  const title = { welcome: "Welcome to SayQL", ai: "How do you want to use AI?", database: "Pick a database", try: "Ask your first question" }[p.step];
+  const title = {
+    welcome: "Welcome to SayQL",
+    ai: "How do you want to use AI?",
+    database: "Pick a database",
+    try: "Ask your first question",
+  }[p.step];
 
   return (
     <Dialog title={title} onClose={p.onFinish} actions={null}>
@@ -63,15 +82,26 @@ function Footer({ children }: { children: ReactNode }) {
 
 function Welcome(p: OnboardingDialogProps) {
   const points = [
-    { icon: MessageSquareText, text: "Type what you need in plain English. SayQL writes the SQL as you type." },
-    { icon: ShieldCheck, text: "Queries run read-only. Anything that could change data asks you first." },
-    { icon: HardDrive, text: "The Ask box never sends rows from your tables to the AI: only your question, table and column names, and your notes." },
+    {
+      icon: MessageSquareText,
+      text: "Type what you need in plain English. SayQL writes the SQL as you type.",
+    },
+    {
+      icon: ShieldCheck,
+      text: "Queries run read-only. Anything that could change data asks you first.",
+    },
+    {
+      icon: HardDrive,
+      text: "The Ask box never sends rows from your tables to the AI: only your question, table and column names, and your notes.",
+    },
   ];
   return (
     <>
       <div className={styles.hero}>
         <BrandMark size={52} />
-        <p className={styles.lede}>Ask your database in plain English. Setup takes about a minute.</p>
+        <p className={styles.lede}>
+          Ask your database in plain English. Setup takes about a minute.
+        </p>
       </div>
       <ul className={styles.points}>
         {points.map(({ icon: Icon, text }) => (
@@ -97,12 +127,23 @@ function Welcome(p: OnboardingDialogProps) {
 
 /** The ways to use AI, each with what it's good and bad at. Providers are grouped under them. */
 type Way = "key" | "plan" | "credits" | "local";
-const WAYS: { id: Way; title: string; tag?: string; local?: boolean; summary: string; pros: string[]; cons: string[] }[] = [
+const WAYS: {
+  id: Way;
+  title: string;
+  tag?: string;
+  local?: boolean;
+  summary: string;
+  pros: string[];
+  cons: string[];
+}[] = [
   {
     id: "key",
     title: "Your own API key",
     summary: "Anthropic, OpenAI, Gemini and more.",
-    pros: ["Pay the provider directly, only for what you use", "Every model, and the fastest answers"],
+    pros: [
+      "Pay the provider directly, only for what you use",
+      "Every model, and the fastest answers",
+    ],
     cons: ["Needs an account and an API key with billing"],
   },
   {
@@ -111,7 +152,11 @@ const WAYS: { id: Way; title: string; tag?: string; local?: boolean; summary: st
     tag: "No API key",
     summary: "The Pro or Max plan you already have, through your installed Claude Code.",
     pros: ["No key and no extra bill", "Claude's models, on your own sign-in"],
-    cons: ["Needs Claude Code installed and signed in", "Slower: Claude Code starts for each request", "Counts against your plan's limits"],
+    cons: [
+      "Needs Claude Code installed and signed in",
+      "Slower: Claude Code starts for each request",
+      "Counts against your plan's limits",
+    ],
   },
   {
     id: "credits",
@@ -119,7 +164,10 @@ const WAYS: { id: Way; title: string; tag?: string; local?: boolean; summary: st
     tag: "No Anthropic account",
     summary: "Prepaid Claude from SayQL.",
     pros: ["No other account to set up", "Prepaid, so no surprise bills"],
-    cons: ["Requests go through SayQL to Anthropic (never stored)", "Credits are paid; ask hello@azenvoc.com"],
+    cons: [
+      "Requests go through SayQL to Anthropic (never stored)",
+      "Credits are paid; ask hello@azenvoc.com",
+    ],
   },
   {
     id: "local",
@@ -127,7 +175,10 @@ const WAYS: { id: Way; title: string; tag?: string; local?: boolean; summary: st
     local: true,
     summary: "Ollama or LM Studio.",
     pros: ["Nothing leaves your computer", "Free"],
-    cons: ["Needs a capable computer and a downloaded model", "Less accurate SQL than the large models"],
+    cons: [
+      "Needs a capable computer and a downloaded model",
+      "Less accurate SQL than the large models",
+    ],
   },
 ];
 
@@ -149,7 +200,9 @@ function PickWay(p: OnboardingDialogProps & { onPick: (w: Way) => void }) {
   const available = WAYS.filter((w) => p.settings.providers.some((x) => wayOf(x) === w.id));
   return (
     <>
-      <p className={styles.intro}>SayQL writes SQL with the AI you choose. You can change this any time in Settings.</p>
+      <p className={styles.intro}>
+        SayQL writes SQL with the AI you choose. You can change this any time in Settings.
+      </p>
       <div className={styles.ways}>
         {available.map((w) => (
           <button key={w.id} type="button" className={styles.way} onClick={() => p.onPick(w.id)}>
@@ -187,7 +240,9 @@ function SetUpWay(p: OnboardingDialogProps & { way: Way; onBack: () => void }) {
   const { settings, way } = p;
   const options = settings.providers.filter((x) => wayOf(x) === way);
   const [providerId, setProviderId] = useState(
-    options.some((x) => x.id === settings.provider) ? settings.provider : (options[0]?.id ?? settings.provider),
+    options.some((x) => x.id === settings.provider)
+      ? settings.provider
+      : (options[0]?.id ?? settings.provider),
   );
   const [apiKey, setApiKey] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
@@ -199,7 +254,10 @@ function SetUpWay(p: OnboardingDialogProps & { way: Way; onBack: () => void }) {
 
   const provider = options.find((x) => x.id === providerId) ?? options[0];
   const info = WAYS.find((w) => w.id === way)!;
-  const featured = way === "key" ? FEATURED.map((id) => options.find((x) => x.id === id)).filter(Boolean) as AiProvider[] : options;
+  const featured =
+    way === "key"
+      ? (FEATURED.map((id) => options.find((x) => x.id === id)).filter(Boolean) as AiProvider[])
+      : options;
   const more = way === "key" ? options.filter((x) => !FEATURED.includes(x.id)) : [];
   // Claude's models are fixed (its API, credits, the plan); others pick from what the service lists.
   const fixedModels = provider.api !== "openai";
@@ -248,12 +306,22 @@ function SetUpWay(p: OnboardingDialogProps & { way: Way; onBack: () => void }) {
   const needsUrl = provider.api === "openai" && !provider.defaultBaseUrl && !baseUrl.trim();
   const needsModel = !!models && !model.trim();
   const blocked = needsKey || needsUrl || needsModel || (provider.api === "plan" && !planOk);
-  const action = models || provider.api === "plan" ? "Continue" : provider.api === "anthropic" ? "Check key and continue" : "Connect";
+  const action =
+    models || provider.api === "plan"
+      ? "Continue"
+      : provider.api === "anthropic"
+        ? "Check key and continue"
+        : "Connect";
 
   return (
     <>
       <p className={styles.intro}>
-        <b>{info.title}.</b> {way === "key" ? "Pick the provider your key is from." : way === "local" && featured.length > 1 ? "Pick the app you run models in." : provider.note}
+        <b>{info.title}.</b>{" "}
+        {way === "key"
+          ? "Pick the provider your key is from."
+          : way === "local" && featured.length > 1
+            ? "Pick the app you run models in."
+            : provider.note}
       </p>
       {featured.length > 1 && (
         <div className={styles.cards} role="radiogroup" aria-label="AI provider">
@@ -285,7 +353,13 @@ function SetUpWay(p: OnboardingDialogProps & { way: Way; onBack: () => void }) {
               options={[
                 {
                   value: "",
-                  label: [...more.filter((x) => !/^other\b/i.test(x.label)).slice(0, 5).map((x) => x.label), "other…"].join(", "),
+                  label: [
+                    ...more
+                      .filter((x) => !/^other\b/i.test(x.label))
+                      .slice(0, 5)
+                      .map((x) => x.label),
+                    "other…",
+                  ].join(", "),
                 },
                 ...more.map((x) => ({ value: x.id, label: x.label })),
               ]}
@@ -312,7 +386,11 @@ function SetUpWay(p: OnboardingDialogProps & { way: Way; onBack: () => void }) {
               mono
               autoFocus
               value={apiKey}
-              placeholder={provider.hasKey ? "Saved in Keychain — paste a new key to replace it" : provider.keyPlaceholder || "Paste your API key"}
+              placeholder={
+                provider.hasKey
+                  ? "Saved in Keychain — paste a new key to replace it"
+                  : provider.keyPlaceholder || "Paste your API key"
+              }
               onChange={(e) => {
                 setApiKey(e.target.value);
                 setModels(null);
@@ -338,12 +416,26 @@ function SetUpWay(p: OnboardingDialogProps & { way: Way; onBack: () => void }) {
         </Field>
       )}
       {models && (
-        <Field label="Model" hint="A fast model keeps SQL appearing as you type. You can add a stronger one for fixes in Settings.">
+        <Field
+          label="Model"
+          hint="A fast model keeps SQL appearing as you type. You can add a stronger one for fixes in Settings."
+        >
           {(id) =>
             models.length ? (
-              <Select id={id} value={model} onChange={setModel} options={models.map((m) => ({ value: m, label: m }))} />
+              <Select
+                id={id}
+                value={model}
+                onChange={setModel}
+                options={models.map((m) => ({ value: m, label: m }))}
+              />
             ) : (
-              <TextInput id={id} mono value={model} placeholder="Model id" onChange={(e) => setModel(e.target.value)} />
+              <TextInput
+                id={id}
+                mono
+                value={model}
+                placeholder="Model id"
+                onChange={(e) => setModel(e.target.value)}
+              />
             )
           }
         </Field>
@@ -354,7 +446,13 @@ function SetUpWay(p: OnboardingDialogProps & { way: Way; onBack: () => void }) {
         <Button variant="ghost" icon={ArrowLeft} onClick={p.onBack}>
           Other ways
         </Button>
-        <Button variant="primary" icon={models || provider.api === "plan" ? Check : Plug} loading={busy} disabled={blocked} onClick={next}>
+        <Button
+          variant="primary"
+          icon={models || provider.api === "plan" ? Check : Plug}
+          loading={busy}
+          disabled={blocked}
+          onClick={next}
+        >
           {action}
         </Button>
       </Footer>
@@ -365,7 +463,9 @@ function SetUpWay(p: OnboardingDialogProps & { way: Way; onBack: () => void }) {
 function ChooseDatabase(p: OnboardingDialogProps) {
   return (
     <>
-      <p className={styles.intro}>Start with the built-in demo, or connect a database of your own. You can add more later.</p>
+      <p className={styles.intro}>
+        Start with the built-in demo, or connect a database of your own. You can add more later.
+      </p>
       <div className={styles.choices}>
         {p.demoAvailable && (
           <button type="button" className={styles.choice} onClick={p.onUseDemo}>
@@ -417,8 +517,9 @@ function AgentsPanel(p: OnboardingDialogProps) {
           Let AI agents in safely
         </h3>
         <p className={styles.agentsText}>
-          Connect Claude Code, Cursor or another AI app to SayQL, choose what they may see per connection (counts and
-          summaries by default, not your rows), and teach SayQL your database with an audit of your code.
+          Connect Claude Code, Cursor or another AI app to SayQL, choose what they may see per
+          connection (counts and summaries by default, not your rows), and teach SayQL your database
+          with an audit of your code.
         </p>
         <div className={styles.agentsActions}>
           <Button size="sm" icon={Plug} onClick={p.onOpenAiApps}>
@@ -439,8 +540,12 @@ function TryIt(p: OnboardingDialogProps) {
   if (!p.settings.aiReady) {
     return (
       <>
-        <Alert tone="warning">AI is off, so SayQL can't write SQL yet. You can still browse tables and run your own SQL.</Alert>
-        <p className={styles.intro}>Add an AI provider any time in Settings to turn plain English into SQL.</p>
+        <Alert tone="warning">
+          AI is off, so SayQL can't write SQL yet. You can still browse tables and run your own SQL.
+        </Alert>
+        <p className={styles.intro}>
+          Add an AI provider any time in Settings to turn plain English into SQL.
+        </p>
         <AgentsPanel {...p} />
         <Footer>
           <Button
@@ -461,10 +566,18 @@ function TryIt(p: OnboardingDialogProps) {
   }
   return (
     <>
-      <p className={styles.intro}>Pick one to see SayQL write the SQL and run it. Or close this and type your own question in the Ask box.</p>
+      <p className={styles.intro}>
+        Pick one to see SayQL write the SQL and run it. Or close this and type your own question in
+        the Ask box.
+      </p>
       <div className={styles.choices}>
         {p.examples.map((q) => (
-          <button key={q} type="button" className={cx(styles.choice, styles.example)} onClick={() => p.onTry(q)}>
+          <button
+            key={q}
+            type="button"
+            className={cx(styles.choice, styles.example)}
+            onClick={() => p.onTry(q)}
+          >
             <span className={styles.choiceIcon}>
               <MessageSquareText size={16} />
             </span>
@@ -474,7 +587,11 @@ function TryIt(p: OnboardingDialogProps) {
             <ArrowRight size={16} className={styles.choiceArrow} />
           </button>
         ))}
-        {p.examples.length === 0 && <p className={styles.intro}>Type a question in the Ask box above the editor to get started.</p>}
+        {p.examples.length === 0 && (
+          <p className={styles.intro}>
+            Type a question in the Ask box above the editor to get started.
+          </p>
+        )}
       </div>
       <AgentsPanel {...p} />
       <Footer>

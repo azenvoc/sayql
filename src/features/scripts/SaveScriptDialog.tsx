@@ -34,13 +34,22 @@ export function SaveScriptDialog({ initialName, onCancel, onSave }: SaveScriptDi
       actions={
         <>
           <Button onClick={onCancel}>Cancel</Button>
-          <Button variant="primary" icon={Save} onClick={save} loading={saving} disabled={!name.trim()}>
+          <Button
+            variant="primary"
+            icon={Save}
+            onClick={save}
+            loading={saving}
+            disabled={!name.trim()}
+          >
             Save
           </Button>
         </>
       }
     >
-      <Field label="Name" hint="Saved scripts appear in the Database Navigator and keep their database.">
+      <Field
+        label="Name"
+        hint="Saved scripts appear in the Database Navigator and keep their database."
+      >
         {(id) => (
           <TextInput
             id={id}

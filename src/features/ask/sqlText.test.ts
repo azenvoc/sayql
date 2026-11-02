@@ -4,8 +4,12 @@ import { cleanSql } from "./sqlText";
 describe("cleanSql", () => {
   it("leaves plain SQL alone", () => {
     expect(cleanSql("SELECT 1;")).toBe("SELECT 1;");
-    expect(cleanSql("-- assumes last 30 days\nSELECT * FROM t")).toBe("-- assumes last 30 days\nSELECT * FROM t");
-    expect(cleanSql("WITH x AS (SELECT 1)\nSELECT * FROM x")).toBe("WITH x AS (SELECT 1)\nSELECT * FROM x");
+    expect(cleanSql("-- assumes last 30 days\nSELECT * FROM t")).toBe(
+      "-- assumes last 30 days\nSELECT * FROM t",
+    );
+    expect(cleanSql("WITH x AS (SELECT 1)\nSELECT * FROM x")).toBe(
+      "WITH x AS (SELECT 1)\nSELECT * FROM x",
+    );
   });
 
   it("strips Markdown fences", () => {
@@ -13,7 +17,8 @@ describe("cleanSql", () => {
   });
 
   it("turns an explanation before the SQL into comments", () => {
-    const reply = "The user's email is on the Person table, so join those.\n\nSELECT TOP 100\n    p.PERSON_EMAIL\nFROM dbo.Person p";
+    const reply =
+      "The user's email is on the Person table, so join those.\n\nSELECT TOP 100\n    p.PERSON_EMAIL\nFROM dbo.Person p";
     expect(cleanSql(reply)).toBe(
       "-- The user's email is on the Person table, so join those.\n\nSELECT TOP 100\n    p.PERSON_EMAIL\nFROM dbo.Person p",
     );
@@ -24,6 +29,8 @@ describe("cleanSql", () => {
   });
 
   it("never touches lines after the SQL starts", () => {
-    expect(cleanSql("SELECT a\nFROM t\nWHERE note = 'The end'")).toBe("SELECT a\nFROM t\nWHERE note = 'The end'");
+    expect(cleanSql("SELECT a\nFROM t\nWHERE note = 'The end'")).toBe(
+      "SELECT a\nFROM t\nWHERE note = 'The end'",
+    );
   });
 });

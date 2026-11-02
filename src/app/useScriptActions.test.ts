@@ -12,7 +12,15 @@ vi.mock("../api/commands", () => ({
 }));
 const api = vi.mocked(commands);
 
-const stored: Script = { id: "s1", name: "Top customers", connectionId: "c", database: "shop", question: "top", sql: "SELECT 1;", updatedAt: 1 };
+const stored: Script = {
+  id: "s1",
+  name: "Top customers",
+  connectionId: "c",
+  database: "shop",
+  question: "top",
+  sql: "SELECT 1;",
+  updatedAt: 1,
+};
 
 async function setup() {
   const { result } = renderHook(() => {
@@ -38,7 +46,13 @@ describe("useScriptActions", () => {
     act(() => r.current.actions.openScript("s1"));
     expect(r.current.tabs.tabs).toHaveLength(1);
     const tab = r.current.tabs.tabs[0];
-    expect(tab).toMatchObject({ scriptId: "s1", title: "Top customers", sql: "SELECT 1;", savedSql: "SELECT 1;", target: { connectionId: "c", database: "shop" } });
+    expect(tab).toMatchObject({
+      scriptId: "s1",
+      title: "Top customers",
+      sql: "SELECT 1;",
+      savedSql: "SELECT 1;",
+      target: { connectionId: "c", database: "shop" },
+    });
 
     act(() => {
       r.current.tabs.open({ connectionId: "c", database: null });
@@ -54,8 +68,14 @@ describe("useScriptActions", () => {
       r.current.tabs.open({ connectionId: "c", database: null }, { sql: "SELECT 2;" });
     });
     await act(() => r.current.actions.saveTab(r.current.tabs.tabs[0], "Mine"));
-    expect(api.saveScript).toHaveBeenCalledWith(expect.objectContaining({ id: "", name: "Mine", sql: "SELECT 2;" }));
-    expect(r.current.tabs.tabs[0]).toMatchObject({ scriptId: "new", title: "Mine", savedSql: "SELECT 2;" });
+    expect(api.saveScript).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "", name: "Mine", sql: "SELECT 2;" }),
+    );
+    expect(r.current.tabs.tabs[0]).toMatchObject({
+      scriptId: "new",
+      title: "Mine",
+      savedSql: "SELECT 2;",
+    });
   });
 
   it("re-saves a script tab under its own id and name", async () => {
@@ -63,7 +83,9 @@ describe("useScriptActions", () => {
     act(() => r.current.actions.openScript("s1"));
     act(() => r.current.tabs.update(r.current.tabs.tabs[0].id, { sql: "SELECT 3;" }));
     await act(() => r.current.actions.saveTab(r.current.tabs.tabs[0]));
-    expect(api.saveScript).toHaveBeenCalledWith(expect.objectContaining({ id: "s1", name: "Top customers", sql: "SELECT 3;" }));
+    expect(api.saveScript).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "s1", name: "Top customers", sql: "SELECT 3;" }),
+    );
   });
 
   it("deleting a script keeps open tabs' SQL, as unsaved", async () => {
@@ -72,6 +94,10 @@ describe("useScriptActions", () => {
     await act(() => r.current.actions.deleteScript(stored));
     expect(api.deleteScript).toHaveBeenCalledWith("s1");
     expect(r.current.scripts.scripts).toEqual([]);
-    expect(r.current.tabs.tabs[0]).toMatchObject({ sql: "SELECT 1;", scriptId: undefined, savedSql: undefined });
+    expect(r.current.tabs.tabs[0]).toMatchObject({
+      sql: "SELECT 1;",
+      scriptId: undefined,
+      savedSql: undefined,
+    });
   });
 });

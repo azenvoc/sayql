@@ -8,7 +8,13 @@ const table = (name: string, cols: string[], schema: string | null = null): Tabl
   kind: "table",
   row_estimate: null,
   foreign_keys: [],
-  columns: cols.map((c, i) => ({ name: c, data_type: "text", nullable: true, primary_key: i === 0, enum_values: null })),
+  columns: cols.map((c, i) => ({
+    name: c,
+    data_type: "text",
+    nullable: true,
+    primary_key: i === 0,
+    enum_values: null,
+  })),
 });
 
 const sqlite: Schema = {
@@ -32,13 +38,19 @@ describe("fastPath", () => {
   });
 
   it("counts rows", () => {
-    expect(fastPath("how many orders are there?", sqlite)).toBe("SELECT COUNT(*) AS total_orders\nFROM orders;");
-    expect(fastPath("count customers", sqlite)).toBe("SELECT COUNT(*) AS total_customers\nFROM customers;");
+    expect(fastPath("how many orders are there?", sqlite)).toBe(
+      "SELECT COUNT(*) AS total_orders\nFROM orders;",
+    );
+    expect(fastPath("count customers", sqlite)).toBe(
+      "SELECT COUNT(*) AS total_customers\nFROM customers;",
+    );
   });
 
   it("handles first/latest N using a timestamp column", () => {
     expect(fastPath("first 5 orders", sqlite)).toBe("SELECT *\nFROM orders\nLIMIT 5;");
-    expect(fastPath("latest 20 orders", sqlite)).toBe("SELECT *\nFROM orders\nORDER BY ordered_at DESC\nLIMIT 20;");
+    expect(fastPath("latest 20 orders", sqlite)).toBe(
+      "SELECT *\nFROM orders\nORDER BY ordered_at DESC\nLIMIT 20;",
+    );
     expect(fastPath("show me the 3 newest customers", sqlite)).toBe(
       "SELECT *\nFROM customers\nORDER BY signed_up_at DESC\nLIMIT 3;",
     );
@@ -53,7 +65,10 @@ describe("fastPath", () => {
   });
 
   it("quotes reserved words and keeps non-public schemas", () => {
-    const pg: Schema = { dialect: "PostgreSQL", tables: [table("user", ["id"]), table("events", ["id"], "analytics")] };
+    const pg: Schema = {
+      dialect: "PostgreSQL",
+      tables: [table("user", ["id"]), table("events", ["id"], "analytics")],
+    };
     expect(fastPath("users", pg)).toBe('SELECT *\nFROM "user"\nLIMIT 100;');
     expect(fastPath("show all users", pg)).toBe('SELECT *\nFROM "user";');
     expect(fastPath("events", pg)).toBe("SELECT *\nFROM analytics.events\nLIMIT 100;");
@@ -67,8 +82,12 @@ describe("fastPath", () => {
       tables: [table("Orders", ["OrderID", "CreatedAt"], "dbo"), table("user", ["id"], "sales")],
     };
     expect(fastPath("show orders", ms)).toBe("SELECT TOP 100 *\nFROM dbo.Orders;");
-    expect(fastPath("latest 5 orders", ms)).toBe("SELECT TOP 5 *\nFROM dbo.Orders\nORDER BY CreatedAt DESC;");
-    expect(fastPath("how many orders", ms)).toBe("SELECT COUNT(*) AS total_orders\nFROM dbo.Orders;");
+    expect(fastPath("latest 5 orders", ms)).toBe(
+      "SELECT TOP 5 *\nFROM dbo.Orders\nORDER BY CreatedAt DESC;",
+    );
+    expect(fastPath("how many orders", ms)).toBe(
+      "SELECT COUNT(*) AS total_orders\nFROM dbo.Orders;",
+    );
     expect(fastPath("sales users", ms)).toBe("SELECT TOP 100 *\nFROM sales.[user];");
   });
 });

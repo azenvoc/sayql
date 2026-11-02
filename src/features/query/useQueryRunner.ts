@@ -38,7 +38,10 @@ export interface QueryContext {
  * data waits for confirmation. `onFailure` hears about the error of a single-statement
  * run, e.g. to offer an AI fix (a script is the person's own, so it's left to them).
  */
-export function useQueryRunner(target: Target | null, onFailure?: (sql: string, error: string) => void): QueryRunner {
+export function useQueryRunner(
+  target: Target | null,
+  onFailure?: (sql: string, error: string) => void,
+): QueryRunner {
   const failure = useLatest(onFailure);
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
   const [total, setTotal] = useState(0);
@@ -90,7 +93,14 @@ export function useQueryRunner(target: Target | null, onFailure?: (sql: string, 
           const sid = crypto.randomUUID();
           statementId.current = sid;
           try {
-            return await commands.runQuery(target, s, allowWrite, sid, context?.source, context?.question);
+            return await commands.runQuery(
+              target,
+              s,
+              allowWrite,
+              sid,
+              context?.source,
+              context?.question,
+            );
           } finally {
             if (statementId.current === sid) statementId.current = null;
           }
@@ -106,7 +116,8 @@ export function useQueryRunner(target: Target | null, onFailure?: (sql: string, 
       if (id !== runId.current) return;
       setRunning(false);
       const last = out[out.length - 1];
-      if (statements.length === 1 && last?.error && last.error !== QUERY_CANCELLED && !last.refused) failure.current?.(last.sql, last.error);
+      if (statements.length === 1 && last?.error && last.error !== QUERY_CANCELLED && !last.refused)
+        failure.current?.(last.sql, last.error);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [target, failure],

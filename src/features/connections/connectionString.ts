@@ -18,7 +18,8 @@ const URL_KINDS: Record<string, DatabaseKind> = {
   file: "sqlite",
 };
 
-const TRUE = /^(true|yes|1|on|mandatory|strict|require|required|verify[-_]?ca|verify[-_]?full|verify[-_]?identity)$/i;
+const TRUE =
+  /^(true|yes|1|on|mandatory|strict|require|required|verify[-_]?ca|verify[-_]?full|verify[-_]?identity)$/i;
 const FALSE = /^(false|no|0|off|optional|disable|disabled|prefer|preferred|allow)$/i;
 
 /**
@@ -41,7 +42,12 @@ export function parseConnectionString(raw: string): ParsedConnectionString | nul
   return null;
 }
 
-function finish(kind: DatabaseKind, f: Partial<ConnectionConfig>, password: string | null, ssl?: boolean): ParsedConnectionString {
+function finish(
+  kind: DatabaseKind,
+  f: Partial<ConnectionConfig>,
+  password: string | null,
+  ssl?: boolean,
+): ParsedConnectionString {
   const host = f.host ?? "";
   const azure = /\.database\.windows\.net$/i.test(host);
   return {
@@ -107,14 +113,19 @@ function url(text: string, kind: DatabaseKind): ParsedConnectionString | null {
 /** sqlserver://host\instance:1433;databaseName=x;user=y;password=z;encrypt=true (JDBC), or sqlserver://u:p@host/db. */
 function sqlServerUrl(text: string): ParsedConnectionString | null {
   const body = text.replace(/^[a-z]+:\/\//i, "");
-  if (!body.includes(";") && body.includes("@")) return url(text.replace(/^[a-z]+:/i, "postgres:"), "mssql");
+  if (!body.includes(";") && body.includes("@"))
+    return url(text.replace(/^[a-z]+:/i, "postgres:"), "mssql");
   const [hostPart, ...rest] = body.split(";");
   const kv = pairs(rest.join(";"), ";");
   const [hostAndInstance, p] = hostPart.split(":");
   const parsed = keyValueFields(kv);
   return finish(
     "mssql",
-    { ...parsed.fields, host: parsed.fields.host || hostAndInstance.split("\\")[0], port: parsed.fields.port ?? port(p) },
+    {
+      ...parsed.fields,
+      host: parsed.fields.host || hostAndInstance.split("\\")[0],
+      port: parsed.fields.port ?? port(p),
+    },
     parsed.password,
     parsed.ssl,
   );
@@ -124,13 +135,19 @@ function sqlServerUrl(text: string): ParsedConnectionString | null {
 function sqlite(text: string): ParsedConnectionString | null {
   const path = decode(text.replace(/^(sqlite|file):(\/\/)?/i, "").split("?")[0]);
   if (!path) return null;
-  return { fields: { kind: "sqlite", file: path, host: "", port: null, ssl: false, trustCert: false }, password: null };
+  return {
+    fields: { kind: "sqlite", file: path, host: "", port: null, ssl: false, trustCert: false },
+    password: null,
+  };
 }
 
 function pairs(text: string, sep: string): Map<string, string> {
   const map = new Map<string, string>();
   // libpq quotes values with spaces: password='a b'. Semicolon strings may brace them: Password={a;b}.
-  const parts = sep === " " ? (text.match(/[^\s=]+\s*=\s*(?:'(?:[^'\\]|\\.)*'|\S*)/g) ?? []) : (text.match(/[^;]*?=\s*(?:\{[^}]*\}|[^;]*)/g) ?? []);
+  const parts =
+    sep === " "
+      ? (text.match(/[^\s=]+\s*=\s*(?:'(?:[^'\\]|\\.)*'|\S*)/g) ?? [])
+      : (text.match(/[^;]*?=\s*(?:\{[^}]*\}|[^;]*)/g) ?? []);
   for (const part of parts.map((p) => p.replace(/^;/, ""))) {
     const i = part.indexOf("=");
     if (i <= 0) continue;
@@ -161,7 +178,13 @@ function keyValueFields(kv: Map<string, string>) {
   if (comma) [host, p] = [comma[1], p ?? port(comma[2])];
   host = host.split("\\")[0];
   return {
-    fields: { host, port: p, database: get(kv, DB) ?? "", user: get(kv, USER) ?? "", trustCert: flag(kv.get("trustservercertificate")) ?? false },
+    fields: {
+      host,
+      port: p,
+      database: get(kv, DB) ?? "",
+      user: get(kv, USER) ?? "",
+      trustCert: flag(kv.get("trustservercertificate")) ?? false,
+    },
     password: get(kv, PASSWORD) ?? null,
     ssl: flag(kv.get("encrypt") ?? kv.get("sslmode") ?? kv.get("ssl")),
   };
@@ -181,8 +204,18 @@ function guessKind(kv: Map<string, string>, semicolons: boolean, p: number | nul
   if (!semicolons || kv.has("dbname")) return "postgres"; // libpq
   if (p === 5432) return "postgres";
   if (p === 3306) return "mysql";
-  if (["initialcatalog", "datasource", "trustservercertificate", "encrypt", "integratedsecurity"].some((k) => kv.has(k))) return "mssql";
-  if (/^tcp:/i.test(get(kv, HOST) ?? "") || /\.database\.windows\.net/i.test(get(kv, HOST) ?? "")) return "mssql";
+  if (
+    [
+      "initialcatalog",
+      "datasource",
+      "trustservercertificate",
+      "encrypt",
+      "integratedsecurity",
+    ].some((k) => kv.has(k))
+  )
+    return "mssql";
+  if (/^tcp:/i.test(get(kv, HOST) ?? "") || /\.database\.windows\.net/i.test(get(kv, HOST) ?? ""))
+    return "mssql";
   if (kv.has("host") || kv.has("username")) return "postgres"; // Npgsql
   if (kv.has("uid") || kv.has("pwd") || kv.has("sslmode")) return "mysql"; // MySQL Connector/NET
   return "mssql";

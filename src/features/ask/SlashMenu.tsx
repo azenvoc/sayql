@@ -1,6 +1,16 @@
 import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { BookOpen, Bot, CornerDownRight, Plus, RotateCcw, ScrollText, Wand2, Wrench, type LucideIcon } from "lucide-react";
+import {
+  BookOpen,
+  Bot,
+  CornerDownRight,
+  Plus,
+  RotateCcw,
+  ScrollText,
+  Wand2,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 import { cx } from "../../lib/cx";
 import type { BuiltinCommand, MenuItem } from "./slashCommands";
 import styles from "./SlashMenu.module.css";
@@ -40,7 +50,9 @@ export function SlashMenu({ id, items, active, anchor, onActiveChange, onPick }:
   }, [anchor, items.length]);
 
   useLayoutEffect(() => {
-    list.current?.querySelector(`#${CSS.escape(itemId(id, active))}`)?.scrollIntoView({ block: "nearest" });
+    list.current
+      ?.querySelector(`#${CSS.escape(itemId(id, active))}`)
+      ?.scrollIntoView({ block: "nearest" });
   }, [id, active]);
 
   if (!pos) return null;
@@ -57,7 +69,11 @@ export function SlashMenu({ id, items, active, anchor, onActiveChange, onPick }:
     >
       {items.map((it, i) => {
         const create = it.kind === "create";
-        const Icon = create ? Plus : it.kind === "builtin" ? ICONS[it.slug as BuiltinCommand] : ScrollText;
+        const Icon = create
+          ? Plus
+          : it.kind === "builtin"
+            ? ICONS[it.slug as BuiltinCommand]
+            : ScrollText;
         return (
           <div key={create ? "+create" : it.slug}>
             {create && <div className={styles.separator} role="separator" />}

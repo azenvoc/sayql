@@ -4,7 +4,10 @@ import type { Schema, Table } from "../../api";
 import { qualifiedName, selectAllSql, selectRowsSql, tableRef } from "../schema";
 
 function normalize(s: string): string {
-  return s.toLowerCase().replace(/[_\s]+/g, " ").trim();
+  return s
+    .toLowerCase()
+    .replace(/[_\s]+/g, " ")
+    .trim();
 }
 
 /** Singular/plural spellings of a table name, e.g. "categories" ↔ "category". */
@@ -28,19 +31,29 @@ function findTable(schema: Schema, phrase: string): Table | null {
 
 /** The column to sort by for "latest": a creation timestamp if there is one, else the primary key. */
 function recencyColumn(t: Table): string | null {
-  const timestamp = t.columns.find((c) => /^(created|inserted|ordered|signed_?up|updated)(_?at|_?on|_?date)?$/i.test(c.name));
+  const timestamp = t.columns.find((c) =>
+    /^(created|inserted|ordered|signed_?up|updated)(_?at|_?on|_?date)?$/i.test(c.name),
+  );
   return (timestamp ?? t.columns.find((c) => c.primary_key))?.name ?? null;
 }
 
-const COUNT = /^(?:count(?: of)?(?: all)?|how many|number of|total number of) (?:the )?(.+?)(?: are there| do we have| exist| in total| total)?$/;
+const COUNT =
+  /^(?:count(?: of)?(?: all)?|how many|number of|total number of) (?:the )?(.+?)(?: are there| do we have| exist| in total| total)?$/;
 const ORDER_WORDS = "first|last|latest|newest|recent|most recent";
 // "top N" is deliberately absent: it implies a ranking, which needs the AI.
-const FIRST_N = new RegExp(`^(?:show |list |get |display )?(?:me )?(?:the )?(${ORDER_WORDS})? ?(\\d{1,5}) (?:(${ORDER_WORDS}) )?(.+)$`);
-const LIST = /^(?:show|list|get|display|see|view|open|select)? ?(?:me )?(?:all |every |the )*(?:rows (?:in|from) )?(.+?)(?: table)?$/;
+const FIRST_N = new RegExp(
+  `^(?:show |list |get |display )?(?:me )?(?:the )?(${ORDER_WORDS})? ?(\\d{1,5}) (?:(${ORDER_WORDS}) )?(.+)$`,
+);
+const LIST =
+  /^(?:show|list|get|display|see|view|open|select)? ?(?:me )?(?:all |every |the )*(?:rows (?:in|from) )?(.+?)(?: table)?$/;
 
 export function fastPath(question: string, schema: Schema | null): string | null {
   if (!schema) return null;
-  const q = question.trim().toLowerCase().replace(/[?.!]+$/, "").replace(/\s+/g, " ");
+  const q = question
+    .trim()
+    .toLowerCase()
+    .replace(/[?.!]+$/, "")
+    .replace(/\s+/g, " ");
   if (!q) return null;
   const { dialect } = schema;
   let m: RegExpMatchArray | null;
@@ -68,7 +81,10 @@ export function fastPath(question: string, schema: Schema | null): string | null
   if ((m = q.match(LIST))) {
     const t = findTable(schema, m[1]);
     // "all users" means all of them (the app caps what it shows); "users" alone gets a 100-row preview.
-    if (t) return /\b(all|every)\b/.test(q) ? `SELECT *\nFROM ${tableRef(t, dialect)};` : selectAllSql(t, dialect);
+    if (t)
+      return /\b(all|every)\b/.test(q)
+        ? `SELECT *\nFROM ${tableRef(t, dialect)};`
+        : selectAllSql(t, dialect);
   }
   return null;
 }

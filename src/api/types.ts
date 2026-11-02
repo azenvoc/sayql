@@ -440,11 +440,30 @@ export type AgentEvent =
   | { type: "step"; runId: string; step: AgentStep }
   | { type: "send"; runId: string; stepId: number; payload: string }
   | { type: "question"; runId: string; stepId: number; question: string; choices: string[] }
-  | { type: "progress"; runId: string; turns: number; maxTurns: number; queries: number; maxQueries: number; usage: AgentUsage; elapsedMs: number }
-  | { type: "done"; runId: string; answer: AgentAnswer | null; error: string | null; stopped: boolean };
+  | {
+      type: "progress";
+      runId: string;
+      turns: number;
+      maxTurns: number;
+      queries: number;
+      maxQueries: number;
+      usage: AgentUsage;
+      elapsedMs: number;
+    }
+  | {
+      type: "done";
+      runId: string;
+      answer: AgentAnswer | null;
+      error: string | null;
+      stopped: boolean;
+    };
 
 /** The person's reply to a paused run. */
-export type AgentReply = { type: "go"; plan: string[] | null } | { type: "send" } | { type: "skip" } | { type: "answer"; text: string };
+export type AgentReply =
+  | { type: "go"; plan: string[] | null }
+  | { type: "send" }
+  | { type: "skip" }
+  | { type: "answer"; text: string };
 
 /** What Settings saves for one provider. `apiKey: null` keeps the saved key. */
 export interface ProviderChoice {

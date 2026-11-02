@@ -7,7 +7,15 @@ import { SHORTCUT, type VoicePhase } from "./voicePhase";
 import styles from "./VoiceControls.module.css";
 
 /** The mic on the question line: starts and stops recording. */
-export function VoiceButton({ phase, disabled, onToggle }: { phase: VoicePhase; disabled?: boolean; onToggle: () => void }) {
+export function VoiceButton({
+  phase,
+  disabled,
+  onToggle,
+}: {
+  phase: VoicePhase;
+  disabled?: boolean;
+  onToggle: () => void;
+}) {
   const recording = phase.kind === "recording" || phase.kind === "starting";
   return (
     <IconButton
@@ -52,7 +60,11 @@ function LevelMeter({ level }: { level: number }) {
   return (
     <span className={styles.meter} aria-hidden>
       {[0.5, 0.8, 1, 0.8, 0.5].map((shape, i) => (
-        <span key={i} className={styles.bar} style={{ transform: `scaleY(${0.2 + 0.8 * loud * shape})` }} />
+        <span
+          key={i}
+          className={styles.bar}
+          style={{ transform: `scaleY(${0.2 + 0.8 * loud * shape})` }}
+        />
       ))}
     </span>
   );
@@ -74,7 +86,10 @@ export function VoicePanel({
 }) {
   if (phase.kind === "message") {
     return (
-      <div className={cx(styles.panel, phase.tone === "error" && styles.error)} role={phase.tone === "error" ? "alert" : "status"}>
+      <div
+        className={cx(styles.panel, phase.tone === "error" && styles.error)}
+        role={phase.tone === "error" ? "alert" : "status"}
+      >
         <span className={styles.text}>{phase.text}</span>
         <IconButton icon={X} label="Close" size="sm" onClick={onClose} />
       </div>
@@ -86,9 +101,16 @@ export function VoicePanel({
     return (
       <div className={styles.panel} role="status">
         <span className={styles.text}>
-          Downloading voice model… {megabytes(model.received)} of {megabytes(model.total || model.bytes)}
+          Downloading voice model… {megabytes(model.received)} of{" "}
+          {megabytes(model.total || model.bytes)}
         </span>
-        <span className={styles.progress} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+        <span
+          className={styles.progress}
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
           <span className={styles.progressFill} style={{ width: `${pct}%` }} />
         </span>
         <Button size="sm" variant="ghost" onClick={onCancelDownload}>
@@ -98,10 +120,14 @@ export function VoicePanel({
     );
   }
   return (
-    <div className={cx(styles.panel, model.error && styles.error)} role={model.error ? "alert" : "status"}>
+    <div
+      className={cx(styles.panel, model.error && styles.error)}
+      role={model.error ? "alert" : "status"}
+    >
       <Mic size={13} className={styles.icon} />
       <span className={styles.text}>
-        {model.error ?? `Voice needs a one-time ${megabytes(model.bytes)} download. It runs on this computer.`}
+        {model.error ??
+          `Voice needs a one-time ${megabytes(model.bytes)} download. It runs on this computer.`}
       </span>
       <Button size="sm" variant="primary" icon={Download} onClick={onDownload}>
         {model.error ? "Try again" : "Download"}

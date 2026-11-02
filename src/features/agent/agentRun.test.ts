@@ -23,7 +23,12 @@ const step = (id: number, patch: Partial<AgentStep> = {}): AgentStep => ({
 const ev = (e: AgentEvent) => ({ type: "event" as const, event: e });
 
 describe("agentReducer", () => {
-  const started = agentReducer(IDLE, { type: "start", runId: "r1", question: "Who owns it?", keepSteps: false });
+  const started = agentReducer(IDLE, {
+    type: "start",
+    runId: "r1",
+    question: "Who owns it?",
+    keepSteps: false,
+  });
 
   it("follows a run from plan to answer", () => {
     let s: AgentRunState = started;
@@ -33,7 +38,14 @@ describe("agentReducer", () => {
     s = agentReducer(s, { type: "replied" });
     expect(s.pending).toBeNull();
     s = agentReducer(s, ev({ type: "step", runId: "r1", step: step(1) }));
-    s = agentReducer(s, ev({ type: "step", runId: "r1", step: step(1, { status: "done", rows: [[1]], rowCount: 1 }) }));
+    s = agentReducer(
+      s,
+      ev({
+        type: "step",
+        runId: "r1",
+        step: step(1, { status: "done", rows: [[1]], rowCount: 1 }),
+      }),
+    );
     expect(s.steps).toHaveLength(1);
     expect(s.steps[0].status).toBe("done");
     s = agentReducer(s, ev({ type: "send", runId: "r1", stepId: 1, payload: "Step 1: 1 rows." }));
@@ -71,14 +83,26 @@ describe("agentReducer", () => {
     let s = agentReducer(started, ev({ type: "step", runId: "other", step: step(9) }));
     expect(s.steps).toHaveLength(0);
     s = agentReducer(s, ev({ type: "step", runId: "r1", step: step(1) }));
-    s = agentReducer(s, ev({ type: "done", runId: "r1", answer: null, error: null, stopped: true }));
+    s = agentReducer(
+      s,
+      ev({ type: "done", runId: "r1", answer: null, error: null, stopped: true }),
+    );
     expect(s.phase).toBe("stopped");
     expect(s.steps[0].status).toBe("error");
   });
 
   it("keeps steps for a follow-up and stores no rows", () => {
-    const s = agentReducer(started, ev({ type: "step", runId: "r1", step: step(1, { status: "done", rows: [["Dana"]], sent: "x" }) }));
-    expect(agentReducer(s, { type: "start", runId: "r2", question: "and?", keepSteps: true }).steps).toHaveLength(1);
+    const s = agentReducer(
+      started,
+      ev({
+        type: "step",
+        runId: "r1",
+        step: step(1, { status: "done", rows: [["Dana"]], sent: "x" }),
+      }),
+    );
+    expect(
+      agentReducer(s, { type: "start", runId: "r2", question: "and?", keepSteps: true }).steps,
+    ).toHaveLength(1);
     const stored = forStorage(s);
     expect(stored.steps[0].rows).toEqual([]);
     expect(stored.steps[0].sent).toBeNull();

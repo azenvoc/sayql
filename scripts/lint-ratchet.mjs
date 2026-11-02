@@ -28,7 +28,12 @@ function clippy() {
   const out = execFileSync(
     "cargo",
     ["clippy", "--all-targets", "--message-format=json", "--quiet"],
-    { cwd: join(root, "src-tauri"), encoding: "utf8", maxBuffer: 1 << 30, stdio: ["ignore", "pipe", "inherit"] },
+    {
+      cwd: join(root, "src-tauri"),
+      encoding: "utf8",
+      maxBuffer: 1 << 30,
+      stdio: ["ignore", "pipe", "inherit"],
+    },
   );
   const seen = new Set();
   const counts = {};
@@ -97,7 +102,9 @@ if (against) {
     }
   }
   if (raised.length) {
-    console.error(`lint-baseline.json raises counts main already tracks. Fix the warnings instead:\n${raised.join("\n")}`);
+    console.error(
+      `lint-baseline.json raises counts main already tracks. Fix the warnings instead:\n${raised.join("\n")}`,
+    );
     process.exit(1);
   }
   console.log("lint-baseline.json: no count raised against main.");
@@ -119,7 +126,9 @@ for (const [tool, run] of Object.entries(tools)) {
   const total = Object.values(now).reduce((a, b) => a + b, 0);
   if (more.length && !init) {
     failed = true;
-    console.error(`${tool}: new warnings. Fix them; see AGENTS.md for the rules.\n${more.join("\n")}`);
+    console.error(
+      `${tool}: new warnings. Fix them; see AGENTS.md for the rules.\n${more.join("\n")}`,
+    );
   } else if (update) {
     baseline[tool] = Object.fromEntries(Object.entries(now).sort(([a], [b]) => a.localeCompare(b)));
     console.log(`${tool}: baseline written (${total} warnings left to fix).`);

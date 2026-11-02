@@ -24,14 +24,25 @@ export function GetStarted({ items, onHide }: { items: ChecklistItem[]; onHide: 
   return (
     <section className={styles.panel} aria-label="Get started">
       <header className={styles.header}>
-        <button type="button" className={styles.toggle} aria-expanded={open} onClick={() => setOpen(!open)}>
+        <button
+          type="button"
+          className={styles.toggle}
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+        >
           {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
           Get started
           <span className={styles.count}>
             {done} of {items.length}
           </span>
         </button>
-        <button type="button" className={styles.hide} title="Hide Get started" aria-label="Hide Get started" onClick={onHide}>
+        <button
+          type="button"
+          className={styles.hide}
+          title="Hide Get started"
+          aria-label="Hide Get started"
+          onClick={onHide}
+        >
           <X size={12} />
         </button>
       </header>
@@ -47,7 +58,11 @@ export function GetStarted({ items, onHide }: { items: ChecklistItem[]; onHide: 
               </span>
               <span className={styles.title}>{i.title}</span>
               {!i.done && (
-                <button type="button" className={cx(styles.action, i === next && styles.actionNext)} onClick={i.onAction}>
+                <button
+                  type="button"
+                  className={cx(styles.action, i === next && styles.actionNext)}
+                  onClick={i.onAction}
+                >
                   {i.action}
                 </button>
               )}

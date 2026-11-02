@@ -15,7 +15,13 @@ vi.mock("../../api", async (orig) => ({
     acceptNoteSuggestion: (id: string) => {
       const s = waiting.find((x) => x.id === id)!;
       waiting = waiting.filter((x) => x.id !== id);
-      const note = { id: "n1", connectionId: s.connectionId, database: s.database, text: s.text, updatedAt: 1 };
+      const note = {
+        id: "n1",
+        connectionId: s.connectionId,
+        database: s.database,
+        text: s.text,
+        updatedAt: 1,
+      };
       saved.push(note);
       return Promise.resolve(note);
     },
@@ -45,7 +51,10 @@ const suggestion = (id: string, text: string, app = "Claude Code"): NoteSuggesti
 });
 
 it("shows the app, note and evidence, and accepts or dismisses", async () => {
-  waiting = [suggestion("s1", "orders_legacy is unused; use orders_v2"), suggestion("s2", "status 3 = cancelled", "Cursor")];
+  waiting = [
+    suggestion("s1", "orders_legacy is unused; use orders_v2"),
+    suggestion("s2", "status 3 = cancelled", "Cursor"),
+  ];
   const changed = vi.fn();
   window.addEventListener(SUGGESTIONS_CHANGED, changed);
   render(<Suggestions />);
@@ -56,7 +65,9 @@ it("shows the app, note and evidence, and accepts or dismisses", async () => {
   expect(screen.getAllByText(/Shop · shop/)).toHaveLength(2);
 
   fireEvent.click(screen.getAllByRole("button", { name: "Accept" })[0]);
-  await waitFor(() => expect(screen.queryByText("orders_legacy is unused; use orders_v2")).toBeNull());
+  await waitFor(() =>
+    expect(screen.queryByText("orders_legacy is unused; use orders_v2")).toBeNull(),
+  );
   expect(saved.map((n) => n.text)).toEqual(["orders_legacy is unused; use orders_v2"]);
   expect(changed).toHaveBeenCalled();
 
@@ -70,8 +81,18 @@ it("shows the app, note and evidence, and accepts or dismisses", async () => {
 
 it("shows what a replacement or removal changes, and the empty state teaches the audit", async () => {
   waiting = [
-    { ...suggestion("s3", "status 3 = refunded; 4 = cancelled"), replaces: "n9", replacedText: "status 3 = cancelled", remove: false },
-    { ...suggestion("s4", "orders_v1 was dropped from the code"), replaces: "n8", replacedText: "orders_v1 is the live orders table", remove: true },
+    {
+      ...suggestion("s3", "status 3 = refunded; 4 = cancelled"),
+      replaces: "n9",
+      replacedText: "status 3 = cancelled",
+      remove: false,
+    },
+    {
+      ...suggestion("s4", "orders_v1 was dropped from the code"),
+      replaces: "n8",
+      replacedText: "orders_v1 is the live orders table",
+      remove: true,
+    },
   ];
   render(<Suggestions />);
   expect(await screen.findByText("status 3 = cancelled")).toBeTruthy();
@@ -93,8 +114,16 @@ it("shows what a replacement or removal changes, and the empty state teaches the
 });
 
 it("shows why an accept failed", async () => {
-  const onAccept = vi.fn(() => Promise.reject("A note describes the database, not the data in it."));
-  render(<NoteSuggestions suggestions={[suggestion("s1", "x")]} onAccept={onAccept} onDismiss={vi.fn()} />);
+  const onAccept = vi.fn(() =>
+    Promise.reject("A note describes the database, not the data in it."),
+  );
+  render(
+    <NoteSuggestions
+      suggestions={[suggestion("s1", "x")]}
+      onAccept={onAccept}
+      onDismiss={vi.fn()}
+    />,
+  );
   fireEvent.click(screen.getByRole("button", { name: "Accept" }));
   expect(await screen.findByText(/describes the database/)).toBeTruthy();
 });
@@ -103,6 +132,8 @@ it("matches suggestions to the open database", () => {
   const s = suggestion("s1", "x");
   expect(suggestionFor(s, { connectionId: "c1", database: "shop" })).toBe(true);
   expect(suggestionFor(s, { connectionId: "c1", database: null })).toBe(false);
-  expect(suggestionFor({ ...s, database: null }, { connectionId: "c1", database: null })).toBe(true);
+  expect(suggestionFor({ ...s, database: null }, { connectionId: "c1", database: null })).toBe(
+    true,
+  );
   expect(suggestionFor(s, null)).toBe(false);
 });

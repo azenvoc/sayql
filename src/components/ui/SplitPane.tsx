@@ -17,7 +17,15 @@ export interface SplitPaneProps {
 }
 
 /** Two panes with a draggable divider. */
-export function SplitPane({ direction, initialSize, minSize = 120, maxSize = 900, persistKey, first, second }: SplitPaneProps) {
+export function SplitPane({
+  direction,
+  initialSize,
+  minSize = 120,
+  maxSize = 900,
+  persistKey,
+  first,
+  second,
+}: SplitPaneProps) {
   const [size, setSize] = usePersistentState(`split:${persistKey}`, initialSize);
   const [dragging, setDragging] = useState(false);
   const horizontal = direction === "horizontal";
