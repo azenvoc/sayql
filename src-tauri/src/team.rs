@@ -79,6 +79,9 @@ pub struct ServerInfo {
     pub users: Option<u32>,
     #[serde(default)]
     pub user_limit: Option<u32>,
+    /// What the server can do beyond queries, such as `knowledge` (0.5.0). Older servers omit it.
+    #[serde(default)]
+    pub features: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -569,6 +572,14 @@ impl TeamClient {
             .send()
             .await
             .map_err(|e| (None, unreachable(&self.server, e)))?;
+        self.read(resp).await
+    }
+
+    /// A reply's body as `T`, or the server's error with its code. A revoked token is forgotten.
+    async fn read<T: DeserializeOwned>(
+        &self,
+        resp: reqwest::Response,
+    ) -> Result<T, (Option<String>, AppError)> {
         decode(resp).await.map_err(|(code, msg)| {
             if code.as_deref() == Some("unauthorized")
                 && let Some(store) = &self.store
@@ -814,6 +825,7 @@ impl TeamPool {
 }
 
 pub mod ai;
+pub mod knowledge;
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

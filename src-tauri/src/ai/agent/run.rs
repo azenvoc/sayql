@@ -52,6 +52,17 @@ pub struct NotesHome {
     pub store: Store,
     pub connection_id: String,
     pub database: Option<String>,
+    /// On a team connection whose server keeps shared notes: the run read the team's notes,
+    /// and its suggested notes go to the server for the knowledge owners to approve.
+    pub team: Option<TeamNotes>,
+}
+
+/// Where a team connection's shared notes are kept.
+#[derive(Clone)]
+pub struct TeamNotes {
+    pub client: crate::team::TeamClient,
+    /// Read again after a suggestion.
+    pub cache: Arc<crate::team::knowledge::Cache>,
 }
 
 /// How Investigate signs the notes it suggests.
@@ -178,6 +189,8 @@ pub struct Answer {
     /// The suggested notes (and any fixes to saved ones) wait with the other suggestions for
     /// the person to accept, instead of being offered here to save.
     pub notes_queued: bool,
+    /// The suggested notes went to the team server, for its knowledge owners to approve.
+    pub notes_shared: bool,
     /// A statement for the person to review and run themselves; SayQL never runs it.
     pub proposed_sql: Option<String>,
     /// The proposed statement could change data (else it is a query to run with another login, say).
@@ -334,9 +347,11 @@ impl Run<'_> {
             .iter()
             .filter(|n| {
                 n.anchors.is_empty()
-                    || n.anchors
-                        .iter()
-                        .any(|a| shown.iter().any(|t| t.eq_ignore_ascii_case(&a.table)))
+                    || n.anchors.iter().any(|a| {
+                        shown
+                            .iter()
+                            .any(|t| crate::team::knowledge::names(&a.table, t))
+                    })
             })
             .cloned()
             .collect();
@@ -413,7 +428,8 @@ impl Run<'_> {
                 // Take the text as the answer, unchecked by tools.
                 let text = turn.text();
                 return End::Answer(Box::new(
-                    self.answer(&json!({ "answer": text, "confidence": "low" })),
+                    self.answer(&json!({ "answer": text, "confidence": "low" }))
+                        .await,
                 ));
             }
             self.messages.push(Msg {
@@ -451,7 +467,7 @@ impl Run<'_> {
                         });
                         continue;
                     }
-                    return End::Answer(Box::new(self.answer(&input)));
+                    return End::Answer(Box::new(self.answer(&input).await));
                 }
                 let out = match self.tool(&name, &input).await {
                     Ok(out) => out,
@@ -794,9 +810,11 @@ impl Run<'_> {
                         .iter()
                         .any(|w| w.len() > 2 && text.contains(&w.to_lowercase()))
                 } else {
-                    n.anchors
-                        .iter()
-                        .any(|a| tables.iter().any(|t| t.eq_ignore_ascii_case(&a.table)))
+                    n.anchors.iter().any(|a| {
+                        tables
+                            .iter()
+                            .any(|t| crate::team::knowledge::names(&a.table, t))
+                    })
                 }
             })
             .map(|n| {
@@ -868,7 +886,8 @@ impl Run<'_> {
         let before = crate::schema::anchors::Snapshot::of(&self.input.schema);
         let changes =
             crate::schema::anchors::diff(&before, &crate::schema::anchors::Snapshot::of(&fresh));
-        if let Some(home) = &self.input.notes_home {
+        // The team server reviews shared notes on its own schema reads.
+        if let Some(home) = self.input.notes_home.as_ref().filter(|h| h.team.is_none()) {
             let _ = crate::notes::review(
                 &home.store,
                 &home.connection_id,
@@ -1404,7 +1423,8 @@ impl Run<'_> {
     /// with a note's id), each optionally with a check. Checked as the model wrote them: a token
     /// means the note holds a value from the data. Where the notes are kept, they wait with the
     /// other suggestions for the person (returns true); otherwise they're offered in the answer.
-    fn suggest_notes(&self, raw: &Value) -> (Vec<String>, bool) {
+    /// On a team connection with shared notes, they go to the team server instead.
+    async fn suggest_notes(&self, raw: &Value) -> (Vec<String>, bool) {
         let items: Vec<&Value> = raw.as_array().into_iter().flatten().take(3).collect();
         let Some(home) = &self.input.notes_home else {
             let texts = items
@@ -1414,6 +1434,9 @@ impl Run<'_> {
                 .collect();
             return (texts, false);
         };
+        if let Some(team) = &home.team {
+            return (self.suggest_team_notes(home, team, &items).await, true);
+        }
         let mut texts = Vec::new();
         for v in items {
             let (text, replaces, remove, check, evidence) = match v {
@@ -1451,7 +1474,78 @@ impl Run<'_> {
         (texts, true)
     }
 
-    fn answer(&self, input: &Value) -> Answer {
+    /// Sends `finish`'s notes to the team server as suggestions, with the same checks as local
+    /// ones: no values from the data in the text, the check or the evidence. Returns the texts
+    /// the server took.
+    async fn suggest_team_notes(
+        &self,
+        home: &NotesHome,
+        team: &TeamNotes,
+        items: &[&Value],
+    ) -> Vec<String> {
+        let Some(server_id) = home.connection_id.strip_prefix(crate::team::ID_PREFIX) else {
+            return Vec::new();
+        };
+        let mut texts = Vec::new();
+        for v in items {
+            let (text, replaces, remove, check, evidence) = match v {
+                Value::String(s) => (s.as_str(), None, false, None, None),
+                o => (
+                    o["text"].as_str().unwrap_or(""),
+                    o["replaces"].as_str().filter(|r| !r.trim().is_empty()),
+                    o["remove"].as_bool().unwrap_or(false),
+                    o["check"].as_str().filter(|c| !c.trim().is_empty()),
+                    o["evidence"].as_str(),
+                ),
+            };
+            let Ok(text) = clean_note(text) else {
+                continue;
+            };
+            let check = match check.map(crate::store::agent::clean_check) {
+                Some(Ok(c)) => Some(c),
+                Some(Err(_)) => continue,
+                None => None,
+            };
+            // The model knows notes by their short id: send the server the note's own id.
+            let replaces = replaces.map(|r| {
+                let wanted = r
+                    .trim()
+                    .trim_matches(|c| c == '[' || c == ']')
+                    .to_lowercase();
+                self.input
+                    .notes
+                    .iter()
+                    .find(|n| note_ref(&n.id) == wanted || n.id.to_lowercase() == wanted)
+                    .map(|n| n.id.clone())
+                    .unwrap_or(wanted)
+            });
+            if remove && replaces.is_none() {
+                continue;
+            }
+            let evidence = evidence
+                .filter(|e| crate::store::note_values::note_value(e).is_none())
+                .unwrap_or("Found while answering a question in Investigate.");
+            let suggestion = crate::team::knowledge::Suggestion {
+                text: text.clone(),
+                evidence: evidence
+                    .chars()
+                    .take(crate::store::suggestions::MAX_EVIDENCE)
+                    .collect(),
+                check,
+                replaces,
+                remove,
+                source: Some(NOTES_SOURCE.into()),
+            };
+            match team.client.suggest_knowledge(server_id, &suggestion).await {
+                Ok(()) => texts.push(text),
+                Err(e) => eprintln!("sayql: the team server didn't take a suggested note: {e}"),
+            }
+        }
+        team.cache.forget(&home.connection_id);
+        texts
+    }
+
+    async fn answer(&self, input: &Value) -> Answer {
         let text = self
             .masker
             .unmask_text(input["answer"].as_str().unwrap_or("").trim());
@@ -1520,7 +1614,13 @@ impl Run<'_> {
             });
         }
         // Checked as the model wrote them: a token means the note holds a value from the data.
-        let (notes, notes_queued) = self.suggest_notes(&input["notes"]);
+        let (notes, notes_queued) = self.suggest_notes(&input["notes"]).await;
+        let notes_shared = notes_queued
+            && self
+                .input
+                .notes_home
+                .as_ref()
+                .is_some_and(|h| h.team.is_some());
         let proposed_sql = input["proposed_sql"]
             .as_str()
             .map(str::trim)
@@ -1546,6 +1646,7 @@ impl Run<'_> {
             assumptions: strings("assumptions"),
             notes,
             notes_queued,
+            notes_shared,
             proposed_sql,
             cannot_answer: cannot,
             model: self.llm.model_name().to_string(),

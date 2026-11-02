@@ -387,13 +387,36 @@ function AnswerCard({
         </div>
       )}
       {answer.notes.length > 0 &&
-        (answer.notesQueued ? <QueuedNotes notes={answer.notes} /> : <SuggestedNotes notes={answer.notes} onSave={onSaveNote} />)}
+        (answer.notesShared ? (
+          <SharedNotes notes={answer.notes} />
+        ) : answer.notesQueued ? (
+          <QueuedNotes notes={answer.notes} />
+        ) : (
+          <SuggestedNotes notes={answer.notes} onSave={onSaveNote} />
+        ))}
       <div className={styles.buttons}>{actions}</div>
       <span className={styles.muted}>
         <Database size={11} /> {answer.model} · {(answer.usage.input + answer.usage.output).toLocaleString()} tokens
         {answer.usage.cached > 0 && ` (+${answer.usage.cached.toLocaleString()} from cache)`}
       </span>
     </section>
+  );
+}
+
+/** The notes the run suggested on a team connection, sent to the team server for its knowledge owners. */
+function SharedNotes({ notes }: { notes: string[] }) {
+  return (
+    <div className={styles.notes}>
+      <span className={styles.muted}>
+        <StickyNote size={12} /> Suggested notes for this database. Sent to your team's knowledge owners for approval.
+      </span>
+      {notes.map((n) => (
+        <div key={n} className={styles.note}>
+          <span>{n}</span>
+          <Badge tone="neutral">sent</Badge>
+        </div>
+      ))}
+    </div>
   );
 }
 

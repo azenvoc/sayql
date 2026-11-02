@@ -75,6 +75,11 @@ export interface DatabaseNavigatorProps {
   onDeleteNote: (note: DbNote) => void;
   /** Reads the schema again and runs every note's check. */
   onCheckNotes?: () => void;
+  /**
+   * The notes are the team's, from the team server: shown read-only, and `onEditNote(null)`
+   * suggests a new one to the team's knowledge owners instead of saving it here.
+   */
+  sharedNotes?: boolean;
   /** Notes AI apps suggested for the open database, waiting for the person. */
   suggestedNotes?: number;
   /** Opens the suggested notes to accept or dismiss. */
@@ -103,9 +108,13 @@ export interface NavigatorScript {
   here: boolean;
 }
 
+/** The hint under a team's shared notes. */
+export const SHARED_HINT = "Shared by your team. Owners approve changes on the team server.";
+const SUGGEST = "Suggest a note…";
+
 /** A note's tooltip: its text, and why it may be out of date or when it was checked. */
-function noteTitle(n: DbNote): string {
-  if (n.suspect) return `${n.text}\n\nMay be out of date: ${n.suspect.reason}. Click to review.`;
+function noteTitle(n: DbNote, shared?: boolean): string {
+  if (n.suspect) return `${n.text}\n\nMay be out of date: ${n.suspect.reason}.${shared ? "" : " Click to review."}`;
   if (n.verifiedAt) return `${n.text}\n\nChecked against the data ${new Date(n.verifiedAt).toLocaleDateString()}.`;
   return n.text;
 }
@@ -165,7 +174,12 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
         "separator",
         { label: "Overview…", icon: LayoutDashboard, onSelect: () => p.onOverview(c) },
         { label: "Investigate settings…", icon: Bot, onSelect: () => p.onAgentSettings(c) },
-        { label: "Add database note…", icon: StickyNote, disabled: !active || !p.schema, onSelect: () => p.onEditNote(null) },
+        {
+          label: active && p.sharedNotes ? SUGGEST : "Add database note…",
+          icon: StickyNote,
+          disabled: !active || !p.schema,
+          onSelect: () => p.onEditNote(null),
+        },
         { label: "Copy name", icon: Copy, onSelect: () => copy(c.name) },
       ];
     }
@@ -190,7 +204,7 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
       { label: current ? "Open" : "Open database", icon: FolderOpen, disabled: current, onSelect: () => p.onOpenDatabase(name) },
       { label: "New SQL tab", icon: FilePlus2, onSelect: () => p.onNewTab(c.id, name) },
       { label: "Refresh", icon: RefreshCw, disabled: !current || p.loading, onSelect: p.onRefresh },
-      { label: "Add database note…", icon: StickyNote, disabled: !current, onSelect: () => p.onEditNote(null) },
+      { label: current && p.sharedNotes ? SUGGEST : "Add database note…", icon: StickyNote, disabled: !current, onSelect: () => p.onEditNote(null) },
       "separator",
       { label: "Copy name", icon: Copy, onSelect: () => copy(name) },
     ];
@@ -243,12 +257,18 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
 
   const doubtful = p.notes.filter((n) => n.suspect).length;
 
-  const noteMenu = (n: DbNote): MenuEntry[] => [
+  const noteMenu = (n: DbNote): MenuEntry[] =>
+    p.sharedNotes
+      ? [
+          { label: "Copy", icon: Copy, onSelect: () => copy(n.text) },
+          { label: SUGGEST, icon: StickyNote, onSelect: () => p.onEditNote(null) },
+        ]
+      : [
     { label: n.suspect ? "Review note…" : "Edit note…", icon: Pencil, onSelect: () => p.onEditNote(n) },
     { label: "Copy", icon: Copy, onSelect: () => copy(n.text) },
     "separator",
     { label: "Delete note", icon: Trash2, danger: true, onSelect: () => p.onDeleteNote(n) },
-  ];
+        ];
 
   const toggle = (set: Set<string>, key: string) => {
     const next = new Set(set);
@@ -326,7 +346,7 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
       <>
         {renderFolder(`${key}:tables`, "Tables", tables, depth)}
         {renderFolder(`${key}:views`, "Views", views, depth)}
-        {(p.notes.length > 0 || !!p.suggestedNotes) && (
+        {(p.notes.length > 0 || !!p.suggestedNotes || p.sharedNotes) && (
           <div role="group">
             <TreeRow
               depth={depth}
@@ -342,9 +362,10 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
                   p.notes.length || undefined
                 )
               }
-              title="Facts about this database that the Ask box, Investigate and MCP use"
+              title={p.sharedNotes ? SHARED_HINT : "Facts about this database that the Ask box, Investigate and MCP use"}
               actions={
                 p.onCheckNotes &&
+                !p.sharedNotes &&
                 p.notes.length > 0 && <IconButton icon={RefreshCw} label="Check notes against the database now" size="sm" onClick={p.onCheckNotes} />
               }
               onClick={() => setCollapsed((s) => toggle(s, `${key}:notes`))}
@@ -359,6 +380,18 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
                 onClick={p.onReviewSuggestions}
               />
             )}
+            {p.sharedNotes && !collapsed.has(`${key}:notes`) && (
+              <>
+                <TreeRow depth={depth + 1} label={<span className={styles.message}>{SHARED_HINT}</span>} />
+                <TreeRow
+                  depth={depth + 1}
+                  icon={<StickyNote size={13} className={styles.suggested} />}
+                  label={<span className={styles.suggested}>{SUGGEST}</span>}
+                  title="Your team's knowledge owners approve it on the team server."
+                  onClick={() => p.onEditNote(null)}
+                />
+              </>
+            )}
             {!collapsed.has(`${key}:notes`) &&
               p.notes.map((n) => (
                 <TreeRow
@@ -372,9 +405,9 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
                     ) : undefined
                   }
                   label={<span className={n.suspect ? styles.noteDoubtful : styles.note}>{n.text}</span>}
-                  title={noteTitle(n)}
-                  onClick={n.suspect ? () => p.onEditNote(n) : undefined}
-                  onDoubleClick={() => p.onEditNote(n)}
+                  title={noteTitle(n, p.sharedNotes)}
+                  onClick={n.suspect && !p.sharedNotes ? () => p.onEditNote(n) : undefined}
+                  onDoubleClick={p.sharedNotes ? undefined : () => p.onEditNote(n)}
                   onContextMenu={(e) => menu.open(e, noteMenu(n))}
                 />
               ))}

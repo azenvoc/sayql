@@ -659,6 +659,11 @@ export function installMockBackend() {
           return a.access;
         case "list_notes":
           return notes.filter((n) => n.connectionId === a.id);
+        // The dev UI has no team server: every connection uses the notes saved here.
+        case "list_shared_notes":
+          return null;
+        case "suggest_note":
+          return "Sent to your team's knowledge owners for approval.";
         case "save_note": {
           const note = a.note as DbNote;
           if (/@|‹/.test(note.text)) return Promise.reject("A note describes the database, not the data in it. Remove the value (an email, number or name) from it.");

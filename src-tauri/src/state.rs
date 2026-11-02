@@ -5,6 +5,7 @@ use crate::ai::agent::run::{History, Reply};
 use crate::db::{self, DbPool};
 use crate::error::AppResult;
 use crate::schema::{self, Schema};
+use crate::store::agent::Note;
 use crate::store::{Store, secrets};
 use crate::team::ai::AiStatus;
 use crate::team::{self, TeamClient, TeamConnection, TeamPool};
@@ -87,6 +88,8 @@ pub struct AppState {
     team_ai: Mutex<Option<AiStatus>>,
     /// The server said team AI is off since then: use the person's own AI until it's asked again.
     team_ai_off: Arc<AtomicBool>,
+    /// The team's shared notes per team connection, and whether the server keeps them.
+    pub knowledge: Arc<team::knowledge::Cache>,
     pub voice: Voice,
 }
 
@@ -114,6 +117,7 @@ impl AppState {
             team_connections: Mutex::new(Vec::new()),
             team_ai: Mutex::new(None),
             team_ai_off: Arc::new(AtomicBool::new(false)),
+            knowledge: Arc::default(),
         })
     }
 
@@ -281,9 +285,34 @@ impl AppState {
         )
     }
 
+    /// The team's shared notes on a team connection whose server keeps them; `None` to use
+    /// the notes saved on this computer. Personal connections never reach the keychain or the
+    /// team server from here.
+    pub async fn team_notes(&self, connection_id: &str) -> Option<team::knowledge::Shared> {
+        if !connection_id.starts_with(team::ID_PREFIX) {
+            return None;
+        }
+        let client = self.team_client().ok().flatten()?;
+        self.knowledge.notes(&client, connection_id).await
+    }
+
+    /// The notes the Ask box sends with the schema: those about any of `tables` (qualified
+    /// names), plus those about no table. On a team connection whose server keeps shared
+    /// notes, the team's; else (or when the server can't be reached) the ones saved here.
+    pub async fn prompt_notes(&self, target: &Target, tables: &[String]) -> Vec<Note> {
+        match self.team_notes(&target.connection_id).await {
+            Some(shared) => team::knowledge::about(&shared.notes, tables),
+            None => self
+                .store
+                .notes_for(&target.connection_id, target.database.as_deref(), tables)
+                .unwrap_or_default(),
+        }
+    }
+
     /// Forgets the team connections and closes their tabs' pools, after signing out.
     pub fn forget_team(&self) {
         self.set_team_ai(None);
+        self.knowledge.clear();
         lock(&self.team_connections).clear();
         lock(&self.pools).retain(|t, _| !t.connection_id.starts_with(team::ID_PREFIX));
         lock(&self.schemas).retain(|t, _| !t.connection_id.starts_with(team::ID_PREFIX));

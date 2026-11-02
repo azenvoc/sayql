@@ -76,13 +76,11 @@ pub async fn generate_sql(
         &task,
         focus_tables.as_deref().unwrap_or(&[]),
     );
-    // Only the notes about the tables the AI is shown, plus those about no table.
+    // Only the notes about the tables the AI is shown, plus those about no table. On a team
+    // connection whose server keeps shared notes, the team's; else the ones saved here.
     let tables = crate::schema::anchors::tables_in(&schema_part, &live.schema);
-    let notes = state
-        .store
-        .notes_for(&id, target.database.as_deref(), &tables)
-        .map(|n| crate::store::agent::render_notes(&n, false))
-        .unwrap_or_default();
+    let notes =
+        crate::store::agent::render_notes(&state.prompt_notes(&target, &tables).await, false);
     let request = GenRequest {
         req_id,
         endpoint,

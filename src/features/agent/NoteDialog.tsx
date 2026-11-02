@@ -10,8 +10,13 @@ export interface NoteDialogProps {
   databaseName: string;
   /** A suggested fix to this note waiting for the person, if any. */
   fix?: NoteSuggestion;
-  /** Saves and closes; rejects with a message to show (a note that holds a value is refused). */
-  onSave: (text: string, check: string) => Promise<void>;
+  /**
+   * Saves and closes; rejects with a message to show (a note that holds a value is refused).
+   * With `suggest`, resolves with what to tell the person, and the dialog stays open to say it.
+   */
+  onSave: (text: string, check: string) => Promise<string | void>;
+  /** A team connection's shared notes: the note is suggested to the team's knowledge owners, not saved here. */
+  suggest?: boolean;
   /** The note is still true: it's no longer doubtful. */
   onConfirm?: () => Promise<void>;
   /** Runs the note's check; resolves with the note and the result. */
@@ -37,7 +42,8 @@ function checkResult(n: DbNote): { tone: "success" | "warning" | "neutral"; text
  * Adds, edits or reviews a database note: a fact about tables, columns or codes, never values
  * from rows. A doubtful note shows why, and the fix SayQL or an AI app suggested for it.
  */
-export function NoteDialog({ note: initial, databaseName, fix, onSave, onConfirm, onCheck, onAcceptFix, onDismissFix, onDelete, onClose }: NoteDialogProps) {
+export function NoteDialog({ note: initial, databaseName, fix, onSave, suggest, onConfirm, onCheck, onAcceptFix, onDismissFix, onDelete, onClose }: NoteDialogProps) {
+  const [sent, setSent] = useState<string | null>(null);
   const [note, setNote] = useState(initial);
   const [text, setText] = useState(initial?.text ?? "");
   const [check, setCheck] = useState(initial?.check?.sql ?? "");
@@ -53,7 +59,22 @@ export function NoteDialog({ note: initial, databaseName, fix, onSave, onConfirm
   };
   const result = note && checkResult(note);
   const edited = text.trim() !== (initial?.text ?? "") || check.trim() !== (initial?.check?.sql ?? "");
-  const title = !initial ? `Add a note to ${databaseName}` : initial.suspect ? "Review database note" : "Edit database note";
+  const title = suggest
+    ? `Suggest a note for ${databaseName}`
+    : !initial
+      ? `Add a note to ${databaseName}`
+      : initial.suspect
+        ? "Review database note"
+        : "Edit database note";
+  if (suggest && sent) {
+    return (
+      <Dialog title={title} size="md" onClose={onClose} actions={<Button variant="primary" onClick={onClose}>Done</Button>}>
+        <div className={base.body}>
+          <Alert tone="success">{sent}</Alert>
+        </div>
+      </Dialog>
+    );
+  }
   return (
     <Dialog
       title={title}
@@ -67,13 +88,20 @@ export function NoteDialog({ note: initial, databaseName, fix, onSave, onConfirm
             </Button>
           )}
           <Button onClick={onClose}>Cancel</Button>
-          <Button variant="primary" disabled={!text.trim() || busy || (!!initial && !edited)} onClick={() => act(() => onSave(text, check))}>
-            Save
+          <Button
+            variant="primary"
+            disabled={!text.trim() || busy || (!!initial && !edited)}
+            onClick={() =>
+              suggest ? act(() => onSave(text, check).then((m) => setSent(m || "Sent.")), false) : act(() => onSave(text, check))
+            }
+          >
+            {suggest ? "Send" : "Save"}
           </Button>
         </>
       }
     >
       <div className={base.body}>
+        {suggest && <p className={styles.meta}>Shared by your team. Owners approve changes on the team server.</p>}
         {note?.suspect && (
           <Alert
             tone="warning"
@@ -107,7 +135,14 @@ export function NoteDialog({ note: initial, databaseName, fix, onSave, onConfirm
             </div>
           </div>
         )}
-        <Field label="Note" hint="A fact the schema can't tell, e.g. “the owner of a tenant is memberships.role = 'owner'”. The Ask box, Investigate and MCP all use it.">
+        <Field
+          label="Note"
+          hint={
+            suggest
+              ? "A fact the schema can't tell, e.g. “the owner of a tenant is memberships.role = 'owner'”. Once approved, everyone's Ask box and Investigate use it."
+              : "A fact the schema can't tell, e.g. “the owner of a tenant is memberships.role = 'owner'”. The Ask box, Investigate and MCP all use it."
+          }
+        >
           {(id) => <textarea id={id} className={base.textarea} rows={3} maxLength={300} value={text} onChange={(e) => setText(e.target.value)} autoFocus />}
         </Field>
         {!!note?.anchors?.length && (
@@ -123,7 +158,11 @@ export function NoteDialog({ note: initial, databaseName, fix, onSave, onConfirm
         <Field
           label="Check"
           optional
-          hint="Read-only SQL that returns one row and one column: true while the note holds. SayQL runs it when the note is saved, weekly, and when Investigate asks. Only true or false is kept."
+          hint={
+            suggest
+              ? "Read-only SQL that returns one row and one column: true while the note holds. Owners run it on the team server. Only true or false is kept."
+              : "Read-only SQL that returns one row and one column: true while the note holds. SayQL runs it when the note is saved, weekly, and when Investigate asks. Only true or false is kept."
+          }
         >
           {(id) => (
             <textarea
