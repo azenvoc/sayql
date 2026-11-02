@@ -26,7 +26,7 @@ use sqlx::{MySqlPool, PgPool, SqlitePool};
 /// Rows beyond this are not sent to the UI.
 pub(crate) const MAX_ROWS: usize = 5000;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum Kind {
     Postgres,
@@ -47,7 +47,7 @@ impl Kind {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ConnConfig {
     pub id: String,
@@ -123,7 +123,7 @@ pub struct LitePools {
     pub(crate) ro: SqlitePool,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryResult {
     pub columns: Vec<String>,

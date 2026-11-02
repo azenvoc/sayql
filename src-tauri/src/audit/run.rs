@@ -57,7 +57,7 @@ impl AuditRuns {
 }
 
 /// A coding agent SayQL knows about, as found on this computer.
-#[derive(Serialize)]
+#[derive(Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AgentView {
     id: &'static str,
@@ -81,7 +81,7 @@ pub struct AgentView {
 }
 
 /// What a run tells the window (`audit://event`, see src/api/events.ts).
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, specta::Type)]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -194,7 +194,7 @@ pub async fn agents(state: &AppState) -> Vec<AgentView> {
 }
 
 /// Who pays for audits, and whether a SayQL credit key is saved (so credits can be chosen).
-#[derive(Serialize)]
+#[derive(Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditPaymentView {
     payment: AuditPayment,

@@ -35,7 +35,7 @@ const GENERIC: &[&str] = &[
 ];
 
 /// A table, or one of its columns, that a note is about.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Anchor {
     /// As [`Table::qualified_name`].

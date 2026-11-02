@@ -10,6 +10,7 @@ use tauri::{AppHandle, State};
 /// model). `focus_tables` (qualified names picked in the navigator) narrow what a draft sees.
 /// `skill` (a saved skill's slug) adds that skill's instruction to the request. Supersedes the generation still running in the same `slot` (one per editor tab).
 #[tauri::command]
+#[specta::specta]
 #[allow(
     clippy::too_many_arguments,
     reason = "a Tauri command takes each webview argument by name"
@@ -106,6 +107,7 @@ pub async fn generate_sql(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn cancel_generation(state: State<'_, AppState>, slot: String) {
     state.cancel_generation(&slot);
 }

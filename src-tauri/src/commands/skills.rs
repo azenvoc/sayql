@@ -5,12 +5,14 @@ use tauri::State;
 
 /// Saved skills, in the order they were created.
 #[tauri::command]
+#[specta::specta]
 pub fn list_skills(state: State<'_, AppState>) -> AppResult<Vec<Skill>> {
     state.store.skills()
 }
 
 /// Creates a skill, or replaces the one called `original` (its slug before an edit).
 #[tauri::command]
+#[specta::specta]
 pub fn save_skill(
     state: State<'_, AppState>,
     skill: Skill,
@@ -27,6 +29,7 @@ pub fn save_skill(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn delete_skill(state: State<'_, AppState>, slug: String) -> AppResult<()> {
     let list: Vec<Skill> = state
         .store

@@ -31,7 +31,7 @@ pub const UNKNOWN_APP: &str = "Unknown app";
 pub const NOT_APPROVED: &str = "not approved";
 
 /// One thing an AI app did, or tried, over MCP.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Activity {
     /// Milliseconds since the Unix epoch.
@@ -77,7 +77,7 @@ impl Activity {
 }
 
 /// An AI app SayQL has seen, or that the person blocked or approved.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AppSummary {
     pub name: String,
@@ -91,7 +91,7 @@ pub struct AppSummary {
 }
 
 /// The apps, and whether only approved ones are let in.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AppList {
     pub only_approved: bool,

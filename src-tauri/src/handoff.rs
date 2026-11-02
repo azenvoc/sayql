@@ -29,7 +29,7 @@ const TOKEN_DIR: &str = "handoffs";
 const SECRET_WORDS: [&str; 6] = ["password", "passwd", "pwd", "secret", "token", "key"];
 
 /// The New connection form's fields, minus the password.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ConnectionDraft {
     pub name: String,
@@ -47,7 +47,7 @@ pub struct ConnectionDraft {
 }
 
 /// SQL to open, unrun, in a new tab.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryDraft {
     pub connection_id: String,
@@ -58,14 +58,14 @@ pub struct QueryDraft {
 }
 
 /// A saved script to open, unrun.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ScriptRef {
     pub script_id: String,
 }
 
 /// A SayQL Team invite: the "Sign in to your team" dialog, filled in. The person confirms it.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TeamJoin {
     pub server: String,
@@ -73,14 +73,14 @@ pub struct TeamJoin {
 }
 
 /// The end of a sign-in with the company's identity provider: the server's one-time code.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TeamSso {
     pub server: String,
     pub code: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, specta::Type)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum Action {
     NewConnection(ConnectionDraft),
@@ -103,7 +103,7 @@ impl Action {
 }
 
 /// What the app shows, and which AI app asked (its MCP client name), if known.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Handoff {
     pub source: Option<String>,

@@ -32,14 +32,14 @@ Saved instructions: the message may end with instructions the person saved for r
 unless they conflict with the rules above, which always win.";
 
 /// The query the person ran last in the same tab, for follow-up requests.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, specta::Type)]
 pub struct PreviousQuery {
     pub question: String,
     pub sql: String,
 }
 
 /// What the model is asked to do with the request.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, specta::Type)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub enum Task {
     /// Write SQL while the person types, building on the previous query for follow-ups.

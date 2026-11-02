@@ -33,7 +33,7 @@ pub fn sso_waiting(app: &AppHandle) -> bool {
 }
 
 /// A team connection as the navigator shows it: no host, user or password, ever.
-#[derive(Serialize)]
+#[derive(Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TeamConnectionView {
     #[serde(flatten)]
@@ -41,7 +41,7 @@ pub struct TeamConnectionView {
     team: TeamInfo,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 struct TeamInfo {
     /// The database's name on the server, for display.
@@ -75,6 +75,7 @@ fn view(c: &TeamConnection) -> Option<TeamConnectionView> {
 
 /// Redeems an invite code, keeps the token in the keychain and the server in settings.
 #[tauri::command]
+#[specta::specta]
 pub async fn team_sign_in(
     state: State<'_, AppState>,
     server: String,
@@ -99,6 +100,7 @@ fn keep_sign_in(state: &AppState, token: &str, account: &TeamAccount) -> AppResu
 /// "Sign in with your company": opens the team server's sign-in page in the browser, which
 /// sends the person to the company's identity provider and back to SayQL (`sayql://team-sso`).
 #[tauri::command]
+#[specta::specta]
 pub async fn team_sso_start(
     state: State<'_, AppState>,
     pending: State<'_, PendingSso>,
@@ -126,6 +128,7 @@ pub async fn team_sso_start(
 /// The browser came back with the server's one-time code: swap it for a sign-in. The code
 /// goes to the server SayQL started the sign-in with, whatever the link said.
 #[tauri::command]
+#[specta::specta]
 pub async fn team_sso_finish(
     state: State<'_, AppState>,
     pending: State<'_, PendingSso>,
@@ -150,6 +153,7 @@ pub async fn team_sso_finish(
 
 /// Who is signed in, with the server's licence; `None` when signed out (without asking anyone).
 #[tauri::command]
+#[specta::specta]
 pub async fn team_status(state: State<'_, AppState>) -> AppResult<Option<TeamStatus>> {
     let Some(client) = state.team_client()? else {
         return Ok(None);
@@ -181,6 +185,7 @@ pub async fn team_status(state: State<'_, AppState>) -> AppResult<Option<TeamSta
 
 /// Signs out: the server revokes the token (when it can be reached), and this computer forgets it.
 #[tauri::command]
+#[specta::specta]
 pub async fn team_sign_out(state: State<'_, AppState>) -> AppResult<()> {
     let client = state.team_client().ok().flatten();
     if let Some(client) = client
@@ -196,6 +201,7 @@ pub async fn team_sign_out(state: State<'_, AppState>) -> AppResult<()> {
 
 /// The team's shared connections; empty when signed out, without asking anyone.
 #[tauri::command]
+#[specta::specta]
 pub async fn team_connections(state: State<'_, AppState>) -> AppResult<Vec<TeamConnectionView>> {
     let list = match state.team_client()? {
         None => Vec::new(),
@@ -212,6 +218,7 @@ pub async fn team_connections(state: State<'_, AppState>) -> AppResult<Vec<TeamC
 
 /// Team AI's state, asked again (Settings opening); `None` when signed out, without asking anyone.
 #[tauri::command]
+#[specta::specta]
 pub async fn team_ai(state: State<'_, AppState>) -> AppResult<Option<AiStatus>> {
     state.refresh_team_ai().await
 }

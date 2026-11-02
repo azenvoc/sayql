@@ -84,7 +84,7 @@ pub struct Io {
     pub stop: CancellationToken,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -129,7 +129,7 @@ pub enum Event {
     },
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, specta::Type)]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -147,7 +147,7 @@ pub enum Reply {
     },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum StepStatus {
     Running,
@@ -157,7 +157,7 @@ pub enum StepStatus {
 
 /// One step as the person sees it. `sql`, `columns` and `rows` are real values: they stay
 /// on this computer. `sent` is exactly what went to the AI.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Step {
     pub id: u32,
@@ -177,7 +177,7 @@ pub struct Step {
     pub error: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Answer {
     /// With real values filled back in.
@@ -203,7 +203,7 @@ pub struct Answer {
     pub usage: Usage,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Sentence {
     pub text: String,

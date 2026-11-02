@@ -9,4 +9,6 @@
 !.prettierrc.json
 !.oxlintrc.json
 pnpm-lock.yaml
+# Generated from the Rust types by `pnpm gen:types`.
+src/api/bindings.ts
 lint-baseline.json

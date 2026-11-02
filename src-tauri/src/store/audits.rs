@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 const FILE: &str = "mcp-audits.json";
 
 /// The last audit of one database.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditRun {
     pub connection_id: String,

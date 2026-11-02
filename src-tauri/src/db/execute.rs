@@ -12,8 +12,8 @@ use std::time::{Duration, Instant};
 use tiberius::Command;
 use tokio_util::sync::CancellationToken;
 
-/// The error of a query stopped with its `CancellationToken`. Must match `QUERY_CANCELLED`
-/// in src/api/types.ts.
+/// The error of a query stopped with its `CancellationToken`. The UI gets it as
+/// `QUERY_CANCELLED` from the generated src/api/bindings.ts.
 pub const CANCELLED: &str = "Query cancelled.";
 
 /// How long a cancelled query gets to stop before its connection is closed anyway.

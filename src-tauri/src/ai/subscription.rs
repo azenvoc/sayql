@@ -62,7 +62,7 @@ pub fn locate() -> AppResult<PathBuf> {
 }
 
 /// What Settings shows after checking Claude Code: installed, recent enough and signed in.
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PlanCheck {
     pub version: String,

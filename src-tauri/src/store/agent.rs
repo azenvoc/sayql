@@ -13,7 +13,7 @@ pub const MAX_NOTE: usize = 300;
 pub const MAX_NEVER_SEND: usize = 200;
 
 /// What the AI may see of query results on one connection.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum Results {
     /// Only how many rows a query returned, and its column names.
@@ -28,7 +28,7 @@ pub enum Results {
 /// What AI apps using SayQL over MCP (Claude Code, Cursor, ...) may see of query results on
 /// one connection. Separate from agent mode's setting; counts and summaries until the person
 /// chooses otherwise.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum AppResults {
     /// Only how many rows a query returned, and its column names.
@@ -44,7 +44,7 @@ pub enum AppResults {
 
 /// Agent mode's access to one connection, which is off until the person turns it on, and
 /// what AI apps may see of it.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AgentAccess {
     #[serde(default)]
@@ -67,7 +67,7 @@ fn yes() -> bool {
 }
 
 /// Run limits and agent preferences, in Settings.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AgentSettings {
     #[serde(default = "default_steps")]
@@ -154,7 +154,7 @@ impl AgentSettings {
 ///
 /// Besides its text, a note knows what it's about (its anchors), where it came from, whether
 /// something has made it doubtful since, and optionally how to check it against the data.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Note {
     pub id: String,
@@ -201,7 +201,7 @@ impl From<&str> for Note {
 }
 
 /// Why a note may no longer be true.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Suspect {
     pub reason: String,
@@ -210,7 +210,7 @@ pub struct Suspect {
 
 /// A read-only query that answers whether a note still holds: it returns one row with one
 /// column, true or false (1 or 0). Only that answer is kept, never data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NoteCheck {
     pub sql: String,
@@ -218,7 +218,7 @@ pub struct NoteCheck {
     pub last: Option<CheckRun>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct CheckRun {
     /// `None` when the check couldn't run (`error` says why).
@@ -228,7 +228,7 @@ pub struct CheckRun {
     pub error: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Revision {
     pub text: String,

@@ -12,7 +12,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 /// `GET /api/v1/ai`: whether team AI is on, its models and this month's usage.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all(serialize = "camelCase", deserialize = "snake_case"))]
 pub struct AiStatus {
     #[serde(default)]
@@ -33,7 +33,7 @@ pub struct AiStatus {
     pub team: Option<AiUsage>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, specta::Type)]
 pub struct AiUsage {
     #[serde(default)]
     pub tokens: u64,

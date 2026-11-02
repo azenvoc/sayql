@@ -18,7 +18,7 @@ pub const MAX_EVIDENCE: usize = 600;
 pub const MAX_PENDING: usize = 50;
 
 /// A note an AI app suggested, waiting for the person.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NoteSuggestion {
     pub id: String,

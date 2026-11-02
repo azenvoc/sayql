@@ -54,7 +54,7 @@ pub struct ToolSpec {
     pub schema: Value,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Usage {
     /// Prompt tokens billed at the full rate (not read from cache).

@@ -1,5 +1,5 @@
 //! Tauri commands, grouped by the part of the UI they serve.
-//! Each has a typed wrapper in src/api/commands.ts.
+//! Each has a typed wrapper in the generated src/api/bindings.ts (see `bindings`).
 
 pub mod agent;
 pub mod app;
@@ -14,3 +14,6 @@ pub mod skills;
 pub mod team;
 pub mod updates;
 pub mod voice;
+
+#[cfg(test)]
+mod bindings;

@@ -84,7 +84,7 @@ pub(crate) const CLAUDE_DENIED: [&str; 14] = [
 
 /// The model the audit runs on: Sonnet unless the person picks another. Claude Code's aliases
 /// (<https://code.claude.com/docs/en/model-config>) follow the latest model of each family.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum AuditModel {
     /// Cheaper, and enough to read code and suggest notes.
@@ -116,7 +116,7 @@ impl AuditModel {
 pub const CREDITS_RUNS: bool = false;
 
 /// Who pays for the audit's model requests.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum AuditPayment {
     /// The person's own Claude Code sign-in, whatever Claude Code is set up with.

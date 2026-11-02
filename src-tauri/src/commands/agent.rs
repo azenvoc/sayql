@@ -13,20 +13,20 @@ use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio_util::sync::CancellationToken;
 
-/// Must match AGENT_EVENT in src/api/events.ts.
-const EVENT: &str = "agent://event";
+/// The UI gets it as `AGENT_EVENT` from the generated src/api/bindings.ts.
+pub(crate) const EVENT: &str = "agent://event";
 
 /// Starts an agent run in `slot` (one per editor tab), stopping the run already there.
 /// Progress arrives as `agent://event`s tagged with `run_id`. `follow_up` continues the
 /// tab's last run (its queries and answer, not its rows) instead of starting fresh.
 #[tauri::command]
+#[specta::specta]
 #[allow(
     clippy::too_many_arguments,
     reason = "a Tauri command takes each webview argument by name"
 )]
 pub async fn start_agent(
     app: AppHandle,
-    state: State<'_, AppState>,
     id: String,
     database: Option<String>,
     question: String,
@@ -37,6 +37,11 @@ pub async fn start_agent(
     follow_up: Option<bool>,
     auto: Option<bool>,
 ) -> AppResult<()> {
+    // From the handle rather than a `State` argument: the generated TypeScript (specta) takes
+    // at most 10 arguments per command. The state is managed in `run`'s setup.
+    let state = app
+        .try_state::<AppState>()
+        .ok_or("SayQL hasn't finished starting. Try again.")?;
     let question = question.trim().to_string();
     if question.is_empty() {
         return Err("Type a question first.".into());
@@ -218,12 +223,14 @@ pub async fn start_agent(
 
 /// Stops a run: the model request and the running query, on the server too.
 #[tauri::command]
+#[specta::specta]
 pub fn stop_agent(state: State<'_, AppState>, run_id: String) {
     state.stop_agent(&run_id);
 }
 
 /// The person's reply to a paused run: Go on the plan, Send or Skip, or an answer.
 #[tauri::command]
+#[specta::specta]
 pub fn reply_agent(state: State<'_, AppState>, run_id: String, reply: Reply) -> AppResult<()> {
     state
         .reply_agent(&run_id, reply)
@@ -233,7 +240,7 @@ pub fn reply_agent(state: State<'_, AppState>, run_id: String, reply: Reply) -> 
 
 /// A connection's agent access as it applies, and on a team connection the admin's rules,
 /// which the UI shows as "Set by your team admin".
-#[derive(Serialize)]
+#[derive(Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AccessView {
     #[serde(flatten)]
@@ -258,6 +265,7 @@ pub(crate) fn effective_access(state: &AppState, id: &str) -> AppResult<AccessVi
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn agent_access(state: State<'_, AppState>, id: String) -> AppResult<AccessView> {
     effective_access(&state, &id)
 }
@@ -265,6 +273,7 @@ pub fn agent_access(state: State<'_, AppState>, id: String) -> AppResult<AccessV
 /// Saves the person's choices. On a team connection the results setting can't go above the
 /// admin's, and the admin's never-send columns aren't saved (they're always added back).
 #[tauri::command]
+#[specta::specta]
 pub fn save_agent_access(
     state: State<'_, AppState>,
     id: String,
@@ -280,6 +289,7 @@ pub fn save_agent_access(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn list_notes(
     state: State<'_, AppState>,
     id: String,
@@ -293,6 +303,7 @@ pub fn list_notes(
 /// The team's shared notes on a team connection whose server keeps them, read-only here;
 /// `None` when the connection uses the notes saved on this computer.
 #[tauri::command]
+#[specta::specta]
 pub async fn list_shared_notes(
     state: State<'_, AppState>,
     id: String,
@@ -304,6 +315,7 @@ pub async fn list_shared_notes(
 /// team server. Refused like any note when it holds values from the data. Returns what to
 /// tell the person.
 #[tauri::command]
+#[specta::specta]
 pub async fn suggest_note(
     state: State<'_, AppState>,
     id: String,
@@ -331,6 +343,7 @@ pub async fn suggest_note(
 /// Saves a database note: new (empty `id`) or edited. Finds what it's about in the open
 /// database's schema, and runs its check when it has one.
 #[tauri::command]
+#[specta::specta]
 pub async fn save_note(state: State<'_, AppState>, note: Note) -> AppResult<Note> {
     state.check_connection(&note.connection_id)?;
     let id = if note.id.is_empty() {
@@ -370,6 +383,7 @@ async fn checked(state: &AppState, target: &Target, note: Note) -> Note {
 /// The person says a doubtful note is still true: it's no longer doubtful, and what it's
 /// about is taken from the schema as it is now.
 #[tauri::command]
+#[specta::specta]
 pub fn confirm_note(state: State<'_, AppState>, id: String) -> AppResult<Note> {
     let note = state
         .store
@@ -392,6 +406,7 @@ pub fn confirm_note(state: State<'_, AppState>, id: String) -> AppResult<Note> {
 
 /// Runs one note's check now and returns the note with the result.
 #[tauri::command]
+#[specta::specta]
 pub async fn check_note(state: State<'_, AppState>, id: String) -> AppResult<Note> {
     let note = state
         .store
@@ -410,6 +425,7 @@ pub async fn check_note(state: State<'_, AppState>, id: String) -> AppResult<Not
 /// Reads the database's schema again (reviewing its notes against it) and runs every note
 /// check, then returns the notes.
 #[tauri::command]
+#[specta::specta]
 pub async fn check_notes(
     state: State<'_, AppState>,
     id: String,
@@ -425,12 +441,14 @@ pub async fn check_notes(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn delete_note(state: State<'_, AppState>, id: String) -> AppResult<()> {
     state.store.delete_note(&id)
 }
 
 /// Notes AI apps suggested over MCP, waiting for the person (all connections, oldest first).
 #[tauri::command]
+#[specta::specta]
 pub fn list_note_suggestions(state: State<'_, AppState>) -> AppResult<Vec<NoteSuggestion>> {
     state.store.note_suggestions()
 }
@@ -438,6 +456,7 @@ pub fn list_note_suggestions(state: State<'_, AppState>) -> AppResult<Vec<NoteSu
 /// Applies a suggested note: saves it as an ordinary note, replaces the note it corrects, or
 /// deletes the note it removes (then `None`).
 #[tauri::command]
+#[specta::specta]
 pub async fn accept_note_suggestion(
     state: State<'_, AppState>,
     id: String,
@@ -459,6 +478,7 @@ pub async fn accept_note_suggestion(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn dismiss_note_suggestion(state: State<'_, AppState>, id: String) -> AppResult<()> {
     state.store.dismiss_note_suggestion(&id)
 }

@@ -16,6 +16,7 @@ use tauri::State;
 /// Saves the choices for `provider` and makes it the one that writes SQL.
 /// `api_key: None` keeps the saved key; an empty `expert_model` reuses the typing model.
 #[tauri::command]
+#[specta::specta]
 pub fn save_settings(
     state: State<'_, AppState>,
     provider: String,
@@ -40,6 +41,7 @@ pub fn save_settings(
 /// Switches to `provider` (one that is ready) and uses `model` for typing or for agent mode,
 /// from the Ask box. Other choices for that provider stay as they were.
 #[tauri::command]
+#[specta::specta]
 pub fn choose_model(
     state: State<'_, AppState>,
     provider: String,
@@ -52,6 +54,7 @@ pub fn choose_model(
 
 /// Saves the agent model of the current provider (empty: its expert model) and the run limits.
 #[tauri::command]
+#[specta::specta]
 pub fn save_agent_settings(
     state: State<'_, AppState>,
     agent_model: String,
@@ -64,6 +67,7 @@ pub fn save_agent_settings(
 /// The models a provider offers, using the key and base URL in the form (falling back to
 /// the saved ones). Doubles as a check that the key and address work.
 #[tauri::command]
+#[specta::specta]
 pub async fn list_models(
     state: State<'_, AppState>,
     provider: String,
@@ -76,12 +80,14 @@ pub async fn list_models(
 /// What's left on the saved SayQL AI credit key, in US dollars; `None` without one. Asks the
 /// credits service the key's AI requests already go to, and nothing else.
 #[tauri::command]
+#[specta::specta]
 pub async fn credits_balance(state: State<'_, AppState>) -> AppResult<Option<f64>> {
     ai::settings::credits_balance(&state.store, &state.http).await
 }
 
 /// Records that the first-run setup was finished or dismissed, so it isn't shown again.
 #[tauri::command]
+#[specta::specta]
 pub fn finish_onboarding(state: State<'_, AppState>) -> AppResult<SettingsView> {
     let mut s = state.store.settings()?;
     s.onboarded = true;
@@ -90,7 +96,7 @@ pub fn finish_onboarding(state: State<'_, AppState>) -> AppResult<SettingsView> 
 }
 
 /// Where the `sayql-mcp` server binary is, for connecting Claude to SayQL.
-#[derive(Serialize)]
+#[derive(Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct McpSetup {
     path: String,
@@ -105,6 +111,7 @@ pub struct McpSetup {
 
 /// The MCP server ships next to the app's own executable (release builds bundle it).
 #[tauri::command]
+#[specta::specta]
 pub fn mcp_setup() -> AppResult<McpSetup> {
     let path = crate::mcp::binary_path()?;
     Ok(McpSetup {
@@ -118,6 +125,7 @@ pub fn mcp_setup() -> AppResult<McpSetup> {
 /// The coding agents that look installed (ids from src/features/agent/agents.ts), to preselect
 /// one in the setup. Only checks for files; runs nothing.
 #[tauri::command]
+#[specta::specta]
 pub async fn installed_coding_agents() -> AppResult<Vec<&'static str>> {
     tauri::async_runtime::spawn_blocking(crate::audit::coding_agents::installed)
         .await
@@ -144,6 +152,7 @@ pub(crate) fn install_link_ok(url: &str) -> bool {
 
 /// Opens Cursor's or VS Code's link that adds SayQL's MCP server; the app asks before adding it.
 #[tauri::command]
+#[specta::specta]
 pub fn open_install_link(app: tauri::AppHandle, url: String) -> AppResult<()> {
     use tauri_plugin_opener::OpenerExt;
     if !install_link_ok(&url) {
@@ -158,12 +167,14 @@ pub fn open_install_link(app: tauri::AppHandle, url: String) -> AppResult<()> {
 
 /// The newest entries in the activity log of AI apps using SayQL over MCP.
 #[tauri::command]
+#[specta::specta]
 pub fn mcp_activity(state: State<'_, AppState>, limit: Option<usize>) -> AppResult<Vec<Activity>> {
     state.store.app_activity(limit.unwrap_or(100).min(1000))
 }
 
 /// The AI apps in the log, blocked or approved, and whether only approved apps are let in.
 #[tauri::command]
+#[specta::specta]
 pub fn mcp_apps(state: State<'_, AppState>) -> AppResult<AppList> {
     state.store.app_summaries()
 }
@@ -178,6 +189,7 @@ fn app_name(name: &str) -> AppResult<&str> {
 
 /// Blocks or allows one AI app; returns the updated list.
 #[tauri::command]
+#[specta::specta]
 pub fn set_mcp_app_blocked(
     state: State<'_, AppState>,
     name: String,
@@ -189,6 +201,7 @@ pub fn set_mcp_app_blocked(
 
 /// Approves one AI app (for when only approved apps are let in); returns the updated list.
 #[tauri::command]
+#[specta::specta]
 pub fn approve_mcp_app(state: State<'_, AppState>, name: String) -> AppResult<AppList> {
     state.store.approve_app(app_name(&name)?)?;
     state.store.app_summaries()
@@ -196,12 +209,14 @@ pub fn approve_mcp_app(state: State<'_, AppState>, name: String) -> AppResult<Ap
 
 /// Turns "only allow apps I've approved" on or off; returns the updated list.
 #[tauri::command]
+#[specta::specta]
 pub fn set_mcp_only_approved(state: State<'_, AppState>, on: bool) -> AppResult<AppList> {
     state.store.set_only_approved_apps(on)?;
     state.store.app_summaries()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn clear_mcp_activity(state: State<'_, AppState>) -> AppResult<()> {
     state.store.clear_app_activity()
 }
@@ -209,6 +224,7 @@ pub fn clear_mcp_activity(state: State<'_, AppState>) -> AppResult<()> {
 /// Your own queries, newest first: from the editor, the Ask box and Investigate; for one
 /// connection when given.
 #[tauri::command]
+#[specta::specta]
 pub fn my_activity(
     state: State<'_, AppState>,
     connection_id: Option<String>,
@@ -221,12 +237,14 @@ pub fn my_activity(
 
 /// Deletes your activity log.
 #[tauri::command]
+#[specta::specta]
 pub fn clear_my_activity(state: State<'_, AppState>) -> AppResult<()> {
     state.store.clear_my_activity()
 }
 
 /// When an AI app last fetched the audit prompt, per connection and database.
 #[tauri::command]
+#[specta::specta]
 pub fn mcp_audits(state: State<'_, AppState>) -> AppResult<Vec<AuditRun>> {
     state.store.audits()
 }
@@ -234,6 +252,7 @@ pub fn mcp_audits(state: State<'_, AppState>) -> AppResult<Vec<AuditRun>> {
 /// The audit instructions for one saved connection, to paste into an AI app that can't fetch
 /// MCP prompts. The same text as the `audit` prompt, plus which tools to use.
 #[tauri::command]
+#[specta::specta]
 pub fn audit_prompt(
     state: State<'_, AppState>,
     id: String,
@@ -279,6 +298,7 @@ mod tests {
 /// Checks the person's own Claude Code for "Your Claude plan": installed, recent enough and
 /// signed in. Reads only its version and sign-in status.
 #[tauri::command]
+#[specta::specta]
 pub async fn check_claude_plan() -> AppResult<ai::subscription::PlanCheck> {
     ai::subscription::check().await
 }

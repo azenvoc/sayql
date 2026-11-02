@@ -10,7 +10,7 @@ use tauri::State;
 
 const DEMO_ID: &str = "demo";
 
-#[derive(Serialize)]
+#[derive(Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct InitView {
     connections: Vec<ConnConfig>,
@@ -35,6 +35,7 @@ fn demo_connection(path: &Path) -> ConnConfig {
 
 /// Startup: saved connections and settings. Adds the demo database on first launch.
 #[tauri::command]
+#[specta::specta]
 pub async fn init(state: State<'_, AppState>) -> AppResult<InitView> {
     let _guard = state.init_lock.lock().await;
     // Read every saved file now, so an unreadable one is reported on the startup screen
@@ -58,6 +59,7 @@ pub async fn init(state: State<'_, AppState>) -> AppResult<InitView> {
 
 /// Creates (empty id) or updates a connection. `password: None` keeps the saved password.
 #[tauri::command]
+#[specta::specta]
 pub fn save_connection(
     state: State<'_, AppState>,
     mut config: ConnConfig,
@@ -83,6 +85,7 @@ pub fn save_connection(
 
 /// Removes the saved connection and its password. The database itself is not touched.
 #[tauri::command]
+#[specta::specta]
 pub fn delete_connection(state: State<'_, AppState>, id: String) -> AppResult<()> {
     refuse_team(&id)?;
     let list: Vec<ConnConfig> = state
@@ -112,6 +115,7 @@ fn refuse_team(id: &str) -> AppResult<()> {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn test_connection(config: ConnConfig, password: Option<String>) -> AppResult<String> {
     let password = password.or_else(|| secrets::password(&config.id));
     let pool = db::connect(&config, password).await?;
@@ -125,6 +129,7 @@ pub async fn test_connection(config: ConnConfig, password: Option<String>) -> Ap
 /// Opens one database of a connection (or reuses it) and returns its schema.
 /// `database: None` opens the connection's default database.
 #[tauri::command]
+#[specta::specta]
 pub async fn open_database(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
@@ -161,6 +166,7 @@ pub async fn open_database(
 
 /// Re-reads the schema, e.g. after tables were added.
 #[tauri::command]
+#[specta::specta]
 pub async fn refresh_schema(
     state: State<'_, AppState>,
     id: String,
@@ -171,6 +177,7 @@ pub async fn refresh_schema(
 
 /// The databases on the connection's server; `None` for SQLite.
 #[tauri::command]
+#[specta::specta]
 pub async fn list_databases(
     state: State<'_, AppState>,
     id: String,

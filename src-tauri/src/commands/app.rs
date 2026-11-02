@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 /// This copy of SayQL, for pre-filling feedback forms. Nothing else about the computer.
-#[derive(Serialize)]
+#[derive(Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AppInfo {
     version: &'static str,
@@ -12,6 +12,7 @@ pub struct AppInfo {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn app_info() -> AppInfo {
     AppInfo {
         version: env!("CARGO_PKG_VERSION"),

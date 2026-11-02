@@ -16,8 +16,8 @@ use tauri::{AppHandle, Emitter, Manager, State};
 
 pub use crate::audit::run::AuditRuns;
 
-/// Must match AUDIT_EVENT in src/api/events.ts.
-const EVENT: &str = "audit://event";
+/// The UI gets it as `AUDIT_EVENT` from the generated src/api/bindings.ts.
+pub(crate) const EVENT: &str = "audit://event";
 
 /// Sends a run's events to the window as `audit://event`.
 fn emitter(app: &AppHandle) -> Emit {
@@ -30,12 +30,14 @@ fn emitter(app: &AppHandle) -> Emit {
 /// The coding agents SayQL knows, whether each is installed, and whether it can run an audit;
 /// SayQL's built-in OpenCode last.
 #[tauri::command]
+#[specta::specta]
 pub async fn audit_agents(state: State<'_, AppState>) -> AppResult<Vec<AgentView>> {
     Ok(run::agents(state.inner()).await)
 }
 
 /// The knowledge an audit of this connection reads, in the order added.
 #[tauri::command]
+#[specta::specta]
 pub fn knowledge_sources(
     state: State<'_, AppState>,
     id: String,
@@ -45,6 +47,7 @@ pub fn knowledge_sources(
 
 /// Asks for a folder and adds it as a source; `None` when cancelled.
 #[tauri::command]
+#[specta::specta]
 pub async fn add_knowledge_folder(
     app: AppHandle,
     state: State<'_, AppState>,
@@ -72,6 +75,7 @@ pub async fn add_knowledge_folder(
 /// an optional read-only token, kept in the keychain; `token_user`: the user name sent with
 /// it, needed for hosts SayQL doesn't know.
 #[tauri::command]
+#[specta::specta]
 #[allow(
     clippy::too_many_arguments,
     reason = "a Tauri command takes each webview argument by name"
@@ -91,6 +95,7 @@ pub async fn add_knowledge_repo(
 /// Asks for files (documents, exports) and adds them as one source, their text read now;
 /// `None` when cancelled.
 #[tauri::command]
+#[specta::specta]
 pub async fn add_knowledge_files(
     app: AppHandle,
     state: State<'_, AppState>,
@@ -129,6 +134,7 @@ pub async fn add_knowledge_files(
 /// Adds a web page as a source, or with `crawl` the pages in its folder on the same site,
 /// once they've been read.
 #[tauri::command]
+#[specta::specta]
 pub async fn add_knowledge_url(
     state: State<'_, AppState>,
     id: String,
@@ -140,6 +146,7 @@ pub async fn add_knowledge_url(
 
 /// Removes a source, its token and SayQL's copy of it.
 #[tauri::command]
+#[specta::specta]
 pub fn remove_knowledge_source(
     state: State<'_, AppState>,
     id: String,
@@ -151,6 +158,7 @@ pub fn remove_knowledge_source(
 /// Checks a source can still be read: the folder is there, or git can reach the repository.
 /// Files and web pages are read again. Its status is updated either way.
 #[tauri::command]
+#[specta::specta]
 pub async fn refresh_knowledge_source(
     state: State<'_, AppState>,
     id: String,
@@ -161,24 +169,28 @@ pub async fn refresh_knowledge_source(
 
 /// The model audits run on.
 #[tauri::command]
+#[specta::specta]
 pub fn audit_model(state: State<'_, AppState>) -> AppResult<AuditModel> {
     state.store.audit_model()
 }
 
 /// Remembers the model audits run on.
 #[tauri::command]
+#[specta::specta]
 pub fn set_audit_model(state: State<'_, AppState>, model: AuditModel) -> AppResult<()> {
     state.store.set_audit_model(model)
 }
 
 /// Who pays for audits, and whether a SayQL credit key is saved (so credits can be chosen).
 #[tauri::command]
+#[specta::specta]
 pub fn audit_payment(state: State<'_, AppState>) -> AppResult<AuditPaymentView> {
     Ok(run::payment_view(&state.store))
 }
 
 /// Remembers who pays for audits.
 #[tauri::command]
+#[specta::specta]
 pub fn set_audit_payment(state: State<'_, AppState>, payment: AuditPayment) -> AppResult<()> {
     state.store.set_audit_payment(payment)
 }
@@ -204,6 +216,7 @@ pub fn clean_leftover_runs(app: &AppHandle) {
 /// Starts an audit with `agent` over the connection's code sources, fetching repositories
 /// first; progress arrives as `audit://event` with `runId`.
 #[tauri::command]
+#[specta::specta]
 pub async fn start_audit(
     app: AppHandle,
     state: State<'_, AppState>,
@@ -230,6 +243,7 @@ pub async fn start_audit(
 
 /// Stops a running audit and the agent's processes.
 #[tauri::command]
+#[specta::specta]
 pub fn cancel_audit(runs: State<'_, AuditRuns>, run_id: String) {
     runs.cancel(&run_id);
 }
@@ -238,6 +252,7 @@ pub fn cancel_audit(runs: State<'_, AuditRuns>, run_id: String) {
 /// running the agent interactively with the same read-only options and the audit
 /// instructions as its first message. Repositories are fetched first.
 #[tauri::command]
+#[specta::specta]
 pub async fn open_audit_in_terminal(
     app: AppHandle,
     state: State<'_, AppState>,

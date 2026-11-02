@@ -10,7 +10,7 @@ use crate::store::agent::AgentSettings;
 use crate::store::{ProviderSettings, Settings, Store, secrets};
 use serde::Serialize;
 
-#[derive(Serialize)]
+#[derive(Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SettingsView {
     /// The provider that writes SQL, and the models it uses.
@@ -33,14 +33,14 @@ pub struct SettingsView {
     team: Option<crate::team::TeamAccount>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, specta::Type)]
 struct ModelOption {
     id: &'static str,
     label: &'static str,
 }
 
 /// One provider as Settings shows it: the catalog entry plus what the person chose for it.
-#[derive(Serialize)]
+#[derive(Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 struct ProviderView {
     id: &'static str,
@@ -172,7 +172,7 @@ pub fn save_provider(
 }
 
 /// Which model slot the Ask box's model picker sets.
-#[derive(serde::Deserialize, Clone, Copy, PartialEq)]
+#[derive(serde::Deserialize, Clone, Copy, PartialEq, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum ModelUse {
     /// Quick mode: writes SQL while the person types.

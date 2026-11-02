@@ -89,6 +89,12 @@ zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2
 # Unpacking the built-in OpenCode and ripgrep on Linux and macOS (.tar.gz).
 flate2 = "1"
 tar = "0.4"
+# TypeScript types and typed command wrappers for the UI (src/api/bindings.ts), generated from
+# the Rust types by `pnpm gen:types` (a test in src/bindings.rs), never at app startup.
+# Pinned exactly: specta 2 is still a release candidate and tauri-specta needs this specta.
+specta = { version = "=2.0.0-rc.26", features = ["derive", "serde_json"] }
+specta-typescript = "=0.0.13"
+tauri-specta = { version = "=2.0.0-rc.26", features = ["derive", "typescript"] }
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]

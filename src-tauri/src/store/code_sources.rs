@@ -25,7 +25,7 @@ pub const MAX_SOURCES_FREE: usize = 3;
 pub const CAP_MESSAGE: &str = "SayQL for teams keeps unlimited sources in sync for everyone.";
 
 /// Where a source's knowledge is.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -83,7 +83,7 @@ impl SourceKind {
 }
 
 /// One knowledge source of a connection (named for its first kind, code).
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct KnowledgeSource {
     /// `src_` and 12 hex digits: also the name of its copy's folder.

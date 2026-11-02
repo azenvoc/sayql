@@ -6,6 +6,7 @@ use tauri::State;
 
 /// Saved scripts, most recently saved first.
 #[tauri::command]
+#[specta::specta]
 pub fn list_scripts(state: State<'_, AppState>) -> AppResult<Vec<Script>> {
     let mut list = state.store.scripts()?;
     list.sort_by_key(|s| std::cmp::Reverse(s.updated_at));
@@ -14,6 +15,7 @@ pub fn list_scripts(state: State<'_, AppState>) -> AppResult<Vec<Script>> {
 
 /// Creates (empty id) or updates a script, and returns it as stored.
 #[tauri::command]
+#[specta::specta]
 pub fn save_script(state: State<'_, AppState>, mut script: Script) -> AppResult<Script> {
     script.name = script.name.trim().to_string();
     if script.name.is_empty() {
@@ -36,6 +38,7 @@ pub fn save_script(state: State<'_, AppState>, mut script: Script) -> AppResult<
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn delete_script(state: State<'_, AppState>, id: String) -> AppResult<()> {
     let list: Vec<Script> = state
         .store

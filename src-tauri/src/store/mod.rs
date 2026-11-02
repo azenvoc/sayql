@@ -187,7 +187,7 @@ impl Default for Settings {
 }
 
 /// A query the person saved from a tab, bound to the database it was written for.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Script {
     pub id: String,
@@ -205,7 +205,7 @@ pub struct Script {
 
 /// Saved instructions the person adds to a question with `/slug`. Text only: a skill
 /// holds no SQL and runs nothing; it is added to the AI request for that question.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Skill {
     pub slug: String,
