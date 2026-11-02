@@ -67,7 +67,8 @@ export function AppAccessList({
       <p className={styles.intro}>
         Per connection, choose what an AI app gets back from a query. {NEVER_SEND_SCOPE} <strong>Last audit</strong> is when an AI app last fetched
         the audit prompt or ran it from here, which teaches SayQL about the database from your code; run it again after
-        big changes. <strong>Run audit</strong> runs your installed Claude Code read-only in the project folder, on your own sign-in.
+        big changes. <strong>Run audit</strong> runs your installed Claude Code, or SayQL&apos;s built-in OpenCode, read-only over the
+        database&apos;s knowledge sources.
       </p>
       <dl className={styles.legend} aria-label="What each choice sends">
         {APP_OPTIONS.map((r) => (
