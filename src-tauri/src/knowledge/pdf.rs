@@ -187,23 +187,29 @@ fn run(mut cmd: Command, input: Vec<u8>, limits: &Limits) -> Result<Vec<u8>, Fai
         buf
     });
 
-    let ended = wait(&mut child, deadline, &overflow);
-    if ended.is_none() {
+    let Some(status) = wait(&mut child, deadline, &overflow) else {
         let _ = child.kill();
         let _ = child.wait();
-    }
+        // Not waiting for the pipe threads: a process the reader started could still hold its
+        // pipes open. They end on their own once the pipes close.
+        return Err(if overflow.load(Ordering::SeqCst) {
+            Failure::TooMuchOutput
+        } else {
+            Failure::TimedOut
+        });
+    };
     let _ = writer.join();
     let out = out_reader.join().unwrap_or_default();
     let err = err_reader.join().unwrap_or_default();
-    match ended {
-        None if overflow.load(Ordering::SeqCst) => Err(Failure::TooMuchOutput),
-        None => Err(Failure::TimedOut),
-        Some(_) if out.len() > limits.stdout => Err(Failure::TooMuchOutput),
-        Some(status) if status.success() => Ok(out),
-        Some(status) => Err(Failure::Exit {
+    if out.len() > limits.stdout {
+        Err(Failure::TooMuchOutput)
+    } else if status.success() {
+        Ok(out)
+    } else {
+        Err(Failure::Exit {
             code: status.code(),
             stderr: err,
-        }),
+        })
     }
 }
 
@@ -356,7 +362,9 @@ mod tests {
             ..quick()
         };
         let started = Instant::now();
-        let err = run(sh("sleep 30"), b"x".to_vec(), &limits).unwrap_err();
+        // `; true` keeps every shell from replacing itself with `sleep`, so a second process
+        // holds the pipes open after the first is killed (as dash on Linux always does).
+        let err = run(sh("sleep 30; true"), b"x".to_vec(), &limits).unwrap_err();
         assert!(matches!(err, Failure::TimedOut), "{err:?}");
         assert!(started.elapsed() < Duration::from_secs(5));
     }
