@@ -1,6 +1,6 @@
 [package]
 name = "sayql"
-version = "0.5.3"
+version = "0.5.4"
 description = "AI-first database client: ask in English, get SQL as you type"
 authors = ["Adith"]
 edition = "2024"
