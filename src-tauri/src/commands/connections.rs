@@ -1,4 +1,4 @@
-use super::settings::{SettingsView, settings_view};
+use crate::ai::settings::{SettingsView, view as settings_view};
 use crate::db::{self, ConnConfig, DatabaseList, Kind};
 use crate::error::AppResult;
 use crate::schema::Schema;

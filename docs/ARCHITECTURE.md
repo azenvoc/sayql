@@ -75,6 +75,10 @@ src-tauri/src/
   notes.rs              database notes: checks, review after a schema change, suggested fixes
   audit/                the audit: an AI checks a database's notes against code, files and web pages
     mod.rs              the audit prompt and its sources
+    run.rs              a run from its checks to its end: which agents can run, who pays, the run folder and
+                        instructions, starting Claude Code or the built-in OpenCode, progress events, Terminal
+    sources.rs          a connection's knowledge sources: adding, checking and reading them again, and bringing
+                        them up to date before a run
     runner.rs, runner/  runs the audit in a coding agent (Claude Code, Codex, ...), read-only; run_dir.rs: the
                         private run folder
     opencode.rs, opencode/  the built-in OpenCode audit: pinned download, deny-first config, private HOME,
@@ -98,7 +102,9 @@ src-tauri/src/
     agent.rs            start/stop/reply_agent (agent://event), per-connection agent access, database notes
     generation.rs       generate_sql, cancel_generation
     scripts.rs          list/save/delete saved scripts
-    settings.rs         save_settings, the settings view sent to the UI
+    settings.rs         save_settings, model choice, MCP setup and AI apps, activity logs (logic in ai/settings.rs)
+    audit.rs            coding agents, knowledge sources (file and folder pickers), audit runs (audit://event);
+                        the logic is in audit/run.rs and audit/sources.rs
     handoff.rs          receives sayql:// links, queues valid handoffs for the window (take_handoffs)
     voice.rs            voice_start/stop/cancel, model download and removal (events: voice://level, voice://progress)
     skills.rs           list/save/delete skills; validate (name rules, no clash with built-in commands)
@@ -124,6 +130,8 @@ src-tauri/src/
     models.rs           Claude's models and per-model request options
     prompt.rs           the English → SQL prompt, shared by every provider
     sse.rs              server-sent-event parser
+    settings.rs         Settings → AI provider: the settings view sent to the UI (never a key), checking and saving
+                        a provider's choices, model switching, listing a provider's models
     agent/              agent mode: answers a question in several read-only steps with a cited answer
       run.rs            the loop: turns, tools run through the read-only gate, result setting and Ask before
                         send, step/query/time/token limits, Stop, events to the tab

@@ -9,7 +9,9 @@ pub mod knowledge;
 pub mod opencode;
 pub mod process;
 pub mod repos;
+pub mod run;
 pub mod runner;
+pub mod sources;
 
 use crate::db::ConnConfig;
 use crate::store::Store;

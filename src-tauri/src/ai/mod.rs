@@ -12,6 +12,7 @@ mod providers;
 
 #[cfg(test)]
 pub(crate) use crate::safety::redact::database_error as mask_database_error;
+pub mod settings;
 mod sse;
 pub mod subscription;
 #[cfg(test)]

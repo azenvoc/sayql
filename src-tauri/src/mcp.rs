@@ -1319,6 +1319,17 @@ fn app_dirs() -> Result<(PathBuf, PathBuf), String> {
     Ok((config, data))
 }
 
+/// Where the `sayql-mcp` binary is: next to the app's own executable.
+pub(crate) fn binary_path() -> crate::error::AppResult<PathBuf> {
+    let exe = std::env::current_exe()?;
+    let name = if cfg!(windows) {
+        "sayql-mcp.exe"
+    } else {
+        "sayql-mcp"
+    };
+    Ok(exe.with_file_name(name))
+}
+
 /// Runs the server on stdin/stdout until the client disconnects.
 pub async fn serve_stdio() -> Result<(), Box<dyn std::error::Error>> {
     let (config_dir, data_dir) = app_dirs()?;
