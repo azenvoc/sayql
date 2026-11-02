@@ -1,7 +1,7 @@
 // Behind a transaction pooler (Supabase on port 6543, PgBouncer), statements outside a transaction can
 // land on different server connections. So these run inside one read-only transaction, which keeps them on
 // one server connection, after clearing any prepared statements another client left there.
-use super::assemble;
+use super::{Described, assemble};
 use crate::schema::Table;
 use sqlx::PgPool;
 use std::collections::HashMap;
@@ -105,6 +105,41 @@ pub(super) async fn introspect(pool: &PgPool) -> Result<Vec<Table>, sqlx::Error>
         .filter(|(_, _, n)| *n >= 0)
         .map(|(s, t, n)| ((s, t), n))
         .collect();
+    // pg_description is what col_description and obj_description read: objsubid is the
+    // column number, or 0 for the table itself.
+    let comments: Vec<(String, String, i32, Option<String>, String)> = sqlx::query_as(
+        r#"SELECT n.nspname::text, c.relname::text, d.objsubid, a.attname::text, d.description
+           FROM pg_description d
+           JOIN pg_class c ON c.oid = d.objoid
+           JOIN pg_namespace n ON n.oid = c.relnamespace
+           LEFT JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = d.objsubid AND d.objsubid > 0
+                                     AND NOT a.attisdropped
+           WHERE d.classoid = 'pg_class'::regclass AND c.relkind IN ('r', 'p', 'v', 'm', 'f')
+             AND n.nspname NOT IN ('pg_catalog', 'information_schema')"#,
+    )
+    .fetch_all(&mut *p)
+    .await?;
+    let checks: Vec<(String, String, String)> = sqlx::query_as(
+        r#"SELECT ns.nspname::text, cl.relname::text, pg_get_constraintdef(con.oid)
+           FROM pg_constraint con
+           JOIN pg_class cl ON cl.oid = con.conrelid
+           JOIN pg_namespace ns ON ns.oid = cl.relnamespace
+           WHERE con.contype = 'c' AND ns.nspname NOT IN ('pg_catalog', 'information_schema')
+           ORDER BY con.conname"#,
+    )
+    .fetch_all(&mut *p)
+    .await?;
+    let mut described = Described::default();
+    for (s, t, sub, c, text) in comments {
+        match c {
+            Some(c) => described.column(s, t, c, text),
+            None if sub == 0 => described.table(s, t, text),
+            None => {}
+        }
+    }
+    for (s, t, def) in checks {
+        described.check(s, t, &def);
+    }
     tx.rollback().await?;
-    Ok(assemble(cols, pks, fks, enums, rows, true))
+    Ok(assemble(cols, pks, fks, enums, rows, described, true))
 }

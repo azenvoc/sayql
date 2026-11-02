@@ -683,6 +683,11 @@ struct SchemaTable {
     kind: Option<String>,
     #[serde(default)]
     columns: Vec<SchemaColumn>,
+    // Empty until the server sends the database's comments and checks.
+    #[serde(default)]
+    comment: Option<String>,
+    #[serde(default)]
+    checks: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -692,6 +697,8 @@ struct SchemaColumn {
     data_type: String,
     #[serde(default = "yes")]
     nullable: bool,
+    #[serde(default)]
+    comment: Option<String>,
 }
 
 fn yes() -> bool {
@@ -715,12 +722,13 @@ impl From<SchemaTable> for Table {
                     name: c.name,
                     data_type: c.data_type,
                     nullable: c.nullable,
-                    primary_key: false,
-                    enum_values: None,
+                    comment: c.comment,
+                    ..Default::default()
                 })
                 .collect(),
-            foreign_keys: vec![],
-            row_estimate: None,
+            comment: t.comment,
+            checks: t.checks,
+            ..Default::default()
         }
     }
 }

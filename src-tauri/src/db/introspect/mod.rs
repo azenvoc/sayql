@@ -1,4 +1,5 @@
-//! Reads tables, columns, keys, enum values and row estimates into a [`Schema`].
+//! Reads tables, columns, keys, enum values, row estimates, comments and CHECK constraints
+//! into a [`Schema`].
 
 mod mssql;
 mod mysql;
@@ -27,12 +28,54 @@ pub async fn introspect(pool: &DbPool, kind: Kind) -> AppResult<Schema> {
 /// (schema, table)
 type Key = (String, String);
 
+/// What the database itself says about its tables: comments and CHECK constraints.
+#[derive(Default)]
+struct Described {
+    /// (schema, table, column) → comment
+    columns: HashMap<(String, String, String), String>,
+    tables: HashMap<Key, String>,
+    /// Each starts with `CHECK`.
+    checks: HashMap<Key, Vec<String>>,
+}
+
+impl Described {
+    fn column(&mut self, s: String, t: String, c: String, comment: String) {
+        if !comment.trim().is_empty() {
+            self.columns.insert((s, t, c), comment);
+        }
+    }
+
+    fn table(&mut self, s: String, t: String, comment: String) {
+        if !comment.trim().is_empty() {
+            self.tables.insert((s, t), comment);
+        }
+    }
+
+    /// `def` with or without its leading `CHECK`.
+    fn check(&mut self, s: String, t: String, def: &str) {
+        let def = def.trim();
+        if def.is_empty() {
+            return;
+        }
+        let def = if def
+            .get(..5)
+            .is_some_and(|w| w.eq_ignore_ascii_case("check"))
+        {
+            def.to_string()
+        } else {
+            format!("CHECK {def}")
+        };
+        self.checks.entry((s, t)).or_default().push(def);
+    }
+}
+
 fn assemble(
     cols: Vec<(String, String, String, String, bool, String)>,
     pks: Vec<(String, String, String)>,
     fks: Vec<(String, String, String, String, String, String)>,
     enums: HashMap<String, Vec<String>>,
     rows: HashMap<Key, i64>,
+    mut described: Described,
     qualify_refs: bool,
 ) -> Vec<Table> {
     let pk: HashSet<(String, String, String)> = pks.into_iter().collect();
@@ -68,12 +111,16 @@ fn assemble(
                 columns: vec![],
                 foreign_keys: fk_map.remove(&key).unwrap_or_default(),
                 row_estimate: rows.get(&key).copied(),
+                comment: described.tables.remove(&key),
+                checks: described.checks.remove(&key).unwrap_or_default(),
             }
         });
         let enum_values = enums.get(&ty).cloned().or_else(|| parse_mysql_enum(&ty));
+        let col_key = (s, t, c);
         table.columns.push(Column {
-            primary_key: pk.contains(&(s, t, c.clone())),
-            name: c,
+            primary_key: pk.contains(&col_key),
+            comment: described.columns.remove(&col_key),
+            name: col_key.2,
             data_type: if enum_values.is_some() && ty.starts_with("enum(") {
                 "enum".into()
             } else {

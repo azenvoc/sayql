@@ -92,6 +92,8 @@ export interface Column {
   nullable: boolean;
   primary_key: boolean;
   enum_values: string[] | null;
+  /** The database's own description of the column. */
+  comment?: string | null;
 }
 
 export interface ForeignKey {
@@ -107,6 +109,10 @@ export interface Table {
   columns: Column[];
   foreign_keys: ForeignKey[];
   row_estimate: number | null;
+  /** The database's own description of the table. */
+  comment?: string | null;
+  /** CHECK constraints as the database writes them. */
+  checks?: string[];
 }
 
 export interface Schema {
