@@ -18,7 +18,6 @@
     "src-tauri/src/audit/knowledge.rs::clippy::indexing_slicing": 1,
     "src-tauri/src/audit/knowledge.rs::clippy::string_slice": 11,
     "src-tauri/src/audit/mod.rs::clippy::string_slice": 3,
-    "src-tauri/src/audit/opencode.rs::clippy::indexing_slicing": 1,
     "src-tauri/src/audit/run.rs::clippy::indexing_slicing": 2,
     "src-tauri/src/audit/runner.rs::clippy::string_slice": 3,
     "src-tauri/src/bin/sayql-mcp.rs::clippy::print_stderr": 1,
@@ -55,6 +54,7 @@
     "src-tauri/src/state.rs::clippy::print_stderr": 1,
     "src-tauri/src/store/code_sources.rs::clippy::expect_used": 1,
     "src-tauri/src/store/code_sources.rs::clippy::string_slice": 2,
+    "src-tauri/src/store/digest.rs::clippy::indexing_slicing": 1,
     "src-tauri/src/store/note_values.rs::clippy::indexing_slicing": 13,
     "src-tauri/src/store/secrets.rs::clippy::expect_used": 1,
     "src-tauri/src/team/ai.rs::clippy::indexing_slicing": 2,
@@ -63,7 +63,6 @@
     "src-tauri/src/team/mod.rs::clippy::print_stderr": 1,
     "src-tauri/src/voice/audio.rs::clippy::indexing_slicing": 4,
     "src-tauri/src/voice/mod.rs::clippy::unwrap_used": 5,
-    "src-tauri/src/voice/model.rs::clippy::indexing_slicing": 1,
     "src-tauri/src/voice/transcribe.rs::clippy::string_slice": 3
   },
   "oxlint": {

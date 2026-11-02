@@ -151,7 +151,8 @@ src-tauri/src/
                         `Reference` checks the set, `agent.rs` runs it with a real model (opt-in, API key)
   schema/               schema model (mod.rs) and compact prompt rendering (render.rs)
   store/                settings/connections JSON (mod.rs), keychain secrets (secrets.rs), and agent mode's
-                        per-connection access, run limits and database notes (agent.rs)
+                        per-connection access, run limits and database notes (agent.rs); SHA-256 of downloaded files
+                        checked against a pinned hash (digest.rs)
   voice/                voice input, all on this computer, no Tauri types
     model.rs            the Whisper model: pinned URL and SHA-256, download, path in app data
     audio.rs            microphone capture with cpal, mono 16 kHz resampling

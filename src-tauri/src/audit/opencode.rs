@@ -48,11 +48,11 @@
 //!   list) and names the tools `sayql_<tool>`.
 
 use crate::ai::{Api, KeyNeed, Provider};
-use crate::audit::runner::{CREDITS_HAIKU, CREDITS_OPUS, CREDITS_SONNET, Line, SAYQL_TOOLS};
+use crate::audit::runner::{CREDITS_HAIKU, CREDITS_OPUS, CREDITS_SONNET, Line, SAYQL_TOOLS, short};
 use crate::store::ProviderSettings;
+use crate::store::digest::sha256_file;
 use futures_util::StreamExt;
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
 use std::ffi::OsString;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -227,25 +227,6 @@ pub fn exe(name: &str) -> String {
     } else {
         name.to_string()
     }
-}
-
-fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
-}
-
-/// The SHA-256 of a file, as lowercase hex.
-pub fn sha256_file(path: &Path) -> std::io::Result<String> {
-    let mut file = std::fs::File::open(path)?;
-    let mut hasher = Sha256::new();
-    let mut buf = vec![0u8; 1 << 20];
-    loop {
-        let n = file.read(&mut buf)?;
-        if n == 0 {
-            break;
-        }
-        hasher.update(&buf[..n]);
-    }
-    Ok(hex(&hasher.finalize()))
 }
 
 /// The installed OpenCode in `dir`, if both executables are there and still match the hashes
@@ -1327,16 +1308,6 @@ impl crate::audit::runner::RunStream for OpenCodeStream {
     }
     fn failure(&self, stderr: &str, exit: Option<i32>) -> String {
         OpenCodeStream::failure(self, stderr, exit)
-    }
-}
-
-fn short(s: &str, max: usize) -> String {
-    let s = s.split_whitespace().collect::<Vec<_>>().join(" ");
-    if s.chars().count() <= max {
-        s
-    } else {
-        let cut: String = s.chars().take(max - 1).collect();
-        format!("{}…", cut.trim_end())
     }
 }
 

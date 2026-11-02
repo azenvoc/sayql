@@ -666,7 +666,8 @@ pub struct ClaudeStream {
 
 const SHORT: usize = 90;
 
-fn short(s: &str, max: usize) -> String {
+/// `s` on one line (runs of whitespace as one space), cut to at most `max` characters with `…`.
+pub(crate) fn short(s: &str, max: usize) -> String {
     let s = s.split_whitespace().collect::<Vec<_>>().join(" ");
     if s.chars().count() <= max {
         s

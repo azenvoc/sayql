@@ -1,5 +1,7 @@
 use super::*;
 use crate::ai::find_provider;
+use crate::store::digest::hex;
+use sha2::{Digest, Sha256};
 
 fn temp(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("sayql-oc-{name}-{}", uuid::Uuid::new_v4()));
