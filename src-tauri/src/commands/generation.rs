@@ -35,7 +35,13 @@ pub async fn generate_sql(
         }
         _ => state.ensure_fresh(&target).await,
     }
-    let live = state.schema(&target)?;
+    // What the database says about never-send columns stays out of the prompt. A signed-out
+    // team connection has no team rules to add: the person's own list.
+    let never_send = match crate::commands::agent::effective_access(&state, &id) {
+        Ok(view) => view.access.never_send,
+        Err(_) => state.store.agent_access(&id)?.never_send,
+    };
+    let live = state.schema(&target)?.for_ai(&never_send);
     let skill = match skill {
         None => None,
         Some(slug) => Some(

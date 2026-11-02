@@ -28,8 +28,10 @@
 
 use crate::db::{DbPool, Kind};
 use crate::readonly::{QueryFailure, run_limited_checked};
+use crate::schema::Schema;
 use crate::sql_lex::{Dialect, Tok, lex};
 use serde_json::Value;
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 use tokio_util::sync::CancellationToken;
@@ -149,6 +151,75 @@ const FORBIDDEN_NAMES: &[&str] = &[
     "table_import_from_s3",
 ];
 const FORBIDDEN_PREFIXES: &[&str] = &["pg_ls_", "pg_file_", "dblink", "xp_"];
+
+/// `schema` as an AI may read it. The database's own text about a never-send column can quote
+/// its values (`COMMENT ON COLUMN users.api_key IS 'e.g. sk_live_…'`, `CHECK (api_key <> 'sk_test_…')`,
+/// enum labels), so on each never-send column the comment and enum values are left out, and so
+/// is every CHECK constraint that names one. Borrowed when nothing is left out. For every
+/// schema text an AI reads; the app's own schema view shows everything.
+pub fn schema_for_ai<'a>(schema: &'a Schema, never: &[Entry]) -> Cow<'a, Schema> {
+    if never.is_empty() {
+        return Cow::Borrowed(schema);
+    }
+    let mut out = Cow::Borrowed(schema);
+    for (i, t) in schema.tables.iter().enumerate() {
+        let table = t.name.to_lowercase();
+        let hidden: HashSet<String> = t
+            .columns
+            .iter()
+            .map(|c| c.name.to_lowercase())
+            .filter(|c| {
+                never
+                    .iter()
+                    .any(|e| e.column == *c && e.table.as_ref().is_none_or(|x| *x == table))
+            })
+            .collect();
+        if hidden.is_empty() {
+            continue;
+        }
+        let names_hidden = |check: &str| {
+            [
+                Dialect::Postgres,
+                Dialect::MySql,
+                Dialect::Sqlite,
+                Dialect::Mssql,
+            ]
+            .into_iter()
+            .flat_map(|d| lex(check, d).into_iter().map(move |l| (l, d)))
+            .any(|(l, d)| !identifiers(&l.toks, d).0.is_disjoint(&hidden))
+        };
+        let shows_values = t.columns.iter().any(|c| {
+            hidden.contains(&c.name.to_lowercase())
+                && (c.comment.is_some() || c.enum_values.is_some() || enum_type(&c.data_type))
+        });
+        if !shows_values && !t.checks.iter().any(|c| names_hidden(c)) {
+            continue;
+        }
+        let Some(t) = out.to_mut().tables.get_mut(i) else {
+            continue;
+        };
+        for c in &mut t.columns {
+            if hidden.contains(&c.name.to_lowercase()) {
+                c.comment = None;
+                c.enum_values = None;
+                // A MySQL `enum('a','b')` or `set('a','b')` type SayQL couldn't parse.
+                if enum_type(&c.data_type)
+                    && let Some((word, _)) = c.data_type.split_once('(')
+                {
+                    c.data_type = word.to_string();
+                }
+            }
+        }
+        t.checks.retain(|c| !names_hidden(c));
+    }
+    out
+}
+
+/// A MySQL type that lists its values: `enum('a','b')`, `set('a','b')`.
+fn enum_type(data_type: &str) -> bool {
+    let ty = data_type.trim_start().to_ascii_lowercase();
+    ty.starts_with("enum(") || ty.starts_with("set(")
+}
 
 /// Why `sql` uses a function AI apps may not use, if it does. A name only counts when it is
 /// called (followed by `(`, or Postgres attribute notation `(row).http`) or, for catalogs,
@@ -1401,6 +1472,89 @@ mod tests {
         ] {
             assert!(forbidden_for_ai(sql, Kind::Postgres).is_none(), "{sql}");
         }
+    }
+
+    fn described(dialect: &str) -> Schema {
+        use crate::schema::{Column, Table};
+        let col = |name: &str, comment: Option<&str>, values: Option<&[&str]>| Column {
+            name: name.into(),
+            data_type: "text".into(),
+            nullable: true,
+            enum_values: values.map(|v| v.iter().map(|s| s.to_string()).collect()),
+            comment: comment.map(str::to_string),
+            ..Default::default()
+        };
+        let table = |name: &str| Table {
+            name: name.into(),
+            kind: "table".into(),
+            columns: vec![
+                col("id", Some("Row id"), None),
+                col("api_key", Some("e.g. sk_live_abc123"), None),
+                col("tier", Some("Plan"), Some(&["free", "secret_tier"])),
+                Column {
+                    data_type: "enum('a1','b2')".into(),
+                    ..col("pin_kind", None, None)
+                },
+            ],
+            comment: Some("One row per account".into()),
+            checks: vec![
+                "CHECK (id > 0)".into(),
+                "CHECK (api_key <> 'sk_test_abc')".into(),
+                "CHECK ((\"TIER\")::text <> 'hidden')".into(),
+                "CHECK ([pin_kind] <> 'x')".into(),
+                "CHECK (note <> 'api_key')".into(),
+                "CHECK (api_key_hint IS NULL)".into(),
+            ],
+            ..Default::default()
+        };
+        Schema {
+            dialect: dialect.into(),
+            tables: vec![table("accounts"), table("staff")],
+        }
+    }
+
+    /// The 2026-11-02 audit (M6): what the database says about a never-send column (its
+    /// comment, enum values and CHECK constraints) reached every prompt.
+    #[test]
+    fn the_schema_for_ai_leaves_out_what_the_database_says_about_never_send_columns() {
+        let s = described("PostgreSQL");
+        let never = entries(&["accounts.api_key", "accounts.tier", "pin_kind"]);
+        let ai = schema_for_ai(&s, &never);
+        let text = crate::schema::render_table(&ai.tables[0], "PostgreSQL");
+        for leaked in ["sk_live", "sk_test", "secret_tier", "hidden", "a1"] {
+            assert!(!text.contains(leaked), "{leaked} in {text}");
+        }
+        let accounts = &ai.tables[0];
+        assert_eq!(accounts.columns[0].comment.as_deref(), Some("Row id"));
+        assert_eq!(accounts.comment.as_deref(), Some("One row per account"));
+        assert!(accounts.columns[1].comment.is_none());
+        assert!(accounts.columns[2].comment.is_none() && accounts.columns[2].enum_values.is_none());
+        assert_eq!(accounts.columns[3].data_type, "enum");
+        // Names are matched as identifiers: in a string, or as part of a longer name, they don't count.
+        assert_eq!(
+            accounts.checks,
+            [
+                "CHECK (id > 0)",
+                "CHECK (note <> 'api_key')",
+                "CHECK (api_key_hint IS NULL)"
+            ]
+        );
+        // A table-qualified entry leaves the same name in another table alone; a bare one doesn't.
+        let staff = &ai.tables[1];
+        assert_eq!(
+            staff.columns[1].comment.as_deref(),
+            Some("e.g. sk_live_abc123")
+        );
+        assert_eq!(staff.columns[2].enum_values.as_ref().map(Vec::len), Some(2));
+        assert_eq!(staff.columns[3].data_type, "enum");
+        assert_eq!(staff.checks.len(), 5);
+        // The app's own schema is unchanged, and with nothing to leave out nothing is copied.
+        assert_eq!(s.tables[0].checks.len(), 6);
+        assert!(matches!(
+            schema_for_ai(&s, &entries(&["staff.nope"])),
+            Cow::Borrowed(_)
+        ));
+        assert!(matches!(schema_for_ai(&s, &[]), Cow::Borrowed(_)));
     }
 
     fn plan(node: Value) -> Result<Analysis, String> {
