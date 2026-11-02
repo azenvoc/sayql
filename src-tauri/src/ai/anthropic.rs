@@ -152,7 +152,10 @@ pub(super) async fn run(
 /// One agent turn with tools: the reply's text and tool calls. Thinking blocks come back as
 /// `Block::Opaque`, to be passed back unchanged on the next turn as the API requires. The
 /// instructions, schema and tools are cached, so later turns pay the cache-read rate for them.
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the parts of one Messages API request; existing debt, see AGENTS.md"
+)]
 pub(crate) async fn turn(
     http: &reqwest::Client,
     access: &Access<'_>,

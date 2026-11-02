@@ -1,0 +1,6 @@
+# One Rust for everyone and CI, so lints and formatting don't change under a contributor.
+# Raise it in its own pull request.
+[toolchain]
+channel = "1.99.1"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

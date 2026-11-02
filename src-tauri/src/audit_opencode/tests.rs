@@ -887,7 +887,10 @@ fn scratch_sayql(root: &Path) -> (PathBuf, PathBuf) {
 
 /// Runs OpenCode as `start_opencode` does: the same config, environment and arguments, prompt
 /// on stdin. Returns stdout, stderr and the exit code.
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "test helper mirroring the OpenCode command line"
+)]
 fn run_opencode(
     oc: &Installed,
     model: &Model,

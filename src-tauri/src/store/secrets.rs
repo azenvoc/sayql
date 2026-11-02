@@ -48,7 +48,7 @@ trait Backend {
 
 /// The OS keychain; unit tests use `TestKeychain` instead.
 #[derive(Default)]
-#[cfg_attr(test, allow(dead_code))]
+#[cfg_attr(test, allow(dead_code, reason = "unit tests use TestKeychain"))]
 struct Keychain;
 
 impl Backend for Keychain {

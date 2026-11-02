@@ -3,12 +3,18 @@
   "private": true,
   "version": "0.5.4",
   "type": "module",
+  "packageManager": "pnpm@10.28.2",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "oxlint src && node scripts/check-tokens.mjs",
+    "lint": "oxlint --quiet src && node scripts/check-tokens.mjs && node scripts/check-architecture.mjs",
+    "lint:ratchet": "node scripts/lint-ratchet.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest run && cd src-tauri && cargo test --lib",
+    "check": "pnpm format:check && pnpm lint && pnpm build && cd src-tauri && cargo fmt --check && cd .. && pnpm lint:ratchet && pnpm test",
+    "hooks": "git config core.hooksPath .githooks",
     "tauri": "tauri"
   },
   "dependencies": {
@@ -30,6 +36,7 @@
     "@vitejs/plugin-react": "^6.0.2",
     "jsdom": "^26.1.0",
     "oxlint": "1.90.0",
+    "prettier": "3.9.10",
     "typescript": "~7.0.2",
     "vite": "^8.0.16",
     "vitest": "5.0.5"

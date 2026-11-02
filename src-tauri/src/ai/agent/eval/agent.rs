@@ -333,7 +333,13 @@ async fn agent_on_a_real_database() {
     };
     if std::env::var("SAYQL_EVAL_RESULTS").is_err() {
         // SAFETY: tests here run this one at a time; it only sets the default the answerer reads.
-        unsafe { std::env::set_var("SAYQL_EVAL_RESULTS", "counts") };
+        #[expect(
+            unsafe_code,
+            reason = "Rust 2024 makes set_var unsafe; see SAFETY above"
+        )]
+        unsafe {
+            std::env::set_var("SAYQL_EVAL_RESULTS", "counts")
+        };
     }
     let (cfg, password) = db::env_config("SAYQL_EVAL_REAL_URL", db::Kind::Postgres).unwrap();
     let pool = db::connect(&cfg, password).await.unwrap();

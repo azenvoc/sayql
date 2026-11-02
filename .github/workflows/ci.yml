@@ -26,16 +26,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev libdbus-1-dev libasound2-dev
 
+      # pnpm's version comes from package.json's packageManager, Node's from .node-version.
       - uses: pnpm/action-setup@v6
-        with:
-          version: 10
 
       - uses: actions/setup-node@v7
         with:
-          node-version: lts/*
+          node-version-file: .node-version
           cache: pnpm
 
       - uses: dtolnay/rust-toolchain@stable
+
+      # The Rust in src-tauri/rust-toolchain.toml.
+      - name: Install the pinned Rust
+        working-directory: src-tauri
+        run: rustup toolchain install
 
       - uses: swatinem/rust-cache@v2
         with:
@@ -45,9 +49,6 @@ jobs:
 
       - name: Type check and build the UI
         run: pnpm build
-
-      - name: Lint the UI
-        run: pnpm lint
 
       - name: Frontend tests
         run: pnpm exec vitest run
@@ -136,6 +137,10 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
+      - name: Install the pinned Rust
+        working-directory: src-tauri
+        run: rustup toolchain install
+
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
@@ -159,13 +164,17 @@ jobs:
       - uses: actions/checkout@v7
 
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
+
+      - name: Install the pinned Rust
+        working-directory: src-tauri
+        run: rustup toolchain install
 
       - name: rustfmt
         working-directory: src-tauri
         run: cargo fmt --check
 
+  # Every clippy warning fails, except those lint-baseline.json counts, and those counts may
+  # only go down (scripts/lint-ratchet.mjs, AGENTS.md).
   clippy:
     runs-on: ubuntu-22.04
     steps:
@@ -176,17 +185,57 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev libdbus-1-dev libasound2-dev
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v7
         with:
-          components: clippy
+          node-version-file: .node-version
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install the pinned Rust
+        working-directory: src-tauri
+        run: rustup toolchain install
 
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
 
-      - name: clippy
-        working-directory: src-tauri
-        run: cargo clippy --all-targets -- -D warnings
+      - name: clippy (the lint ratchet)
+        run: node scripts/lint-ratchet.mjs --only=clippy
+
+  # Formatting, lint, the architecture rules and the TypeScript lint ratchet (AGENTS.md).
+  consistency:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Prettier
+        run: pnpm format:check
+
+      - name: Lint, design tokens and architecture rules
+        run: pnpm lint
+
+      - name: oxlint (the lint ratchet)
+        run: node scripts/lint-ratchet.mjs --only=oxlint
+
+      # A pull request may lower lint-baseline.json's counts, never raise them.
+      - name: The lint baseline only goes down
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --depth=1 origin "${{ github.base_ref }}"
+          if git show FETCH_HEAD:lint-baseline.json > "$RUNNER_TEMP/main-baseline.json" 2>/dev/null; then
+            node scripts/lint-ratchet.mjs --against="$RUNNER_TEMP/main-baseline.json"
+          else
+            echo "main has no lint-baseline.json yet."
+          fi
 
   # The backend builds C++ (whisper.cpp, for voice input), so check that it still compiles
   # on every platform the release builds for, not only Linux.
@@ -209,8 +258,13 @@ jobs:
       - uses: actions/checkout@v7
 
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
+
+      # The Rust in src-tauri/rust-toolchain.toml, with this job's target.
+      - name: Install the pinned Rust
+        working-directory: src-tauri
+        run: |
+          rustup toolchain install
+          rustup target add ${{ matrix.target }}
 
       - uses: swatinem/rust-cache@v2
         with:

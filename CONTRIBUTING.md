@@ -89,10 +89,12 @@ matrix and what each check covers.
 
 1. Fork the repository and create a branch from `main`.
 2. Keep the change focused: one fix or feature per pull request.
-3. Match the surrounding code: feature folders in `src/features`, design tokens instead of raw colours,
-   thin Tauri commands, tests next to the code they cover.
-4. Add or update tests, and run `pnpm test` and `pnpm build` (type check) before you push.
-5. Open a pull request describing what changed and why. CI runs the same checks.
+3. Follow [AGENTS.md](AGENTS.md): the code rules for everyone, people and AI agents alike. CI enforces
+   every one of them (formatting, lints, the lint ratchet, architecture checks), and a pull request
+   that fails one can't be merged. `pnpm hooks` turns on a pre-commit hook with the fast checks.
+4. Add or update tests, and run `pnpm check` before you push. It runs what CI runs, except the
+   database integration tests.
+5. Open a pull request describing what changed and why.
 
 ## Ground rules for SayQL features
 

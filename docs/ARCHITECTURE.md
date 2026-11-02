@@ -61,6 +61,19 @@ src-tauri/src/
   readonly.rs           read-only access shared by MCP and agent mode: schema search (describe), queries stopped
                         on the server after a time limit (run_limited), row caps, the write refusal
   bin/sayql-mcp.rs      its entry point
+  sql_lex.rs            the SQL lexer every check shares (strings, quoted names and comments per dialect)
+  never_send.rs         never-send columns: refuses SQL that could read one (names, the Postgres plan, shapes)
+  pii.rs                likely personal data in text, for the masker and note checks
+  notes.rs              database notes: checks, review after a schema change, suggested fixes
+  knowledge.rs          knowledge sources: file text (PDF, DOCX, HTML) and the web crawler
+  repos.rs              git and local code sources copied for the audit
+  audit.rs              the audit prompt and its sources
+  audit_runner.rs       runs the audit in a coding agent (Claude Code, Codex, ...), read-only
+  audit_opencode.rs     the built-in OpenCode audit: pinned download, deny-first config, private HOME
+  agent_process.rs      child processes: process groups, stop and kill
+  coding_agents.rs      which coding agents are installed
+  team.rs, team/        the team server client: sign-in, queries, shared notes, team AI
+  app_menu.rs           the native menu
   handoff.rs            sayql:// links from sayql-mcp to the app (prefilled connection, SQL tab): validation, one-time tokens
   error.rs              AppError / AppResult: the single error type; serializes to a message for the UI
   state.rs              AppState: store, open connections, the running AI generation
@@ -106,7 +119,7 @@ src-tauri/src/
       prompt.rs         instructions, the "why" playbook, the schema and notes block
       checks.rs         checks in code: joins that repeat rows before a sum, numbers no step backs, big scans
       text_protocol.rs  one fenced JSON action per reply, for models without tool calling
-      mask.rs           masks likely personal data in results as per-run tokens (‹email-3›), puts real values back
+      mask/             masks likely personal data in results as per-run tokens (‹email-3›), puts real values back
                         into SQL as dialect literals, and builds the "counts and summaries only" view
       eval/             tests only: the evaluation question set (questions.json, demo store and tenant fixture);
                         `Reference` checks the set, `agent.rs` runs it with a real model (opt-in, API key)

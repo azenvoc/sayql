@@ -925,6 +925,7 @@ export function installMockBackend() {
           return installedCodingAgents();
         case "open_install_link":
           // The browser preview can't open Cursor or VS Code; the real app asks the OS to.
+          // oxlint-disable-next-line no-console -- the browser preview shows the link it would open
           console.info("open_install_link", a.url);
           return null;
         case "mcp_activity":

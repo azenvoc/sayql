@@ -1,0 +1,7 @@
+# Tests may unwrap, index and print: a failure there is the test failing, not the app crashing.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+allow-indexing-slicing-in-tests = true
+allow-print-in-tests = true
+allow-dbg-in-tests = true

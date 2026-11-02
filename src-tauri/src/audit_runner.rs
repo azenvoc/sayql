@@ -554,7 +554,7 @@ pub fn sh_quote(s: &str) -> String {
 }
 
 /// `s` quoted for PowerShell (single quotes, doubled inside).
-#[cfg_attr(not(windows), allow(dead_code))]
+#[cfg_attr(not(windows), allow(dead_code, reason = "used on Windows only"))]
 pub fn ps_quote(s: &str) -> String {
     format!("'{}'", s.replace('\'', "''"))
 }
@@ -581,7 +581,7 @@ pub fn unix_script(
 }
 
 /// The same for Windows PowerShell.
-#[cfg_attr(not(windows), allow(dead_code))]
+#[cfg_attr(not(windows), allow(dead_code, reason = "used on Windows only"))]
 pub fn powershell_script(
     folder: &Path,
     path_var: &OsString,
