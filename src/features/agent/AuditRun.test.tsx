@@ -243,3 +243,65 @@ it("asks for the connection when it has none", async () => {
   await waitFor(() => expect(startAudit).toHaveBeenCalled());
   expect(startAudit.mock.calls[0].slice(1)).toEqual(["claude", "c2", null]);
 });
+
+const builtIn = (patch: Partial<AuditAgent> = {}): AuditAgent => ({
+  id: "opencode",
+  label: "SayQL's built-in OpenCode",
+  path: null,
+  version: "1.19.5",
+  supported: true,
+  ready: true,
+  problem: null,
+  installUrl: "https://opencode.ai",
+  builtIn: true,
+  downloadBytes: 66_056_854,
+  detail: "SayQL AI credits · claude-sonnet-5-5",
+  ...patch,
+});
+
+it("runs Claude Code when it's installed, and offers the built-in OpenCode beside it", async () => {
+  agents = [claude(), codex, builtIn()];
+  sources = [shop];
+  expect(auditButtonTitle(agents)).toBe("Runs your installed Claude Code, read-only, over this database's code");
+  render(<AuditDialog target={target} onClose={() => {}} />);
+  const select = (await screen.findByRole("combobox", { name: "Audit with" })) as HTMLSelectElement;
+  expect(select.value).toBe("claude");
+  expect([...select.options].map((o) => o.text)).toEqual(["Claude Code", "SayQL's built-in OpenCode"]);
+  await screen.findByText("/Users/me/code/shop");
+  fireEvent.click(screen.getByRole("button", { name: "Start audit" }));
+  await waitFor(() => expect(startAudit).toHaveBeenCalled());
+  expect(startAudit.mock.calls[0][1]).toBe("claude");
+});
+
+it("without Claude Code it runs the built-in OpenCode, saying what it downloads and showing the download", async () => {
+  agents = [claude({ path: null, version: null, ready: false }), codex, builtIn()];
+  sources = [shop];
+  expect(auditButtonTitle(agents)).toBe("Runs SayQL's built-in OpenCode, read-only, over this database's code");
+  render(<AuditDialog target={target} onClose={() => {}} />);
+  expect(await screen.findByText(/Runs OpenCode 1.19.5, built into SayQL, read-only/)).toBeTruthy();
+  expect(screen.getByText(/SayQL AI credits · claude-sonnet-5-5/)).toBeTruthy();
+  expect(screen.getByText(/Downloads OpenCode 1.19.5, about 66 MB, once, from GitHub/)).toBeTruthy();
+  expect(screen.queryByRole("combobox", { name: "Model for the audit" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Open in Terminal" })).toBeNull();
+  await screen.findByText("/Users/me/code/shop");
+  fireEvent.click(screen.getByRole("button", { name: "Download and start" }));
+  await waitFor(() => expect(startAudit).toHaveBeenCalled());
+  const [runId, agent] = startAudit.mock.calls[0];
+  expect(agent).toBe("opencode");
+  act(() => emit({ type: "download", runId, received: 24_000_000, total: 66_056_854 }));
+  expect(screen.getByText(/Downloading OpenCode: 24 of 66 MB/)).toBeTruthy();
+  act(() => emit({ type: "download", runId, received: 66_056_854, total: 66_056_854 }));
+  expect(screen.queryByText(/Downloading OpenCode:/)).toBeNull();
+});
+
+it("says why the built-in OpenCode can't run when nothing can", async () => {
+  agents = [
+    claude({ path: null, version: null, ready: false }),
+    codex,
+    builtIn({ ready: false, problem: "Choose a model for OpenAI in Settings → AI provider to run the audit with it." }),
+  ];
+  render(<AuditDialog target={target} onClose={() => {}} />);
+  expect(await screen.findByText(/Choose a model for OpenAI/)).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Install Claude Code" })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: /Install SayQL/ })).toBeNull();
+});

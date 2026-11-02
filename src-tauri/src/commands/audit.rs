@@ -2,14 +2,16 @@
 //! knowledge sources (local folders, git repositories, files and web pages, each fetched or
 //! read again first) with the audit instructions,
 //! streams its progress to the window as `audit://event`, and opens the same run in a terminal
-//! instead. See src/audit_runner.rs for what's enforced, src/repos.rs for git, and
+//! instead. Without Claude Code it runs SayQL's built-in OpenCode, downloaded on first use. See
+//! src/audit_runner.rs and src/audit_opencode.rs for what's enforced, src/repos.rs for git, and
 //! src/knowledge.rs for files and web pages.
 
 use crate::agent_process::{TerminalRun, kill_tree, launch_terminal, no_window, version_of};
-use crate::ai::{SAYQL_CREDITS, endpoint};
+use crate::ai::{KeyNeed, SAYQL_CREDITS, endpoint};
 use crate::audit::{self, Target};
+use crate::audit_opencode::{self as opencode, OpenCodeStream};
 use crate::audit_runner::{
-    self as runner, AgentSpec, AuditModel, AuditPayment, ClaudeStream, RunFiles,
+    self as runner, AgentSpec, AuditModel, AuditPayment, ClaudeStream, RunFiles, RunStream,
 };
 use crate::commands::settings::mcp_binary;
 use crate::error::{AppError, AppResult};
@@ -53,6 +55,12 @@ pub struct AgentView {
     /// Why it can't run, when found but not ready.
     problem: Option<String>,
     install_url: &'static str,
+    /// SayQL's built-in OpenCode, rather than an agent the person installed.
+    built_in: bool,
+    /// What the first run downloads, in bytes, while it isn't downloaded yet.
+    download_bytes: Option<u64>,
+    /// The AI it talks to: "SayQL AI credits · claude-sonnet-5-5".
+    detail: Option<String>,
 }
 
 #[derive(Serialize, Clone)]
@@ -66,6 +74,12 @@ enum AuditEvent {
         run_id: String,
         kind: &'static str,
         text: String,
+    },
+    /// Downloading the built-in OpenCode before the run.
+    Download {
+        run_id: String,
+        received: u64,
+        total: u64,
     },
     Done {
         run_id: String,
@@ -100,16 +114,63 @@ async fn view(spec: &'static AgentSpec) -> AgentView {
         supported: spec.unsupported.is_none(),
         problem,
         install_url: spec.install_url,
+        built_in: false,
+        download_bytes: None,
+        detail: None,
     }
 }
 
-/// The coding agents SayQL knows, whether each is installed, and whether it can run an audit.
+/// The model the built-in OpenCode would use, from Settings → AI provider (the keychain isn't
+/// read for this).
+fn opencode_model(state: &AppState) -> AppResult<opencode::Model> {
+    let settings = state.store.settings().unwrap_or_default();
+    let p = endpoint::provider(&settings.provider)?;
+    Ok(opencode::model_for(p, &settings.provider_settings(p.id))?)
+}
+
+/// The built-in OpenCode: always offered, ready unless this computer or the settings rule it out.
+fn opencode_view(state: &AppState) -> AgentView {
+    let dir = opencode::install_dir(&state.runners_dir);
+    let installed = opencode::present(&dir);
+    let model = opencode_model(state);
+    let problem = match (
+        opencode::this_platform(),
+        opencode::managed_policy(),
+        &model,
+    ) {
+        (Err(e), _, _) => Some(e),
+        (_, Some(e), _) => Some(e),
+        (_, _, Err(e)) => Some(e.to_string()),
+        _ => None,
+    };
+    AgentView {
+        id: opencode::ID,
+        label: opencode::LABEL,
+        path: installed.as_ref().map(|p| p.to_string_lossy().into_owned()),
+        version: Some(opencode::VERSION.into()),
+        supported: true,
+        ready: problem.is_none(),
+        problem,
+        install_url: "https://opencode.ai",
+        built_in: true,
+        download_bytes: match installed {
+            Some(_) => None,
+            None => opencode::this_platform().ok().map(|p| p.download_bytes()),
+        },
+        detail: model.ok().map(|m| format!("{} · {}", m.label, m.model)),
+    }
+}
+
+/// The coding agents SayQL knows, whether each is installed, and whether it can run an audit;
+/// SayQL's built-in OpenCode last.
 #[tauri::command]
-pub async fn audit_agents() -> AppResult<Vec<AgentView>> {
+pub async fn audit_agents(state: State<'_, AppState>) -> AppResult<Vec<AgentView>> {
     let mut out = Vec::new();
     for spec in &runner::AGENTS {
         out.push(view(spec).await);
     }
+    let state = state.inner();
+    out.push(opencode_view(state));
     Ok(out)
 }
 
@@ -715,21 +776,108 @@ fn credits(state: &AppState) -> AppResult<Option<Credits>> {
 struct Prepared {
     spec: &'static AgentSpec,
     bin: PathBuf,
-    /// The first code source: the agent's working directory.
-    folder: PathBuf,
-    /// The other code sources, given as `--add-dir`.
-    more_dirs: Vec<PathBuf>,
-    /// Every source by label, for the progress lines.
-    sources: Vec<(String, PathBuf)>,
-    connection_id: String,
-    database: Option<String>,
-    prompt: String,
+    sources: Sources,
     files: RunFiles,
     dir: PathBuf,
     model: AuditModel,
     payment: AuditPayment,
     /// Set when the run is paid with SayQL credits.
     credits: Option<Credits>,
+}
+
+/// The run's code sources, brought up to date, and the audit instructions over them.
+struct Sources {
+    /// The first code source: the agent's working directory.
+    folder: PathBuf,
+    /// The other code sources (Claude Code's `--add-dir`).
+    more_dirs: Vec<PathBuf>,
+    /// Every source by label, for the progress lines.
+    sources: Vec<(String, PathBuf)>,
+    connection_id: String,
+    database: Option<String>,
+    prompt: String,
+    sayql_mcp: PathBuf,
+}
+
+/// Whether `app` may use SayQL now, as its MCP server would decide.
+fn check_gate(state: &AppState, app: &str) -> AppResult<()> {
+    match state.store.app_gate(app)? {
+        AppGate::Allowed => Ok(()),
+        AppGate::Blocked => Err(format!(
+            "{app} is blocked from using SayQL. Allow it in Settings → AI apps → Activity first."
+        )
+        .into()),
+        AppGate::NotApproved => Err(format!(
+            "Only approved apps may use SayQL, and {app} isn't approved. Approve it in Settings → AI apps first."
+        )
+        .into()),
+    }
+}
+
+/// Fetches the sources (last, once everything else checks out) and writes the instructions.
+async fn prepare_sources(
+    state: &AppState,
+    id: &str,
+    database: Option<&str>,
+    headless: bool,
+    say: &(dyn Fn(&'static str, String) + Send + Sync),
+) -> AppResult<Sources> {
+    let conn = state.store.connection(id)?;
+    let database = audit::target_database(&state.store, &conn, database);
+    let ready = ready_sources(state, &conn.id, say).await?;
+    let dirs: Vec<String> = ready
+        .iter()
+        .map(|r| r.dir.to_string_lossy().into_owned())
+        .collect();
+    let listed: Vec<audit::Source> = ready
+        .iter()
+        .zip(&dirs)
+        .map(|(r, dir)| audit::Source {
+            label: &r.label,
+            kind: r.kind,
+            document: r.document,
+            dir,
+            url: r.url.as_deref(),
+            commit: r.commit.as_deref(),
+        })
+        .collect();
+    let mut prompt = audit::instructions_for(
+        Some(&Target {
+            connection_id: &conn.id,
+            name: &conn.name,
+            database: database.as_deref(),
+        }),
+        false,
+        &listed,
+    );
+    prompt.push_str(runner::run_notes(headless));
+    let sayql_mcp = mcp_binary()?;
+    if !sayql_mcp.exists() {
+        return Err(format!(
+            "SayQL's MCP server isn't next to the app ({}). Reinstall SayQL; in a dev build, run `cargo build --bin sayql-mcp`.",
+            sayql_mcp.display()
+        )
+        .into());
+    }
+    let sources: Vec<(String, PathBuf)> = ready.into_iter().map(|r| (r.label, r.dir)).collect();
+    Ok(Sources {
+        folder: sources[0].1.clone(),
+        more_dirs: sources[1..].iter().map(|(_, d)| d.clone()).collect(),
+        sources,
+        connection_id: conn.id,
+        database,
+        prompt,
+        sayql_mcp,
+    })
+}
+
+/// A new folder for one run's files, in the temp folder; removed when the run ends.
+fn run_dir() -> AppResult<PathBuf> {
+    let dir = std::env::temp_dir()
+        .join("sayql-audit")
+        .join(uuid::Uuid::new_v4().to_string());
+    std::fs::create_dir_all(&dir)?;
+    Ok(dir)
 }
 
 async fn prepare(
@@ -778,81 +926,22 @@ async fn prepare(
     }
     // The agent reaches the database through SayQL's MCP server, which lets it in only as the
     // person allows: say so now rather than after a run that couldn't read anything.
-    match state.store.app_gate(spec.label)? {
-        AppGate::Allowed => {}
-        AppGate::Blocked => {
-            return Err(format!(
-                "{} is blocked from using SayQL. Allow it in Settings → AI apps → Activity first.",
-                spec.label
-            )
-            .into());
-        }
-        AppGate::NotApproved => {
-            return Err(format!(
-                "Only approved apps may use SayQL, and {} isn't approved. Approve it in Settings → AI apps first.",
-                spec.label
-            )
-            .into());
-        }
-    }
-    let conn = state.store.connection(id)?;
-    let database = audit::target_database(&state.store, &conn, database);
-    // Fetched last, once everything else checks out.
-    let ready = ready_sources(state, &conn.id, say).await?;
-    let dirs: Vec<String> = ready
-        .iter()
-        .map(|r| r.dir.to_string_lossy().into_owned())
-        .collect();
-    let listed: Vec<audit::Source> = ready
-        .iter()
-        .zip(&dirs)
-        .map(|(r, dir)| audit::Source {
-            label: &r.label,
-            kind: r.kind,
-            document: r.document,
-            dir,
-            url: r.url.as_deref(),
-            commit: r.commit.as_deref(),
-        })
-        .collect();
-    let mut prompt = audit::instructions_for(
-        Some(&Target {
-            connection_id: &conn.id,
-            name: &conn.name,
-            database: database.as_deref(),
-        }),
-        false,
-        &listed,
-    );
-    prompt.push_str(runner::run_notes(headless));
-    let sayql_mcp = mcp_binary()?;
-    if !sayql_mcp.exists() {
-        return Err(format!(
-            "SayQL's MCP server isn't next to the app ({}). Reinstall SayQL; in a dev build, run `cargo build --bin sayql-mcp`.",
-            sayql_mcp.display()
-        )
-        .into());
-    }
-    let dir = std::env::temp_dir()
-        .join("sayql-audit")
-        .join(uuid::Uuid::new_v4().to_string());
-    std::fs::create_dir_all(&dir)?;
+    check_gate(state, spec.label)?;
+    let sources = prepare_sources(state, id, database, headless, say).await?;
+    let dir = run_dir()?;
     let files = RunFiles {
         mcp_config: dir.join("mcp.json"),
         settings: dir.join("settings.json"),
     };
-    std::fs::write(&files.mcp_config, runner::mcp_config_json(&sayql_mcp))?;
+    std::fs::write(
+        &files.mcp_config,
+        runner::mcp_config_json(&sources.sayql_mcp),
+    )?;
     std::fs::write(&files.settings, runner::SETTINGS_JSON)?;
-    let sources: Vec<(String, PathBuf)> = ready.into_iter().map(|r| (r.label, r.dir)).collect();
     Ok(Prepared {
         spec,
         bin,
-        folder: sources[0].1.clone(),
-        more_dirs: sources[1..].iter().map(|(_, d)| d.clone()).collect(),
         sources,
-        connection_id: conn.id,
-        database,
-        prompt,
         files,
         dir,
         model: state.store.audit_model().unwrap_or_default(),
@@ -883,16 +972,19 @@ pub async fn start_audit(
             },
         );
     };
+    if agent == opencode::ID {
+        return start_opencode(&app, &state, &runs, run_id, &id, database.as_deref()).await;
+    }
     let p = prepare(&state, &agent, &id, database.as_deref(), true, &say).await?;
     let mut cmd = tokio::process::Command::new(&p.bin);
     cmd.args(runner::claude_args(
         &p.files,
-        &p.more_dirs,
+        &p.sources.more_dirs,
         true,
         p.model,
         p.payment,
     ))
-    .current_dir(&p.folder)
+    .current_dir(&p.sources.folder)
     .env("PATH", runner::child_path(&p.bin))
     // Started from inside a Claude Code session (a dev build), it would refuse to nest.
     .env_remove("CLAUDECODE")
@@ -924,7 +1016,7 @@ pub async fn start_audit(
     })?;
     // The prompt goes on stdin: nothing about the run is on the command line but file paths.
     if let Some(mut stdin) = child.stdin.take() {
-        stdin.write_all(p.prompt.as_bytes()).await?;
+        stdin.write_all(p.sources.prompt.as_bytes()).await?;
         drop(stdin);
     }
     let stop = CancellationToken::new();
@@ -932,20 +1024,250 @@ pub async fn start_audit(
         .lock()
         .unwrap_or_else(|e| e.into_inner())
         .insert(run_id.clone(), stop.clone());
-    tauri::async_runtime::spawn(drive(app, run_id, child, p, stop));
+    let mut stream = ClaudeStream::with_sources(p.sources.sources.clone());
+    stream.credits = p.credits.is_some();
+    let run = Run {
+        app: p.spec.label,
+        dir: p.dir,
+        connection_id: p.sources.connection_id,
+        database: p.sources.database,
+        secret: p.credits.map(|c| c.key),
+    };
+    tauri::async_runtime::spawn(drive(app, run_id, child, run, Box::new(stream), stop));
     Ok(())
+}
+
+/// The environment SayQL's MCP server gets inside an OpenCode run: the person's real home and
+/// app folders (OpenCode itself has a private home), so it finds SayQL's files and the keychain.
+fn mcp_env() -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    let mut put = |k: &str, v: Option<PathBuf>| {
+        if let Some(v) = v {
+            out.push((k.to_string(), v.to_string_lossy().into_owned()));
+        }
+    };
+    put("HOME", dirs::home_dir());
+    if cfg!(windows) {
+        put("USERPROFILE", dirs::home_dir());
+        put("APPDATA", std::env::var_os("APPDATA").map(PathBuf::from));
+        put(
+            "LOCALAPPDATA",
+            std::env::var_os("LOCALAPPDATA").map(PathBuf::from),
+        );
+    } else {
+        // Where `dirs` found them in the app, so the server's own lookup lands in the same place.
+        put("XDG_CONFIG_HOME", dirs::config_dir());
+        put("XDG_DATA_HOME", dirs::data_dir());
+    }
+    put(
+        "SAYQL_CONFIG_DIR",
+        std::env::var_os("SAYQL_CONFIG_DIR").map(PathBuf::from),
+    );
+    out
+}
+
+/// Starts an audit with SayQL's built-in OpenCode, downloading it first if this is the first
+/// run (progress as `Download` events; cancel stops it).
+async fn start_opencode(
+    app: &AppHandle,
+    state: &AppState,
+    runs: &AuditRuns,
+    run_id: String,
+    id: &str,
+    database: Option<&str>,
+) -> AppResult<()> {
+    let say = |kind: &'static str, text: String| {
+        let _ = app.emit(
+            EVENT,
+            AuditEvent::Line {
+                run_id: run_id.clone(),
+                kind,
+                text,
+            },
+        );
+    };
+    opencode::this_platform()?;
+    if let Some(why) = opencode::managed_policy() {
+        return Err(why.into());
+    }
+    if state.store.knowledge_sources(id)?.is_empty() {
+        return Err(
+            "Add a source first: the folder, repository, files or web pages about this database."
+                .into(),
+        );
+    }
+    let model = opencode_model(state)?;
+    let key = if model.key == KeyNeed::None {
+        None
+    } else {
+        let settings = state.store.settings().unwrap_or_default();
+        secrets::api_key(&settings.provider)
+    };
+    if model.key == KeyNeed::Required && key.is_none() {
+        return Err(format!(
+            "Add your {} key in Settings → AI provider to run the audit with it.",
+            model.label
+        )
+        .into());
+    }
+    check_gate(state, opencode::APP)?;
+    let stop = CancellationToken::new();
+    runs.0
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .insert(run_id.clone(), stop.clone());
+    let forget = || {
+        runs.0
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove(&run_id);
+    };
+    let result = async {
+        let dir = opencode::install_dir(&state.runners_dir);
+        let installed = match tokio::task::block_in_place(|| opencode::installed(&dir)) {
+            Some(i) => i,
+            None => {
+                say(
+                    "step",
+                    format!("Downloading OpenCode {} (once)…", opencode::VERSION),
+                );
+                let mut last = 0u64;
+                let i = opencode::download(
+                    &state.http,
+                    &state.runners_dir,
+                    &stop,
+                    |received, total| {
+                        // About every megabyte.
+                        if received - last >= 1 << 20 || received == total {
+                            last = received;
+                            let _ = app.emit(
+                                EVENT,
+                                AuditEvent::Download {
+                                    run_id: run_id.clone(),
+                                    received,
+                                    total,
+                                },
+                            );
+                        }
+                    },
+                )
+                .await?;
+                say("step", "Downloaded and checked OpenCode".into());
+                i
+            }
+        };
+        let sources = prepare_sources(state, id, database, true, &say).await?;
+        let dirs: Vec<PathBuf> = sources.sources.iter().map(|(_, d)| d.clone()).collect();
+        // OpenCode would follow a link out of the sources: say which one rather than run.
+        let scan = dirs.clone();
+        if let Some((link, target)) = tokio::task::spawn_blocking(move || opencode::link_out(&scan))
+            .await
+            .map_err(|e| AppError::User(e.to_string()))?
+        {
+            return Err(format!(
+                "{} is a link to {}, outside this connection's knowledge sources, and SayQL's built-in OpenCode would follow it. Remove the link, or add what it points to as a source, then run the audit again.",
+                link.display(),
+                target.display()
+            )
+            .into());
+        }
+        let env_for_mcp = mcp_env();
+        let config = opencode::config_json(&opencode::RunConfig {
+            model: &model,
+            sayql_mcp: &sources.sayql_mcp,
+            mcp_env: &env_for_mcp,
+            sources: &dirs,
+        })?;
+        let run_dir = run_dir()?;
+        let home = opencode::Home::new(&run_dir);
+        opencode::prepare_home(&home, &installed.bin_dir.join(opencode::exe("rg")))?;
+        let mut cmd = tokio::process::Command::new(&installed.opencode);
+        cmd.args(opencode::run_args(&model, &sources.folder))
+            .current_dir(&sources.folder)
+            .env_clear()
+            .envs(opencode::child_env(
+                &home,
+                &sources.folder,
+                &opencode::search_dir(&home, &installed),
+                config,
+                key.clone(),
+                std::env::vars_os(),
+            ))
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .kill_on_drop(true);
+        #[cfg(unix)]
+        cmd.process_group(0);
+        no_window(&mut cmd);
+        let mut child = cmd.spawn().map_err(|e| {
+            let _ = std::fs::remove_dir_all(&run_dir);
+            AppError::User(format!("Could not start OpenCode: {e}"))
+        })?;
+        // The prompt goes on stdin, never on the command line.
+        if let Some(mut stdin) = child.stdin.take() {
+            stdin.write_all(sources.prompt.as_bytes()).await?;
+            drop(stdin);
+        }
+        let stream = OpenCodeStream::new(sources.sources.clone(), &model);
+        let run = Run {
+            app: opencode::APP,
+            dir: run_dir,
+            connection_id: sources.connection_id,
+            database: sources.database,
+            secret: key,
+        };
+        AppResult::Ok((child, run, stream))
+    }
+    .await;
+    match result {
+        Ok((child, run, stream)) => {
+            tauri::async_runtime::spawn(drive(
+                app.clone(),
+                run_id,
+                child,
+                run,
+                Box::new(stream),
+                stop,
+            ));
+            Ok(())
+        }
+        Err(e) => {
+            forget();
+            Err(e)
+        }
+    }
+}
+
+/// What a run needs after it started, whichever agent runs it.
+struct Run {
+    /// The app the audit is recorded for, as SayQL's app list names it.
+    app: &'static str,
+    /// The run's own files, removed at the end.
+    dir: PathBuf,
+    connection_id: String,
+    database: Option<String>,
+    /// A key the run was given (a credit key, an API key): never shown in the window.
+    secret: Option<String>,
 }
 
 async fn drive(
     app: AppHandle,
     run_id: String,
     mut child: tokio::process::Child,
-    p: Prepared,
+    p: Run,
+    mut stream: Box<dyn RunStream>,
     stop: CancellationToken,
 ) {
-    // Nothing shown in the window carries the credit key.
-    let key = p.credits.as_ref().map(|c| c.key.clone());
-    let clean = |s: String| runner::redact(&s, key.as_deref());
+    // Nothing shown in the window carries a key.
+    let key = p.secret.clone();
+    let clean = |s: String| {
+        let s = match key.as_deref().map(str::trim).filter(|k| k.len() >= 8) {
+            Some(k) if !k.starts_with("sqlc_") => s.replace(k, "…"),
+            _ => s,
+        };
+        runner::redact(&s, key.as_deref())
+    };
     let emit = |e: AuditEvent| {
         let _ = app.emit(EVENT, e);
     };
@@ -961,8 +1283,6 @@ async fn drive(
             String::from_utf8_lossy(&buf).into_owned()
         })
     });
-    let mut stream = ClaudeStream::with_sources(p.sources.clone());
-    stream.credits = p.credits.is_some();
     let mut lines = child.stdout.take().map(|o| BufReader::new(o).lines());
     let deadline = tokio::time::sleep(runner::TIME_LIMIT);
     tokio::pin!(deadline);
@@ -977,9 +1297,7 @@ async fn drive(
                         for l in stream.feed(&line) {
                             emit(AuditEvent::Line { run_id: run_id.clone(), kind: l.kind, text: clean(l.text) });
                         }
-                        // Claude Code retries a refused key for minutes; a credit key that was
-                        // refused once won't be accepted on a retry.
-                        if stream.credits && stream.api_error.as_deref() == Some("authentication_failed") {
+                        if stream.give_up() {
                             ended = Some("refused");
                             break;
                         }
@@ -1010,22 +1328,10 @@ async fn drive(
         None => String::new(),
     };
     let summary = stream
-        .ending
-        .as_ref()
-        .filter(|e| !e.is_error && !e.text.trim().is_empty())
-        .map(|e| clean(e.text.chars().take(4000).collect::<String>()));
-    let ok = ended.is_none()
-        && status.is_some_and(|s| s.success())
-        && stream.ending.as_ref().is_some_and(|e| !e.is_error);
-    let failure = || {
-        clean(runner::failure(
-            stream.ending.as_ref(),
-            &stderr,
-            stream.api_error.as_deref(),
-            status.and_then(|s| s.code()),
-            p.payment,
-        ))
-    };
+        .summary()
+        .map(|t| clean(t.chars().take(4000).collect::<String>()));
+    let ok = ended.is_none() && status.is_some_and(|s| s.success()) && stream.succeeded();
+    let failure = || clean(stream.failure(&stderr, status.and_then(|s| s.code())));
     let (outcome, error) = match ended {
         Some("cancelled") => ("cancelled", None),
         Some("refused") => ("error", Some(failure())),
@@ -1044,7 +1350,7 @@ async fn drive(
         let state = app.state::<AppState>();
         let _ = state
             .store
-            .record_audit(&p.connection_id, p.database.as_deref(), p.spec.label);
+            .record_audit(&p.connection_id, p.database.as_deref(), p.app);
     }
     let _ = std::fs::remove_dir_all(&p.dir);
     app.state::<AuditRuns>()
@@ -1055,7 +1361,7 @@ async fn drive(
     emit(AuditEvent::Done {
         run_id,
         outcome,
-        suggested: stream.suggested,
+        suggested: stream.suggested(),
         summary,
         error,
     });
@@ -1084,15 +1390,21 @@ pub async fn open_audit_in_terminal(
     id: String,
     database: Option<String>,
 ) -> AppResult<()> {
+    if agent == opencode::ID {
+        return Err(
+            "SayQL's built-in OpenCode runs inside SayQL only. Start the audit here instead."
+                .into(),
+        );
+    }
     let p = prepare(&state, &agent, &id, database.as_deref(), false, &|_, _| {}).await?;
-    let args = runner::claude_args(&p.files, &p.more_dirs, false, p.model, p.payment);
+    let args = runner::claude_args(&p.files, &p.sources.more_dirs, false, p.model, p.payment);
     let prompt = p.dir.join("prompt.txt");
-    std::fs::write(&prompt, &p.prompt)?;
+    std::fs::write(&prompt, &p.sources.prompt)?;
     let path_var = runner::child_path(&p.bin);
     // The files stay: the terminal reads them after this returns (they're in the temp folder).
     launch_terminal(&TerminalRun {
         dir: &p.dir,
-        folder: &p.folder,
+        folder: &p.sources.folder,
         bin: &p.bin,
         path_var: &path_var,
         args: &args,

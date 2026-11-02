@@ -254,6 +254,8 @@ and flags mean, relationships without foreign keys, units and time zones, and fi
 each with its evidence. It needs no rows. For apps without MCP prompts, **Copy prompt** on a connection in
 **Settings → AI apps → Access** copies the same instructions. The **Last audit** column there shows when each
 connection was last audited and nudges you to run it again after 30 days: code moves on and notes go stale.
+**Run audit** in SayQL starts it for you, read-only: with your installed Claude Code, or without it with SayQL's
+built-in OpenCode (downloaded once, about 66 MB, checksum-checked) and the AI provider you chose in Settings.
 
 Columns you marked **never send** in a connection's agent settings stay private over MCP too: queries
 naming them are refused and their values are withheld. The AI app writes the SQL itself, so MCP never uses
