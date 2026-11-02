@@ -194,7 +194,7 @@ pub async fn run_check(pool: &DbPool, sql: &str, never_send: &[String]) -> Check
         Ok(r) if r.rows.len() != 1 || r.columns.len() != 1 => {
             fail("A check must return one row with one column: true or false.".into())
         }
-        Ok(r) => match truth(&r.rows[0][0]) {
+        Ok(r) => match r.rows.first().and_then(|row| row.first()).and_then(truth) {
             Some(ok) => CheckRun {
                 ok: Some(ok),
                 at,
