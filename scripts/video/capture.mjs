@@ -191,6 +191,14 @@ const reveal = (sel, text) =>
     text,
   );
 
+/** The rect of the innermost visible element whose text contains `text`. */
+const textRect = (text) =>
+  page.evaluate((text) => {
+    const els = [...document.querySelectorAll("body *")].filter((e) => e.offsetParent && e.textContent.includes(text));
+    const r = els.at(-1).getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  }, text);
+
 const scene = (name) => log("scene", { name });
 const cam = (r, opts = {}) => log("cam", { rect: r, ...opts });
 const caption = (text) => log("caption", { text });
@@ -344,6 +352,62 @@ caption("Don't trust an app? Block it.");
 await click(await waitFor("button", "Block Cursor"));
 await waitFor("button", "Allow Cursor");
 await sleep(1800);
+log("end");
+
+// Off camera: close Settings, then "Teach SayQL this database" → Run audit. In ?video mode the demo
+// store's knowledge sources are its code folder and its data docs.
+await press("Escape");
+await waitFor("span", "Teach SayQL this database");
+await sleep(300);
+await click(await rect("span", "Teach SayQL this database"), { glide: 0 });
+await click(await waitFor('[role="dialog"] button', "Run audit"), { glide: 0 });
+await waitFor('[role="dialog"] button', "Start audit");
+await sleep(800);
+
+// 5. Knowledge: the audit reads the code and docs and suggests notes; then a note whose column was
+// renamed shows as doubtful, with SayQL's fix.
+scene("knowledge");
+cam(await waitFor('[role="dialog"]'), { maxZoom: 1.6, pad: 30 });
+caption("Learns from your code and docs");
+await sleep(900);
+await click(await waitFor('[role="dialog"] button', "Start audit"), { glide: 550 });
+hideCursor();
+await sleep(150);
+cam(await waitFor('[role="dialog"]'), { maxZoom: 1.7, pad: 30 });
+await waitForText("Suggested a note: orders.status");
+cam(await waitFor('[role="dialog"]'), { maxZoom: 1.7, pad: 30 });
+await waitForText("2 notes suggested", 10000);
+await sleep(200);
+// The log and its result; the summary below it would push the dialog past the caption.
+cam(union(await waitFor('[role="log"]'), await textRect("2 notes suggested")), { maxZoom: 1.6, pad: 30 });
+await sleep(1600);
+log("end");
+
+// Off camera: close the audit; the notes reload with the doubtful one.
+await click(await waitFor('[role="dialog"] button[aria-label="Close"]'), { glide: 0 });
+await waitForText("may be out of date");
+await sleep(600);
+
+scene("notes");
+const doubtfulNote = await waitFor("span", "products.price is in cents, not dollars");
+cam(union(await textRect("may be out of date: the column"), doubtfulNote, await rect("span", "Notes")), { maxZoom: 1.7, pad: 30 });
+caption("Notes stay true as the schema changes");
+await sleep(1500);
+await click(doubtfulNote, { glide: 600 });
+await waitFor('[role="dialog"] button', "Use this text");
+await sleep(200);
+{
+  const d = await waitFor('[role="dialog"]');
+  const b = await waitFor('[role="dialog"] button', "Use this text");
+  cam({ x: d.x, y: d.y, w: d.w, h: b.y + b.h - d.y + 12 }, { maxZoom: 1.8, pad: 24 });
+}
+await sleep(2200);
+await click(await waitFor('[role="dialog"] button', "Use this text"), { glide: 550 });
+// The note, fixed, and no longer doubtful.
+await waitFor("span", "products.price_cents is in cents, not dollars");
+await sleep(100);
+cam(union(await rect("span", "Notes"), await rect("span", "products.price_cents is in cents, not dollars")), { maxZoom: 1.9, pad: 40 });
+await sleep(2000);
 log("end");
 
 // ── Teams: the SayQL server's admin page ────────────────────────────────────
