@@ -1647,7 +1647,7 @@ mod tests {
             data_type: "text".into(),
             nullable: true,
             primary_key: false,
-            enum_values: None,
+            ..Default::default()
         };
         let table = |n: &str| Table {
             schema: None,
@@ -1656,6 +1656,7 @@ mod tests {
             columns: vec![col("email"), col("ssn")],
             foreign_keys: vec![],
             row_estimate: None,
+            ..Default::default()
         };
         let mut s = Schema {
             dialect: "PostgreSQL".into(),

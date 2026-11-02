@@ -8,8 +8,9 @@
 //!
 //! (README.md shows how to start throwaway containers for these.)
 //!
-//! The Postgres tests drop and recreate the schemas `sayql_it`, `sayql_it_inv` and `sayql_usage_it`;
-//! the MySQL and SQL Server tests drop and recreate the database `sayql_it`.
+//! The Postgres tests drop and recreate the schemas `sayql_it`, `sayql_it_inv`, `sayql_usage_it`
+//! and `sayql_kn`; the MySQL and SQL Server tests drop and recreate the databases `sayql_it` and
+//! `sayql_kn`.
 //! Nothing else is touched.
 
 use super::*;
@@ -202,6 +203,111 @@ async fn usage_statistics_from_real_servers() {
         if let usage::Stats::Known(u) = &stats {
             assert!(u.since.is_some() || kind == Kind::Mysql, "{kind:?}: {u:?}");
         }
+    }
+}
+
+/// The database's own comments and CHECK constraints reach the schema and its text, and changing
+/// a comment moves the fingerprint.
+#[tokio::test]
+async fn comments_and_checks_from_real_servers() {
+    fn expect(tables: &[Table], schema: Option<&str>, dialect: &str) {
+        let orders = table(tables, schema, "orders");
+        assert_eq!(orders.comment.as_deref(), Some("One row per order"));
+        assert_eq!(
+            column(orders, "status").comment.as_deref(),
+            Some("p = pending, s = shipped")
+        );
+        assert_eq!(column(orders, "total").comment, None);
+        assert!(
+            orders
+                .checks
+                .iter()
+                .any(|c| c.starts_with("CHECK") && c.contains("total") && c.contains('0')),
+            "{:?}",
+            orders.checks
+        );
+        assert_eq!(orders.checks.len(), 2, "{:?}", orders.checks);
+        let plain = table(tables, schema, "plain");
+        assert!(plain.comment.is_none() && plain.checks.is_empty());
+        assert!(plain.columns.iter().all(|c| c.comment.is_none()));
+        let text = crate::schema::render_table(orders, dialect);
+        assert!(text.contains("/* One row per order */]"), "{text}");
+        assert!(text.contains("/* p = pending, s = shipped */"), "{text}");
+    }
+
+    if let Some(t) = env_target("SAYQL_TEST_PG_URL") {
+        let db = if t.database.is_empty() {
+            "postgres".to_string()
+        } else {
+            t.database.clone()
+        };
+        let pool = open(Kind::Postgres, &t, &db).await;
+        exec(&pool, "DROP SCHEMA IF EXISTS sayql_kn CASCADE; CREATE SCHEMA sayql_kn;
+            CREATE TABLE sayql_kn.orders (id int PRIMARY KEY, status text NOT NULL CHECK (status IN ('p', 's')),
+              total numeric NOT NULL, CONSTRAINT total_ok CHECK (total >= 0));
+            CREATE TABLE sayql_kn.plain (id int);
+            COMMENT ON TABLE sayql_kn.orders IS 'One row per order';
+            COMMENT ON COLUMN sayql_kn.orders.status IS 'p = pending, s = shipped';").await;
+        let before = schema_hash::read(&pool).await.expect("fingerprint");
+        let schema = introspect(&pool, Kind::Postgres).await.expect("introspect");
+        expect(&schema.tables, Some("sayql_kn"), "PostgreSQL");
+        exec(&pool, "COMMENT ON COLUMN sayql_kn.orders.total IS 'In USD'").await;
+        assert_ne!(schema_hash::read(&pool).await.unwrap(), before);
+        exec(&pool, "DROP SCHEMA sayql_kn CASCADE").await;
+    }
+
+    if let Some(t) = env_target("SAYQL_TEST_MYSQL_URL") {
+        let admin = open(Kind::Mysql, &t, &t.database).await;
+        exec(
+            &admin,
+            "DROP DATABASE IF EXISTS sayql_kn; CREATE DATABASE sayql_kn",
+        )
+        .await;
+        let pool = open(Kind::Mysql, &t, "sayql_kn").await;
+        // CHECK constraints are kept from MySQL 8.0.16 and MariaDB 10.2; older servers parse
+        // and drop them.
+        exec(&pool, "CREATE TABLE orders (id int PRIMARY KEY,
+              status varchar(1) NOT NULL COMMENT 'p = pending, s = shipped' CHECK (status IN ('p', 's')),
+              total decimal(10,2) NOT NULL, CONSTRAINT total_ok CHECK (total >= 0)) COMMENT = 'One row per order';
+            CREATE TABLE plain (id int)").await;
+        let schema = introspect(&pool, Kind::Mysql).await.expect("introspect");
+        let orders = table(&schema.tables, None, "orders");
+        if orders.checks.is_empty() {
+            assert_eq!(orders.comment.as_deref(), Some("One row per order"));
+            assert_eq!(
+                column(orders, "status").comment.as_deref(),
+                Some("p = pending, s = shipped")
+            );
+        } else {
+            expect(&schema.tables, None, "MySQL");
+        }
+        let before = schema_hash::read(&pool).await.expect("fingerprint");
+        exec(&pool, "ALTER TABLE plain COMMENT = 'Nothing much'").await;
+        assert_ne!(schema_hash::read(&pool).await.unwrap(), before);
+        exec(&admin, "DROP DATABASE sayql_kn").await;
+    }
+
+    if let Some(t) = env_target("SAYQL_TEST_MSSQL_URL") {
+        let admin = open(Kind::Mssql, &t, &t.database).await;
+        exec(&admin, "IF DB_ID('sayql_kn') IS NOT NULL BEGIN ALTER DATABASE sayql_kn SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE sayql_kn; END").await;
+        exec(&admin, "CREATE DATABASE sayql_kn").await;
+        let pool = open(Kind::Mssql, &t, "sayql_kn").await;
+        for sql in [
+            "CREATE TABLE dbo.orders (id int PRIMARY KEY, status varchar(1) NOT NULL CHECK (status IN ('p', 's')),
+               total decimal(10,2) NOT NULL, CONSTRAINT total_ok CHECK (total >= 0))",
+            "CREATE TABLE dbo.plain (id int)",
+            "EXEC sp_addextendedproperty 'MS_Description', 'One row per order', 'SCHEMA', 'dbo', 'TABLE', 'orders'",
+            "EXEC sp_addextendedproperty 'MS_Description', 'p = pending, s = shipped', 'SCHEMA', 'dbo', 'TABLE', 'orders', 'COLUMN', 'status'",
+        ] {
+            exec(&pool, sql).await;
+        }
+        let before = schema_hash::read(&pool).await.expect("fingerprint");
+        let schema = introspect(&pool, Kind::Mssql).await.expect("introspect");
+        expect(&schema.tables, Some("dbo"), "SQL Server");
+        exec(&pool, "EXEC sp_addextendedproperty 'MS_Description', 'In USD', 'SCHEMA', 'dbo', 'TABLE', 'orders', 'COLUMN', 'total'").await;
+        assert_ne!(schema_hash::read(&pool).await.unwrap(), before);
+        drop(pool);
+        exec(&admin, "ALTER DATABASE sayql_kn SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE sayql_kn").await;
     }
 }
 

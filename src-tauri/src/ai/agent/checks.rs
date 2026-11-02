@@ -371,11 +371,12 @@ mod tests {
                     data_type: "int".into(),
                     nullable: false,
                     primary_key: *pk,
-                    enum_values: None,
+                    ..Default::default()
                 })
                 .collect(),
             foreign_keys: vec![],
             row_estimate: None,
+            ..Default::default()
         };
         Schema {
             dialect: "SQLite".into(),

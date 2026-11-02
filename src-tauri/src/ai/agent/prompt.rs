@@ -180,7 +180,7 @@ mod tests {
             data_type: "int".into(),
             nullable: true,
             primary_key: false,
-            enum_values: None,
+            ..Default::default()
         };
         let tables: Vec<Table> = (0..300)
             .map(|i| Table {
@@ -194,6 +194,7 @@ mod tests {
                 columns: (0..40).map(|c| col(&format!("column_{c}"))).collect(),
                 foreign_keys: vec![],
                 row_estimate: Some(i),
+                ..Default::default()
             })
             .collect();
         let s = Schema {

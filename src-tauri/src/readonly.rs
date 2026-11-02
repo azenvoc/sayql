@@ -190,11 +190,12 @@ mod tests {
                     data_type: "int".into(),
                     nullable: false,
                     primary_key: false,
-                    enum_values: None,
+                    ..Default::default()
                 })
                 .collect(),
             foreign_keys: vec![],
             row_estimate: Some(10),
+            ..Default::default()
         }
     }
 

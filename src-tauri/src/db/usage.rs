@@ -309,6 +309,7 @@ mod tests {
             columns: vec![],
             foreign_keys: vec![],
             row_estimate: Some(10),
+            ..Default::default()
         }
     }
 

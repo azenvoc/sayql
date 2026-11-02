@@ -1,4 +1,6 @@
 -- Demo store database bundled with SayQL. Generated deterministically-ish with random().
+-- The comments inside CREATE TABLE are kept by SQLite, and SayQL shows them to the AI, the way it
+-- shows a server database's COMMENT ON and CHECK constraints. All times are UTC.
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE categories (
@@ -6,12 +8,12 @@ CREATE TABLE categories (
   name TEXT NOT NULL UNIQUE
 );
 
-CREATE TABLE products (
+CREATE TABLE products ( -- Products for sale in the store
   id INTEGER PRIMARY KEY,
   name TEXT NOT NULL,
   category_id INTEGER NOT NULL REFERENCES categories(id),
-  price REAL NOT NULL,
-  stock INTEGER NOT NULL DEFAULT 0,
+  price REAL NOT NULL, -- Current list price in US dollars
+  stock INTEGER NOT NULL DEFAULT 0, -- Units in stock now
   created_at TEXT NOT NULL
 );
 
@@ -22,16 +24,17 @@ CREATE TABLE customers (
   email TEXT NOT NULL UNIQUE,
   country TEXT NOT NULL,
   city TEXT NOT NULL,
-  signed_up_at TEXT NOT NULL
+  signed_up_at TEXT NOT NULL -- When the customer created their account
 );
 
--- status is one of: pending, paid, shipped, delivered, cancelled, refunded
-CREATE TABLE orders (
+CREATE TABLE orders ( -- One row per order a customer placed. Its lines are in order_items.
   id INTEGER PRIMARY KEY,
   customer_id INTEGER NOT NULL REFERENCES customers(id),
+  -- pending: not paid yet. paid: paid, not shipped. shipped: on its way. delivered: received.
+  -- cancelled: stopped before shipping. refunded: the money was returned.
   status TEXT NOT NULL CHECK (status IN ('pending', 'paid', 'shipped', 'delivered', 'cancelled', 'refunded')),
   ordered_at TEXT NOT NULL,
-  shipped_at TEXT
+  shipped_at TEXT -- Empty until the order ships
 );
 
 CREATE TABLE order_items (
@@ -39,14 +42,14 @@ CREATE TABLE order_items (
   order_id INTEGER NOT NULL REFERENCES orders(id),
   product_id INTEGER NOT NULL REFERENCES products(id),
   quantity INTEGER NOT NULL,
-  unit_price REAL NOT NULL
+  unit_price REAL NOT NULL -- US dollars per unit when the order was placed; a line costs quantity * unit_price
 );
 
 CREATE TABLE reviews (
   id INTEGER PRIMARY KEY,
   product_id INTEGER NOT NULL REFERENCES products(id),
   customer_id INTEGER NOT NULL REFERENCES customers(id),
-  rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5), -- Stars, 5 is best
   body TEXT,
   created_at TEXT NOT NULL
 );

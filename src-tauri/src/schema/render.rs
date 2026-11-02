@@ -10,6 +10,8 @@ const FULL_SCHEMA_CHAR_BUDGET: usize = 300_000;
 const RELEVANT_TABLE_LIMIT: usize = 30;
 /// Tables that reference a focus table, included so the model can join to them.
 const REFERENCING_TABLE_LIMIT: usize = 15;
+/// Longest comment or CHECK we show, in characters.
+const NOTE_CHAR_LIMIT: usize = 200;
 
 /// Words that must be quoted to be used as names. Matches `quoteIdent` in src/features/schema/sql.ts.
 const RESERVED: &[&str] = &[
@@ -85,8 +87,31 @@ fn render_ref(ref_table: &str, dialect: &str) -> String {
     }
 }
 
+/// A comment or CHECK on one line, cut to [`NOTE_CHAR_LIMIT`]. `None` when it's empty.
+fn one_line(text: &str) -> Option<String> {
+    let flat = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    if flat.is_empty() {
+        return None;
+    }
+    if flat.chars().count() <= NOTE_CHAR_LIMIT {
+        return Some(flat);
+    }
+    let cut: String = flat.chars().take(NOTE_CHAR_LIMIT - 1).collect();
+    Some(format!("{}…", cut.trim_end()))
+}
+
+/// A database comment as a `/* … */` block, so commas in it can't be mistaken for the next
+/// column.
+fn comment(text: &Option<String>) -> Option<String> {
+    one_line(text.as_deref()?).map(|t| format!("/* {} */", t.replace("*/", "* /")))
+}
+
 /// One line per table, e.g.
 /// `orders [table, ~1000 rows](id integer PK, customer_id integer -> customers.id, status text)`
+///
+/// The database's own comments and CHECK constraints are added when it has them:
+/// `orders [table, ~1000 rows /* One row per order */](status text /* p = pending */) CHECK (total >= 0)`.
+/// A table without them renders exactly as it always has, which keeps the prompt cached.
 pub fn render_table(t: &Table, dialect: &str) -> String {
     let fk: HashMap<&str, &ForeignKey> = t
         .foreign_keys
@@ -114,6 +139,10 @@ pub fn render_table(t: &Table, dialect: &str) -> String {
             if let Some(vals) = &c.enum_values {
                 s.push_str(&format!(" {{{}}}", vals.join("|")));
             }
+            if let Some(note) = comment(&c.comment) {
+                s.push(' ');
+                s.push_str(&note);
+            }
             s
         })
         .collect();
@@ -122,13 +151,22 @@ pub fn render_table(t: &Table, dialect: &str) -> String {
         .filter(|n| *n >= 0)
         .map(|n| format!(", ~{n} rows"))
         .unwrap_or_default();
-    format!(
-        "{} [{}{}]({})",
+    let note = comment(&t.comment)
+        .map(|n| format!(" {n}"))
+        .unwrap_or_default();
+    let mut line = format!(
+        "{} [{}{}{}]({})",
         render_name(t, dialect),
         t.kind,
         rows,
+        note,
         cols.join(", ")
-    )
+    );
+    for check in t.checks.iter().filter_map(|c| one_line(c)) {
+        line.push(' ');
+        line.push_str(&check);
+    }
+    line
 }
 
 pub fn render_full(schema: &Schema) -> String {
@@ -196,6 +234,29 @@ pub fn relevant_tables(schema: &Schema, question: &str) -> Vec<usize> {
                     }
                 }
             }
+            // The database's comments: each matching word counts once per table, and short
+            // words ("the", "of", "id") don't count at all.
+            let comment_words = |text: &Option<String>| -> HashSet<String> {
+                text.as_deref()
+                    .map(tokenize)
+                    .unwrap_or_default()
+                    .into_iter()
+                    .filter(|w| w.chars().count() >= 4)
+                    .collect()
+            };
+            let hits = |found: HashSet<String>| {
+                found
+                    .iter()
+                    .filter(|w| words.contains(*w) || words.contains(&singular(w)))
+                    .count() as i64
+            };
+            score += 3 * hits(comment_words(&t.comment));
+            score += hits(
+                t.columns
+                    .iter()
+                    .flat_map(|c| comment_words(&c.comment))
+                    .collect(),
+            );
             (i, score)
         })
         .filter(|(_, s)| *s > 0)
@@ -317,7 +378,7 @@ mod tests {
                 data_type: "int".into(),
                 nullable: false,
                 primary_key: true,
-                enum_values: None,
+                ..Default::default()
             }],
             foreign_keys: fks
                 .iter()
@@ -328,6 +389,7 @@ mod tests {
                 })
                 .collect(),
             row_estimate: None,
+            ..Default::default()
         }
     }
 
@@ -365,14 +427,14 @@ mod tests {
                     data_type: "integer".into(),
                     nullable: false,
                     primary_key: true,
-                    enum_values: None,
+                    ..Default::default()
                 },
                 Column {
                     name: "CustomerId".into(),
                     data_type: "integer".into(),
                     nullable: true,
                     primary_key: false,
-                    enum_values: None,
+                    ..Default::default()
                 },
             ],
             foreign_keys: vec![ForeignKey {
@@ -381,6 +443,7 @@ mod tests {
                 ref_column: "Id".into(),
             }],
             row_estimate: Some(3),
+            ..Default::default()
         };
         assert_eq!(
             render_table(&t, "PostgreSQL"),
@@ -399,6 +462,82 @@ mod tests {
             render_table(&mysql, "MySQL"),
             "`Order Lines` [table, ~3 rows](id integer PK, CustomerId integer)"
         );
+    }
+
+    #[test]
+    fn the_database_comments_and_checks_are_shown_on_one_line() {
+        let plain = Table {
+            schema: None,
+            name: "orders".into(),
+            kind: "table".into(),
+            columns: vec![
+                Column {
+                    name: "id".into(),
+                    data_type: "integer".into(),
+                    primary_key: true,
+                    ..Default::default()
+                },
+                Column {
+                    name: "status".into(),
+                    data_type: "text".into(),
+                    ..Default::default()
+                },
+            ],
+            row_estimate: Some(3),
+            ..Default::default()
+        };
+        // Byte for byte what it was before comments existed, so the cached prompt stays valid.
+        let before = "orders [table, ~3 rows](id integer PK, status text NOT NULL)";
+        assert_eq!(render_table(&plain, "SQLite"), before);
+        let blank = Table {
+            comment: Some("  \n ".into()),
+            checks: vec![" ".into()],
+            ..plain.clone()
+        };
+        assert_eq!(render_table(&blank, "SQLite"), before);
+
+        let mut t = plain.clone();
+        t.comment = Some("One row per order.\nSee order_items.".into());
+        t.columns[1].comment = Some("p = pending, s = shipped */ sneaky".into());
+        t.checks = vec![
+            "CHECK (status IN ('p', 's'))".into(),
+            "CHECK\n  (id > 0)".into(),
+        ];
+        assert_eq!(
+            render_table(&t, "SQLite"),
+            "orders [table, ~3 rows /* One row per order. See order_items. */](id integer PK, \
+             status text NOT NULL /* p = pending, s = shipped * / sneaky */) \
+             CHECK (status IN ('p', 's')) CHECK (id > 0)"
+        );
+
+        // Long ones are cut, on a character boundary.
+        t.columns[1].comment = Some("é".repeat(500));
+        let text = render_table(&t, "SQLite");
+        let shown = text
+            .split("/* ")
+            .nth(2)
+            .unwrap()
+            .split(" */")
+            .next()
+            .unwrap();
+        assert_eq!(shown.chars().count(), NOTE_CHAR_LIMIT);
+        assert!(shown.ends_with('…'));
+    }
+
+    #[test]
+    fn comments_help_find_the_relevant_tables() {
+        let mut ledger = table("gl_entries", &[]);
+        ledger.comment = Some("Refunds and payments, one row per movement".into());
+        let mut misc = table("misc", &[]);
+        misc.columns[0].comment = Some("The invoice number".into());
+        let schema = Schema {
+            dialect: "SQLite".into(),
+            tables: vec![table("person", &[]), ledger, misc],
+        };
+        assert_eq!(relevant_tables(&schema, "total refunds last month"), [1]);
+        assert_eq!(relevant_tables(&schema, "list invoices"), [2]);
+        // Short words in comments ("one", "per") don't pull a table in.
+        assert!(relevant_tables(&schema, "one per row").is_empty());
     }
 
     #[test]

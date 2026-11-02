@@ -21,7 +21,7 @@ pub struct Schema {
     pub tables: Vec<Table>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct Table {
     /// Postgres schema / MySQL database. `None` for SQLite.
     pub schema: Option<String>,
@@ -31,9 +31,13 @@ pub struct Table {
     pub columns: Vec<Column>,
     pub foreign_keys: Vec<ForeignKey>,
     pub row_estimate: Option<i64>,
+    /// The database's own description of the table (`COMMENT ON TABLE`, MS_Description, …).
+    pub comment: Option<String>,
+    /// CHECK constraints as the database writes them, each starting with `CHECK`.
+    pub checks: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct Column {
     pub name: String,
     pub data_type: String,
@@ -41,6 +45,8 @@ pub struct Column {
     pub primary_key: bool,
     /// Allowed values for enum-typed columns, when the database exposes them.
     pub enum_values: Option<Vec<String>>,
+    /// The database's own description of the column.
+    pub comment: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

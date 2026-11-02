@@ -38,7 +38,7 @@ mod tests {
                 data_type: "int".into(),
                 nullable: false,
                 primary_key: true,
-                enum_values: None,
+                ..Default::default()
             }],
             foreign_keys: fks
                 .iter()
@@ -49,6 +49,7 @@ mod tests {
                 })
                 .collect(),
             row_estimate: None,
+            ..Default::default()
         }
     }
 

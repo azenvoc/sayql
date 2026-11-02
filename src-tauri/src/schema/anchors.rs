@@ -432,7 +432,7 @@ mod tests {
             data_type: ty.into(),
             nullable: true,
             primary_key: false,
-            enum_values: None,
+            ..Default::default()
         }
     }
 
@@ -444,6 +444,7 @@ mod tests {
             columns: cols,
             foreign_keys: vec![],
             row_estimate: None,
+            ..Default::default()
         }
     }
 
