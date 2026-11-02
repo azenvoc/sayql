@@ -86,12 +86,7 @@ fn planar_geometry(b: &[u8]) -> Option<String> {
         if figures.iter().any(|&(attr, _)| attr > 1 && version == 2) || shapes.is_empty() {
             return None;
         }
-        let g = Shapes {
-            points: &points,
-            figures: &figures,
-            shapes: &shapes,
-        };
-        g.wkt(0)?
+        Shapes::new(&points, &figures, &shapes).wkt(0, 0)?
     };
     // Version 2 may end with a segment count; nothing else may follow.
     (r.0.is_empty() || version == 2 && r.0.len() == 4 && r.0 == [0, 0, 0, 0]).then_some(wkt)
@@ -132,32 +127,72 @@ impl Reader<'_> {
     }
 }
 
+/// How deep collections may nest. SQL Server allows any depth, but real values stay a few levels
+/// deep, and each level is a recursive call: a crafted value nesting thousands of
+/// GEOMETRYCOLLECTIONs would overflow the stack. Deeper values stay as bytes.
+const MAX_DEPTH: usize = 32;
+
 struct Shapes<'a> {
     points: &'a [String],
     figures: &'a [(u8, usize)],
     /// (parent shape, first figure or -1, OGC type)
     shapes: &'a [(i32, i32, u8)],
+    /// Each shape's members, found once rather than by scanning every shape per collection.
+    /// A member always follows its parent, so a crafted parent can't make a cycle.
+    children: Vec<Vec<usize>>,
+    /// Where each shape's figures end: the first figure of the next shape that has one.
+    figures_end: Vec<usize>,
 }
 
-impl Shapes<'_> {
+impl<'a> Shapes<'a> {
+    fn new(points: &'a [String], figures: &'a [(u8, usize)], shapes: &'a [(i32, i32, u8)]) -> Self {
+        let mut children = vec![Vec::new(); shapes.len()];
+        for (c, &(parent, _, _)) in shapes.iter().enumerate() {
+            let parent = usize::try_from(parent).ok().filter(|&p| p < c);
+            if let Some(list) = parent.and_then(|p| children.get_mut(p)) {
+                list.push(c);
+            }
+        }
+        let mut figures_end = vec![figures.len(); shapes.len()];
+        let mut next = figures.len();
+        for (s, &(_, first, _)) in shapes.iter().enumerate().rev() {
+            if let Some(end) = figures_end.get_mut(s) {
+                *end = next;
+            }
+            if let Ok(f) = usize::try_from(first) {
+                next = f;
+            }
+        }
+        Shapes {
+            points,
+            figures,
+            shapes,
+            children,
+            figures_end,
+        }
+    }
+
     /// The points of figure `f`.
     fn figure(&self, f: usize) -> Option<String> {
         let start = self.figures.get(f)?.1;
-        let end = self.figures.get(f + 1).map_or(self.points.len(), |x| x.1);
+        let end = self
+            .figures
+            .get(f.checked_add(1)?)
+            .map_or(self.points.len(), |x| x.1);
         Some(self.points.get(start..end)?.join(", "))
     }
 
     /// Shape `s`'s figures: from its first figure to the next shape's.
     fn figures_of(&self, s: usize) -> Option<std::ops::Range<usize>> {
         let first = usize::try_from(self.shapes.get(s)?.1).ok()?;
-        let end = self.shapes[s + 1..]
-            .iter()
-            .find_map(|x| usize::try_from(x.1).ok())
-            .unwrap_or(self.figures.len());
-        Some(first..end)
+        Some(first..*self.figures_end.get(s)?)
     }
 
-    fn wkt(&self, s: usize) -> Option<String> {
+    /// Shape `s` as WKT, `depth` collections down from the top.
+    fn wkt(&self, s: usize, depth: usize) -> Option<String> {
+        if depth > MAX_DEPTH {
+            return None;
+        }
         let (_, first, kind) = *self.shapes.get(s)?;
         let name = [
             "",
@@ -171,11 +206,7 @@ impl Shapes<'_> {
         ]
         .get(usize::from(kind))
         .filter(|n| !n.is_empty())?;
-        let children = || {
-            (s + 1..self.shapes.len())
-                .filter(|&c| self.shapes[c].0 == s as i32)
-                .collect::<Vec<_>>()
-        };
+        let children = self.children.get(s)?;
         if first < 0 && kind <= 3 {
             return Some(format!("{name} EMPTY"));
         }
@@ -187,19 +218,19 @@ impl Shapes<'_> {
                 .collect::<Option<Vec<_>>>()?
                 .join(", "),
             // Members of MULTI* collections are written without their type name.
-            4..=6 => children()
-                .into_iter()
-                .map(|c| {
-                    self.wkt(c).map(|w| {
+            4..=6 => children
+                .iter()
+                .map(|&c| {
+                    self.wkt(c, depth + 1).map(|w| {
                         w.split_once(' ')
                             .map_or(w.clone(), |(_, rest)| rest.to_string())
                     })
                 })
                 .collect::<Option<Vec<_>>>()?
                 .join(", "),
-            _ => children()
-                .into_iter()
-                .map(|c| self.wkt(c))
+            _ => children
+                .iter()
+                .map(|&c| self.wkt(c, depth + 1))
                 .collect::<Option<Vec<_>>>()?
                 .join(", "),
         };
@@ -234,5 +265,51 @@ mod tests {
         // hierarchyid bytes aren't geometry.
         assert_eq!(planar_geometry(&[0x5b, 0x40]), None);
         assert_eq!(planar_geometry(&[0x5b, 0x40, 0, 0, 1, 0x0C]), None);
+    }
+
+    /// A geometry with no points or figures, only the given (parent, OGC type) shapes.
+    fn shapes_bytes(shapes: impl IntoIterator<Item = (i32, u8)>) -> Vec<u8> {
+        let shapes: Vec<(i32, u8)> = shapes.into_iter().collect();
+        let mut b = vec![0, 0, 0, 0, 1, 0x04];
+        b.extend(0u32.to_le_bytes()); // points
+        b.extend(0u32.to_le_bytes()); // figures
+        b.extend(u32::try_from(shapes.len()).unwrap().to_le_bytes());
+        for (parent, kind) in shapes {
+            b.extend(parent.to_le_bytes());
+            b.extend((-1i32).to_le_bytes());
+            b.push(kind);
+        }
+        b
+    }
+
+    #[test]
+    fn deeply_nested_collections_stay_bytes_without_overflowing_the_stack() {
+        assert_eq!(
+            planar_geometry(&shapes_bytes((-1..2).map(|p| (p, 7)))).as_deref(),
+            Some("GEOMETRYCOLLECTION (GEOMETRYCOLLECTION (GEOMETRYCOLLECTION EMPTY))")
+        );
+        // ~900 KB: 100,000 GEOMETRYCOLLECTIONs, each inside the one before, on a small stack.
+        let deep = shapes_bytes((-1..99_999).map(|p| (p, 7)));
+        let decoded = std::thread::Builder::new()
+            .stack_size(256 * 1024)
+            .spawn(move || planar_geometry(&deep))
+            .unwrap()
+            .join()
+            .unwrap();
+        assert_eq!(decoded, None);
+    }
+
+    #[test]
+    fn many_members_of_one_collection_decode_in_linear_time() {
+        // Finding each collection's members by scanning every shape took ~10^10 steps here.
+        let flat = shapes_bytes(std::iter::once((-1, 7)).chain((0..100_000).map(|_| (0, 7))));
+        let start = std::time::Instant::now();
+        let wkt = planar_geometry(&flat).unwrap();
+        assert!(
+            start.elapsed() < std::time::Duration::from_secs(5),
+            "{:?}",
+            start.elapsed()
+        );
+        assert_eq!(wkt.matches("GEOMETRYCOLLECTION EMPTY").count(), 100_000);
     }
 }
