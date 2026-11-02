@@ -886,9 +886,16 @@ impl Run<'_> {
         }
         self.reread = true;
         let fresh = db::introspect(self.pool, self.input.kind).await.ok()?;
+        // The run's schema is the one the AI may read (see `never_send::schema_for_ai`); the
+        // notes are reviewed against the whole one.
+        let shown = crate::never_send::schema_for_ai(
+            &fresh,
+            &crate::never_send::entries(&self.input.access.never_send),
+        )
+        .into_owned();
         let before = crate::schema::anchors::Snapshot::of(&self.input.schema);
         let changes =
-            crate::schema::anchors::diff(&before, &crate::schema::anchors::Snapshot::of(&fresh));
+            crate::schema::anchors::diff(&before, &crate::schema::anchors::Snapshot::of(&shown));
         // The team server reviews shared notes on its own schema reads.
         if let Some(home) = self.input.notes_home.as_ref().filter(|h| h.team.is_none()) {
             let _ = crate::notes::review(
@@ -904,7 +911,7 @@ impl Run<'_> {
                 self.input.notes = notes;
             }
         }
-        self.input.schema = fresh;
+        self.input.schema = shown;
         if changes.is_empty() {
             return Some("SayQL read the schema again: it hasn't changed.".into());
         }

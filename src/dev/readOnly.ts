@@ -80,6 +80,9 @@ const WRITE_KEYWORDS = new Set([
   "PG_FILE_WRITE",
   "PG_FILE_RENAME",
   "PG_FILE_UNLINK",
+  "SETUSER",
+  "WRITETEXT",
+  "UPDATETEXT",
 ]);
 
 /** Same list as `WRITE_PREFIXES` in classify.rs. */

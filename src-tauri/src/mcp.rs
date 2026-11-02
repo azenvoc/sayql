@@ -827,7 +827,8 @@ impl SayqlServer {
         );
         let target = Target::new(p.connection_id.clone(), p.database.clone());
         let never = never_send::entries(&self.access(&p.connection_id)?.never_send);
-        let mut schema = self.schema(&p.connection_id, p.database).await?;
+        let schema = self.schema(&p.connection_id, p.database).await?;
+        let mut schema = never_send::schema_for_ai(&schema, &never).into_owned();
         mark_never_send(&mut schema, &never);
         // Counts and dates from the database's statistics; none when it keeps none or they can't be read.
         let usage = match self.state.target_pool(&target).await {

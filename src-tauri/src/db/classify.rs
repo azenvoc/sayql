@@ -82,6 +82,11 @@ const WRITE_KEYWORDS: &[&str] = &[
     "PG_FILE_WRITE",
     "PG_FILE_RENAME",
     "PG_FILE_UNLINK",
+    // SQL Server: `SETUSER` changes who the session acts as; `WRITETEXT` and `UPDATETEXT`
+    // change text/image columns.
+    "SETUSER",
+    "WRITETEXT",
+    "UPDATETEXT",
 ];
 
 /// Function families with the same kind of lasting effect: `pg_stat_reset_shared`,
@@ -373,6 +378,19 @@ mod tests {
             "/* outer /* inner */ still a comment */ SELECT [a]]b] FROM t",
             Kind::Mssql
         ));
+    }
+
+    #[test]
+    fn tsql_setuser_and_text_writes_need_confirmation() {
+        for sql in [
+            "SELECT 1; SETUSER 'dbo'",
+            "SELECT 1\nSETUSER",
+            "SELECT 1; WRITETEXT t.notes @ptr 'x'",
+            "SELECT 1; UPDATETEXT t.notes @ptr 0 NULL 'x'",
+        ] {
+            assert!(rw_everywhere(sql), "{sql}");
+        }
+        assert!(is_read_only("SELECT setuser_id FROM t", Kind::Mssql));
     }
 
     #[test]

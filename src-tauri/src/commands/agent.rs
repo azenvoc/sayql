@@ -55,7 +55,7 @@ pub async fn start_agent(
     }
     let target = Target::new(id.clone(), database.clone());
     state.ensure_fresh(&target).await;
-    let live = state.schema(&target)?;
+    let live = state.schema(&target)?.for_ai(&access.never_send);
     let pool = state
         .target_pool(&target)
         .await?
@@ -237,12 +237,12 @@ pub fn reply_agent(state: State<'_, AppState>, run_id: String, reply: Reply) -> 
 #[serde(rename_all = "camelCase")]
 pub struct AccessView {
     #[serde(flatten)]
-    access: AgentAccess,
+    pub(crate) access: AgentAccess,
     team: Option<TeamRules>,
 }
 
 /// The person's choices with the team admin's rules on top, on a team connection.
-fn effective_access(state: &AppState, id: &str) -> AppResult<AccessView> {
+pub(crate) fn effective_access(state: &AppState, id: &str) -> AppResult<AccessView> {
     let own = state.store.agent_access(id)?;
     Ok(match state.team_connection(id).map(|c| c.rules()) {
         Some(rules) => AccessView {
