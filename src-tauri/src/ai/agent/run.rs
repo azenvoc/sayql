@@ -1128,7 +1128,13 @@ impl Run<'_> {
                 let top: Vec<Value> = top_r
                     .rows
                     .iter()
-                    .map(|r| json!([self.masker.mask_value(&col_name, &r[0]), r.get(1)]))
+                    .map(|r| {
+                        json!([
+                            self.masker
+                                .mask_value(&col_name, r.first().unwrap_or(&Value::Null)),
+                            r.get(1)
+                        ])
+                    })
                     .collect();
                 out["top_values"] = Value::Array(top);
                 summary = if personal {
@@ -1148,7 +1154,7 @@ impl Run<'_> {
                     .map(|r| {
                         format!(
                             "{} ({})",
-                            plain(&r[0]),
+                            plain(r.first().unwrap_or(&Value::Null)),
                             plain(r.get(1).unwrap_or(&Value::Null))
                         )
                     })

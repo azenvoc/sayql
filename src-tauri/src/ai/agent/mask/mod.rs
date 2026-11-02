@@ -161,7 +161,9 @@ impl Masker {
                             .or_else(|| untraced.then_some("text"))
                         {
                             Some(kind) => {
-                                masked[i] = true;
+                                if let Some(m) = masked.get_mut(i) {
+                                    *m = true;
+                                }
                                 Value::String(self.token(kind, v))
                             }
                             None => v.clone(),
@@ -1401,6 +1403,19 @@ mod tests {
         assert_eq!(m.mask(&r, 5).rows[0][0], json!("x"));
         m.learn_aliases("SELECT code FROM patients");
         assert!(m.mask(&r, 5).rows[0][0].as_str().unwrap().starts_with('‹'));
+    }
+
+    #[test]
+    fn rows_wider_or_narrower_than_their_columns_are_masked_without_panicking() {
+        let mut m = Masker::new(Vec::<String>::new());
+        let r = result(
+            &["id"],
+            vec![vec![json!(1), json!("dana.reyes@example.org")], vec![]],
+        );
+        let out = m.mask(&r, 5);
+        assert!(out.rows[0][1].as_str().unwrap().starts_with('‹'), "{out:?}");
+        let s = m.summarize(&r);
+        assert_eq!((s.row_count, s.columns.len()), (2, 1));
     }
 
     #[test]

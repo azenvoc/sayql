@@ -662,7 +662,7 @@ impl TeamClient {
             })?,
             _ = cancel.cancelled() => return Err(CANCELLED.into()),
         };
-        Ok(r.into())
+        r.try_into()
     }
 }
 
@@ -763,22 +763,31 @@ struct ReplyColumn {
     name: String,
 }
 
-impl From<QueryReply> for QueryResult {
-    fn from(r: QueryReply) -> Self {
+/// What a reply whose rows don't line up with its columns says. Code downstream reads cells by
+/// position, so such a reply is refused rather than passed on.
+const MISSHAPEN: &str = "Your team's SayQL server sent rows that don't match their columns. Try again, or ask your team admin.";
+
+impl TryFrom<QueryReply> for QueryResult {
+    type Error = AppError;
+
+    fn try_from(r: QueryReply) -> AppResult<Self> {
         let mut columns: Vec<String> = r.columns.into_iter().map(|c| c.name).collect();
         // Withheld columns are left out of the rows; drop them from the header too if the server kept them there.
         let width = r.rows.first().map(Vec::len);
         if width.is_some_and(|w| w < columns.len()) {
             columns.retain(|c| !r.withheld.iter().any(|w| w.eq_ignore_ascii_case(c)));
         }
-        QueryResult {
+        if r.rows.iter().any(|row| row.len() != columns.len()) {
+            return Err(MISSHAPEN.into());
+        }
+        Ok(QueryResult {
             columns,
             rows: r.rows,
             rows_affected: None,
             truncated: r.truncated,
             elapsed_ms: r.elapsed_ms as u128,
             withheld: r.withheld,
-        }
+        })
     }
 }
 

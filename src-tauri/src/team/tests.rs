@@ -692,6 +692,48 @@ async fn signed_out_nothing_is_sent_anywhere() {
     let _ = std::fs::remove_dir_all(dir);
 }
 
+/// Answers every query with rows that don't line up with their one column.
+fn misshapen(_: &str, path: &str, _: &Value) -> (u16, Value) {
+    match path {
+        "/api/v1/connections/c_short/query" => {
+            (200, json!({ "columns": [{ "name": "x" }], "rows": [[]] }))
+        }
+        "/api/v1/connections/c_long/query" => (
+            200,
+            json!({ "columns": [{ "name": "x" }], "rows": [[true, 1]] }),
+        ),
+        "/api/v1/connections/c_mixed/query" => (
+            200,
+            json!({ "columns": [{ "name": "a" }, { "name": "b" }], "rows": [[1, 2], [3]] }),
+        ),
+        _ => err(404, "not_found"),
+    }
+}
+
+/// Code downstream reads cells by position (a note's check reads `rows[0][0]`), so a reply
+/// whose rows are wider or narrower than its columns used to abort the app.
+#[tokio::test]
+async fn replies_whose_rows_dont_match_their_columns_are_refused() {
+    let f = fake(misshapen).await;
+    for id in ["c_short", "c_long", "c_mixed"] {
+        let e = pool(&f.url, id)
+            .query("select x", 10, &CancellationToken::new())
+            .await
+            .unwrap_err();
+        assert_eq!(e.to_string(), MISSHAPEN, "{id}");
+    }
+    let check = crate::notes::run_check(
+        &crate::db::DbPool::Team(pool(&f.url, "c_short")),
+        "select true",
+        &[],
+    )
+    .await;
+    assert!(
+        check.ok.is_none() && check.error.as_deref() == Some(MISSHAPEN),
+        "{check:?}"
+    );
+}
+
 /// Against a real SayQL server: `SAYQL_TEST_TEAM_URL=http://localhost:8080 SAYQL_TEST_TEAM_CODE=…
 /// cargo test --lib team::tests::real_server -- --ignored`. The server needs a licence, an unused
 /// invite, a SQLite connection named Clinic over a `patients(id, name, ssn)` table with

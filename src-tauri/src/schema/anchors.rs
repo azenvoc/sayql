@@ -395,29 +395,43 @@ pub fn diff(old: &Snapshot, new: &Snapshot) -> Vec<Change> {
 
 /// `text` with the whole-word name `from` replaced by `to`, matching case-insensitively, as a
 /// rename would change a note: "orders.state" for "orders.status".
+///
+/// Matches are found on `text` itself, comparing one character at a time, because lowercasing
+/// can change a string's byte length (`İ` grows, the Kelvin sign shrinks) and offsets found in
+/// a lowercased copy land in the wrong place, or inside a character, in the original.
 pub fn rename_in(text: &str, from: &str, to: &str) -> String {
-    let lower = text.to_lowercase();
-    let from_l = from.to_lowercase();
     let is_word = |c: char| c.is_alphanumeric() || c == '_';
+    let same = |a: char, b: char| a == b || a.to_lowercase().eq(b.to_lowercase());
+    let from: Vec<char> = from.chars().collect();
+    if from.is_empty() {
+        return text.to_string();
+    }
+    let chars: Vec<(usize, char)> = text.char_indices().collect();
     let mut out = String::with_capacity(text.len());
     let mut i = 0;
-    while let Some(off) = lower[i..].find(&from_l) {
-        let start = i + off;
-        let end = start + from_l.len();
-        let before_ok = lower[..start]
-            .chars()
-            .next_back()
-            .is_none_or(|c| !is_word(c));
-        let after_ok = lower[end..].chars().next().is_none_or(|c| !is_word(c));
-        out.push_str(&text[i..start]);
+    while let Some(&(start, c)) = chars.get(i) {
+        let end_i = i.saturating_add(from.len());
+        let matched = chars
+            .get(i..end_i)
+            .is_some_and(|w| w.iter().zip(&from).all(|(&(_, a), &b)| same(a, b)));
+        if !matched {
+            out.push(c);
+            i = i.saturating_add(1);
+            continue;
+        }
+        let end = chars.get(end_i).map_or(text.len(), |&(b, _)| b);
+        let before_ok = i
+            .checked_sub(1)
+            .and_then(|p| chars.get(p))
+            .is_none_or(|&(_, c)| !is_word(c));
+        let after_ok = chars.get(end_i).is_none_or(|&(_, c)| !is_word(c));
         if before_ok && after_ok {
             out.push_str(to);
         } else {
-            out.push_str(&text[start..end]);
+            out.push_str(text.get(start..end).unwrap_or_default());
         }
-        i = end;
+        i = end_i;
     }
-    out.push_str(&text[i..]);
     out
 }
 
@@ -589,5 +603,25 @@ mod tests {
             rename_in("Memberships.role", "memberships", "members"),
             "members.role"
         );
+    }
+
+    #[test]
+    fn renames_in_text_whose_case_changes_byte_length() {
+        // `İ` lowercases to three bytes and the Kelvin sign to one, so offsets found in a
+        // lowercased copy used to panic inside a character or splice the name in the wrong place.
+        assert_eq!(
+            rename_in("İ é orders", "orders", "purchases"),
+            "İ é purchases"
+        );
+        assert_eq!(
+            rename_in("İstanbul orders are shipped", "orders", "purchases"),
+            "İstanbul purchases are shipped"
+        );
+        assert_eq!(
+            rename_in("\u{212A}elvin orders", "orders", "purchases"),
+            "\u{212A}elvin purchases"
+        );
+        assert_eq!(rename_in("ÉTAT = 1", "état", "state"), "state = 1");
+        assert_eq!(rename_in("İİ orders", "", "x"), "İİ orders");
     }
 }
