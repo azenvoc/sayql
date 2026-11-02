@@ -125,6 +125,77 @@ fn asset_for(bytes: &[u8], archive: Archive, entry: &'static str) -> Asset {
     }
 }
 
+/// A server on 127.0.0.1 that answers each connection with `reply`, then waits `hold` before
+/// closing.
+fn serve(reply: Vec<u8>, hold: std::time::Duration) -> String {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    std::thread::spawn(move || {
+        for conn in listener.incoming() {
+            let Ok(mut conn) = conn else { continue };
+            let reply = reply.clone();
+            std::thread::spawn(move || {
+                let mut buf = [0u8; 4096];
+                let _ = std::io::Read::read(&mut conn, &mut buf);
+                let _ = conn.write_all(&reply);
+                let _ = conn.flush();
+                std::thread::sleep(hold);
+            });
+        }
+    });
+    format!("http://{addr}/file")
+}
+
+fn http_reply(length: usize, body: &[u8]) -> Vec<u8> {
+    let mut r = format!("HTTP/1.1 200 OK\r\nContent-Length: {length}\r\n\r\n").into_bytes();
+    r.extend_from_slice(body);
+    r
+}
+
+/// A download that stops coming, or a server that never answers, fails instead of hanging the
+/// audit's start forever.
+#[tokio::test]
+async fn a_stalled_download_fails_instead_of_waiting_forever() {
+    let http = reqwest::Client::builder().no_proxy().build().unwrap();
+    let dir = temp("fetch");
+    let to = dir.join("file.download");
+    let stop = CancellationToken::new();
+    let short = (
+        std::time::Duration::from_millis(300),
+        std::time::Duration::from_millis(300),
+    );
+    let hold = std::time::Duration::from_secs(5);
+    // Complete.
+    let url = serve(http_reply(5, b"hello"), hold);
+    let mut seen = 0;
+    fetch(&http, &url, 5, &to, &stop, short, |n| seen += n)
+        .await
+        .unwrap();
+    assert_eq!(seen, 5);
+    assert_eq!(std::fs::read(&to).unwrap(), b"hello");
+    // Larger than the pinned size.
+    let url = serve(http_reply(5, b"hello"), hold);
+    let e = fetch(&http, &url, 4, &to, &stop, short, |_| {})
+        .await
+        .unwrap_err();
+    assert!(e.contains("larger than expected"), "{e}");
+    // Stops halfway.
+    let started = std::time::Instant::now();
+    let url = serve(http_reply(1000, b"part"), hold);
+    let e = fetch(&http, &url, 1000, &to, &stop, short, |_| {})
+        .await
+        .unwrap_err();
+    assert_eq!(e, FAILED);
+    // Never answers.
+    let url = serve(Vec::new(), hold);
+    let e = fetch(&http, &url, 1000, &to, &stop, short, |_| {})
+        .await
+        .unwrap_err();
+    assert_eq!(e, FAILED);
+    assert!(started.elapsed() < std::time::Duration::from_secs(4));
+    let _ = std::fs::remove_dir_all(dir);
+}
+
 #[test]
 fn a_download_is_unpacked_only_when_its_checksum_matches() {
     let dir = temp("install");

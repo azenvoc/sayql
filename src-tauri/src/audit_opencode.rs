@@ -56,6 +56,7 @@ use sha2::{Digest, Sha256};
 use std::ffi::OsString;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 
 /// The audit runner's id, as the window names it.
@@ -360,11 +361,10 @@ pub async fn download(
     stop: &CancellationToken,
     mut progress: impl FnMut(u64, u64),
 ) -> Result<Installed, String> {
-    const FAILED: &str = "Couldn't download OpenCode. Check your connection and try again.";
     let platform = this_platform()?;
     let _guard = install_lock().lock().await;
     let dest = install_dir(runners);
-    if let Some(done) = installed(&dest) {
+    if let Some(done) = installed_off_thread(&dest).await {
         return Ok(done);
     }
     let parent = dest.parent().ok_or("No folder for OpenCode.")?;
@@ -376,35 +376,26 @@ pub async fn download(
         let mut hashes = serde_json::Map::new();
         for (name, asset) in [("opencode", &platform.opencode), ("rg", &platform.ripgrep)] {
             let archive = work.join(format!("{name}.download"));
-            let response = http
-                .get(asset.url)
-                .send()
-                .await
-                .and_then(|r| r.error_for_status())
-                .map_err(|_| FAILED)?;
-            let mut file = std::fs::File::create(&archive).map_err(|e| e.to_string())?;
-            let mut got = 0u64;
-            let mut stream = response.bytes_stream();
-            loop {
-                let chunk = tokio::select! {
-                    _ = stop.cancelled() => return Err("Download cancelled.".to_string()),
-                    next = stream.next() => next,
-                };
-                let Some(chunk) = chunk else { break };
-                let chunk = chunk.map_err(|_| FAILED)?;
-                got += chunk.len() as u64;
-                if got > asset.bytes {
-                    return Err(
-                        "The download is larger than expected, so SayQL didn't use it.".into(),
-                    );
-                }
-                file.write_all(&chunk).map_err(|e| e.to_string())?;
-                received += chunk.len() as u64;
-                progress(received, total);
-            }
-            file.flush().map_err(|e| e.to_string())?;
-            drop(file);
-            let sha = install_from_archive(&archive, asset, &work.join("bin").join(exe(name)))?;
+            fetch(
+                http,
+                asset.url,
+                asset.bytes,
+                &archive,
+                stop,
+                TIMEOUTS,
+                |n| {
+                    received += n;
+                    progress(received, total);
+                },
+            )
+            .await?;
+            // Hashing and unpacking 80 MB is blocking work: off the async threads.
+            let dest_exe = work.join("bin").join(exe(name));
+            let from = archive.clone();
+            let sha =
+                tokio::task::spawn_blocking(move || install_from_archive(&from, asset, &dest_exe))
+                    .await
+                    .map_err(|e| e.to_string())??;
             let _ = std::fs::remove_file(&archive);
             hashes.insert(name.into(), Value::String(sha));
         }
@@ -414,11 +405,68 @@ pub async fn download(
             std::fs::remove_dir_all(&dest).map_err(|e| e.to_string())?;
         }
         std::fs::rename(&work, &dest).map_err(|e| e.to_string())?;
-        installed(&dest).ok_or_else(|| "OpenCode didn't install correctly. Try again.".to_string())
+        installed_off_thread(&dest)
+            .await
+            .ok_or_else(|| "OpenCode didn't install correctly. Try again.".to_string())
     }
     .await;
     let _ = std::fs::remove_dir_all(&work);
     result
+}
+
+/// [`installed`] on a blocking thread: it hashes both executables (about 190 MB).
+async fn installed_off_thread(dir: &Path) -> Option<Installed> {
+    let dir = dir.to_path_buf();
+    tokio::task::spawn_blocking(move || installed(&dir))
+        .await
+        .ok()
+        .flatten()
+}
+
+const FAILED: &str = "Couldn't download OpenCode. Check your connection and try again.";
+
+/// How long a download waits for the server to answer, and then for each piece of the file.
+pub const TIMEOUTS: (Duration, Duration) = (Duration::from_secs(30), Duration::from_secs(60));
+
+/// Downloads `url` into `to`, at most `limit` bytes, reporting each piece's size. Fails when the
+/// server doesn't answer within `timeouts.0` or the file stops coming for `timeouts.1`;
+/// `stop` cancels.
+pub async fn fetch(
+    http: &reqwest::Client,
+    url: &str,
+    limit: u64,
+    to: &Path,
+    stop: &CancellationToken,
+    timeouts: (Duration, Duration),
+    mut on_bytes: impl FnMut(u64),
+) -> Result<(), String> {
+    let (answer, stall) = timeouts;
+    let response = tokio::select! {
+        _ = stop.cancelled() => return Err("Download cancelled.".to_string()),
+        r = tokio::time::timeout(answer, http.get(url).send()) => r,
+    };
+    let response = response
+        .map_err(|_| FAILED)?
+        .and_then(|r| r.error_for_status())
+        .map_err(|_| FAILED)?;
+    let mut file = std::fs::File::create(to).map_err(|e| e.to_string())?;
+    let mut got = 0u64;
+    let mut stream = response.bytes_stream();
+    loop {
+        let chunk = tokio::select! {
+            _ = stop.cancelled() => return Err("Download cancelled.".to_string()),
+            next = tokio::time::timeout(stall, stream.next()) => next.map_err(|_| FAILED)?,
+        };
+        let Some(chunk) = chunk else { break };
+        let chunk = chunk.map_err(|_| FAILED)?;
+        got += chunk.len() as u64;
+        if got > limit {
+            return Err("The download is larger than expected, so SayQL didn't use it.".into());
+        }
+        file.write_all(&chunk).map_err(|e| e.to_string())?;
+        on_bytes(chunk.len() as u64);
+    }
+    file.flush().map_err(|e| e.to_string())
 }
 
 // ---------------------------------------------------------------------------------------------
