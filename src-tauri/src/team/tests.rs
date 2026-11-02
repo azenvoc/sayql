@@ -8,23 +8,23 @@ use tokio::net::TcpListener;
 
 /// One request the fake server saw.
 #[derive(Debug, Clone)]
-struct Seen {
-    method: String,
-    path: String,
-    auth: Option<String>,
-    body: Value,
+pub(crate) struct Seen {
+    pub method: String,
+    pub path: String,
+    pub auth: Option<String>,
+    pub body: Value,
 }
 
 /// A fake team server on a free local port. `reply(method, path, body)` gives the status and
 /// JSON to answer with.
-struct Fake {
-    url: String,
-    seen: Arc<Mutex<Vec<Seen>>>,
+pub(crate) struct Fake {
+    pub url: String,
+    pub seen: Arc<Mutex<Vec<Seen>>>,
 }
 
-type Reply = fn(&str, &str, &Value) -> (u16, Value);
+pub(crate) type Reply = fn(&str, &str, &Value) -> (u16, Value);
 
-async fn fake(reply: Reply) -> Fake {
+pub(crate) async fn fake(reply: Reply) -> Fake {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let url = format!("http://127.0.0.1:{}", listener.local_addr().unwrap().port());
     let seen = Arc::new(Mutex::new(Vec::new()));
@@ -93,7 +93,7 @@ async fn fake(reply: Reply) -> Fake {
     Fake { url, seen }
 }
 
-fn err(status: u16, code: &str) -> (u16, Value) {
+pub(crate) fn err(status: u16, code: &str) -> (u16, Value) {
     (
         status,
         json!({ "error": { "code": code, "message": format!("The server says {code}.") } }),
@@ -101,7 +101,7 @@ fn err(status: u16, code: &str) -> (u16, Value) {
 }
 
 /// The contract's happy path, with the auth checked on every route but the open two.
-fn server(method: &str, path: &str, body: &Value) -> (u16, Value) {
+pub(crate) fn server(method: &str, path: &str, body: &Value) -> (u16, Value) {
     let sql = body["sql"].as_str().unwrap_or("").to_ascii_lowercase();
     match (method, path) {
         // The server, not the app, refuses writes, so the attempt is in its audit log.
@@ -145,7 +145,7 @@ fn server(method: &str, path: &str, body: &Value) -> (u16, Value) {
     }
 }
 
-fn client(url: &str) -> TeamClient {
+pub(crate) fn client(url: &str) -> TeamClient {
     TeamClient::new(
         reqwest::Client::new(),
         url.to_string(),

@@ -1,6 +1,6 @@
 use crate::ai::Api;
 use crate::ai::agent::model::{Llm, ToolMode};
-use crate::ai::agent::run::{self, Event, Io, NotesHome, Reply, RunInput, StepStatus};
+use crate::ai::agent::run::{self, Event, Io, NotesHome, Reply, RunInput, StepStatus, TeamNotes};
 use crate::ai::endpoint::endpoint;
 use crate::error::{AppError, AppResult};
 use crate::state::{AgentRun, AppState, Target};
@@ -108,11 +108,23 @@ pub async fn start_agent(
         ),
     };
     let notes_database = state.notes_database(&target);
-    let notes = state.store.notes(&id, notes_database.as_deref())?;
+    // On a team connection whose server keeps shared notes, the team's notes, and suggestions
+    // go to the server; else the notes saved here.
+    let (notes, team_notes) = match state.team_notes(&id).await {
+        Some(shared) => (
+            shared.notes,
+            state.team_client().ok().flatten().map(|client| TeamNotes {
+                client,
+                cache: state.knowledge.clone(),
+            }),
+        ),
+        None => (state.store.notes(&id, notes_database.as_deref())?, None),
+    };
     let notes_home = Some(NotesHome {
         store: state.store.clone(),
         connection_id: id.clone(),
         database: notes_database,
+        team: team_notes,
     });
     let focus = focus_tables.unwrap_or_default();
     let relevance = format!("{question} {}", focus.join(" "));
@@ -273,6 +285,44 @@ pub fn list_notes(
     state
         .store
         .notes(&id, database.as_deref().filter(|d| !d.trim().is_empty()))
+}
+
+/// The team's shared notes on a team connection whose server keeps them, read-only here;
+/// `None` when the connection uses the notes saved on this computer.
+#[tauri::command]
+pub async fn list_shared_notes(
+    state: State<'_, AppState>,
+    id: String,
+) -> AppResult<Option<Vec<Note>>> {
+    Ok(state.team_notes(&id).await.map(|s| s.notes))
+}
+
+/// Suggests a note on a team connection, for the team's knowledge owners to approve on the
+/// team server. Refused like any note when it holds values from the data. Returns what to
+/// tell the person.
+#[tauri::command]
+pub async fn suggest_note(
+    state: State<'_, AppState>,
+    id: String,
+    text: String,
+    check: Option<String>,
+) -> AppResult<String> {
+    state.check_connection(&id)?;
+    let server_id = id
+        .strip_prefix(team::ID_PREFIX)
+        .ok_or("Only notes on team connections are suggested to the team.")?;
+    let client = state.team_client()?.ok_or(team::SIGNED_OUT)?;
+    let suggestion = team::knowledge::Suggestion {
+        text: crate::store::agent::clean_note(&text)?,
+        check: match check.as_deref().map(str::trim).filter(|c| !c.is_empty()) {
+            Some(c) => Some(crate::store::agent::clean_check(c)?),
+            None => None,
+        },
+        ..Default::default()
+    };
+    client.suggest_knowledge(server_id, &suggestion).await?;
+    state.knowledge.forget(&id);
+    Ok(team::knowledge::SENT.into())
 }
 
 /// Saves a database note: new (empty `id`) or edited. Finds what it's about in the open

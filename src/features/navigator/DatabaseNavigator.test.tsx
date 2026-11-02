@@ -57,6 +57,37 @@ describe("DatabaseNavigator", () => {
     expect(onCheckNotes).toHaveBeenCalled();
   });
 
+  it("shows a team's shared notes read-only, with the same marks, and offers only a suggestion", () => {
+    const schema: Schema = { dialect: "PostgreSQL", tables: [table("orders", "table")] };
+    const team: ConnectionConfig = { ...conn, id: "team:c_1", name: "Production", kind: "postgres", team: { database: "app", notes: "" } };
+    const onEditNote = vi.fn();
+    const onCheckNotes = vi.fn();
+    const doubtful = {
+      id: "kn_2", connectionId: "team:c_1", database: null, text: "users.last_login_at is set on sign-in", updatedAt: 0,
+      suspect: { reason: "the column users.last_login_at no longer exists", since: 0 },
+    };
+    render(
+      <DatabaseNavigator
+        {...props({ connections: [team], activeId: "team:c_1", databases: { "team:c_1": null }, schema, onEditNote, onCheckNotes })}
+        sharedNotes
+        notes={[{ id: "kn_1", connectionId: "team:c_1", database: null, text: "orders.status 3 means refunded", updatedAt: 0, verifiedAt: Date.now() }, doubtful]}
+      />,
+    );
+    expect(screen.getByText("Shared by your team. Owners approve changes on the team server.")).toBeTruthy();
+    expect(screen.getByLabelText("Checked")).toBeTruthy();
+    expect(screen.getByLabelText("May be out of date")).toBeTruthy();
+    // No checking or editing here.
+    expect(screen.queryByLabelText("Check notes against the database now")).toBeNull();
+    fireEvent.click(screen.getByText("users.last_login_at is set on sign-in"));
+    fireEvent.doubleClick(screen.getByText("orders.status 3 means refunded"));
+    expect(onEditNote).not.toHaveBeenCalled();
+    fireEvent.contextMenu(screen.getByText("orders.status 3 means refunded"));
+    expect(screen.queryByText("Edit note…")).toBeNull();
+    expect(screen.queryByText("Delete note")).toBeNull();
+    fireEvent.click(screen.getAllByText("Suggest a note…")[0]);
+    expect(onEditNote).toHaveBeenCalledWith(null);
+  });
+
   const props = (over: Partial<Parameters<typeof DatabaseNavigator>[0]> = {}) => ({
     connections: [conn], activeId: "c1", databases: { c1: null }, databaseName: null, schema: null, loading: false,
     connected: true, onConnect: vi.fn(),

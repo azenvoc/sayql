@@ -21,7 +21,7 @@ const COMMANDS = [
   "delete_script", "list_skills", "save_skill", "delete_skill", "mcp_setup", "installed_coding_agents", "open_install_link", "mcp_activity", "mcp_apps", "set_mcp_app_blocked", "approve_mcp_app", "set_mcp_only_approved", "clear_mcp_activity", "mcp_audits", "audit_prompt", "audit_agents", "code_sources", "add_code_folder", "add_code_repo", "remove_code_source", "check_code_source", "start_audit", "cancel_audit", "audit_model", "set_audit_model", "audit_payment", "set_audit_payment", "open_audit_in_terminal", "take_handoffs", "app_info", "check_update",
   "install_update", "save_settings", "finish_onboarding", "list_models", "voice_status", "voice_download",
   "voice_cancel_download", "voice_delete_model", "voice_start", "voice_stop", "voice_cancel",
-  "agent_access", "save_agent_access", "start_agent", "reply_agent", "stop_agent", "list_notes", "save_note", "delete_note", "check_note", "check_notes", "confirm_note",
+  "agent_access", "save_agent_access", "start_agent", "reply_agent", "stop_agent", "list_notes", "list_shared_notes", "suggest_note", "save_note", "delete_note", "check_note", "check_notes", "confirm_note",
   "list_note_suggestions", "accept_note_suggestion", "dismiss_note_suggestion",
   "save_agent_settings", "choose_model", "credits_balance", "team_sign_in", "team_sso_start", "team_sso_finish", "team_status", "team_sign_out", "team_connections", "team_ai",
 ];

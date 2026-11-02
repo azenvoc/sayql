@@ -100,6 +100,8 @@ pub fn run() {
             agent::agent_access,
             agent::save_agent_access,
             agent::list_notes,
+            agent::list_shared_notes,
+            agent::suggest_note,
             agent::save_note,
             agent::delete_note,
             agent::check_note,

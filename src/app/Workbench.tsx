@@ -111,9 +111,29 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
   const { schema, loading, error } = conn.schemaState(target);
   const databaseName = conn.databaseName(target);
   const [notes, setNotes] = useState<DbNote[]>([]);
+  /** The notes are the team's, from the team server: read-only here, and new ones are suggested. */
+  const [sharedNotes, setSharedNotes] = useState(false);
   useEffect(() => {
-    if (!target) return setNotes([]);
-    commands.listNotes(target).then(setNotes, () => setNotes([]));
+    if (!target) {
+      setSharedNotes(false);
+      return setNotes([]);
+    }
+    let current = true;
+    const local = () =>
+      commands.listNotes(target).then(
+        (n) => current && (setNotes(n), setSharedNotes(false)),
+        () => current && (setNotes([]), setSharedNotes(false)),
+      );
+    // A team connection whose server keeps shared notes uses those; anything else the notes saved here.
+    if (target.connectionId.startsWith("team:")) {
+      commands.listSharedNotes(target.connectionId).then(
+        (shared) => (shared ? current && (setNotes(shared), setSharedNotes(true)) : local()),
+        () => local(),
+      );
+    } else void local();
+    return () => {
+      current = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetKey(target), notesVersion]);
   // Reading a schema reviews the notes against it, so list them again after each read.
@@ -121,7 +141,8 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
     if (schema) setNotesVersion((v) => v + 1);
   }, [schema]);
   // Notes something has made doubtful; their banner can be put off per database, for the session.
-  const doubtful = notes.filter((n) => n.suspect);
+  // The team's doubtful notes are for its owners to review on the team server.
+  const doubtful = sharedNotes ? [] : notes.filter((n) => n.suspect);
   const doubtKey = `${target ? targetKey(target) : ""}:${doubtful.map((n) => n.id).join(",")}`;
   const [hiddenDoubts, setHiddenDoubts] = useState<string[]>([]);
   // Notes AI apps suggested over MCP; an accepted one (here or in Settings) is a new note.
@@ -564,7 +585,8 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
                 if (s) setDialog({ kind: "deleteScript", script: s });
               }}
               notes={notes}
-              onEditNote={(note) => setDialog({ kind: "note", note })}
+              sharedNotes={sharedNotes}
+              onEditNote={(note) => setDialog({ kind: "note", note: sharedNotes ? null : note })}
               onDeleteNote={(note) => void commands.deleteNote(note.id).then(() => setNotesVersion((v) => v + 1))}
               onCheckNotes={() => {
                 if (!target) return;
@@ -782,7 +804,13 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
           note={dialog.note}
           databaseName={databaseName ?? active?.name ?? "this database"}
           fix={dialog.note ? noteSuggestions.suggestions.find((s) => s.replaces === dialog.note?.id) : undefined}
+          suggest={sharedNotes && !dialog.note}
           onSave={async (text, check) => {
+            if (sharedNotes && !dialog.note) {
+              const sent = await commands.suggestNote(target.connectionId, text, check);
+              setNotesVersion((v) => v + 1);
+              return sent;
+            }
             const base: DbNote = dialog.note ?? { id: "", connectionId: target.connectionId, database: target.database, text, updatedAt: 0 };
             await commands.saveNote({ ...base, text, check: check.trim() ? { sql: check.trim() } : null });
             setNotesVersion((v) => v + 1);

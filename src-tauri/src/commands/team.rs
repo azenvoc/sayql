@@ -155,6 +155,7 @@ pub async fn team_status(state: State<'_, AppState>) -> AppResult<Option<TeamSta
         return Ok(None);
     };
     let (user, server) = client.status().await?;
+    state.knowledge.set_server(&server);
     let mut settings = state.store.settings()?;
     let Some(saved) = settings.team.clone() else {
         return Ok(None);

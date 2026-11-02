@@ -400,6 +400,8 @@ export interface AgentAnswer {
   notes: string[];
   /** The notes (and fixes to saved ones) wait with the other suggestions instead of being offered here. */
   notesQueued?: boolean;
+  /** The notes went to the team server, for its knowledge owners to approve. */
+  notesShared?: boolean;
   proposedSql: string | null;
   /** The proposed statement could change data; otherwise it is a query to run yourself. */
   proposedChangesData: boolean;

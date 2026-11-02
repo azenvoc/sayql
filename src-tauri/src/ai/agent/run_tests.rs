@@ -1250,6 +1250,7 @@ async fn a_run_checks_notes_and_suggests_fixes_for_the_person() {
             store: store.clone(),
             connection_id: "c1".into(),
             database: None,
+            team: None,
         }),
         focus: vec![],
         skill: None,
@@ -1317,5 +1318,110 @@ async fn a_run_checks_notes_and_suggests_fixes_for_the_person() {
         steps_of(&events)
             .iter()
             .any(|s| s.tool == "check_note" && s.status == StepStatus::Done)
+    );
+}
+
+/// On a team connection whose server keeps shared notes, the run reads the team's notes and
+/// the notes `finish` suggests go to the server for its knowledge owners, not to the local
+/// queue. A fix names the team note by the short id the model saw.
+#[tokio::test]
+async fn on_a_team_connection_suggested_notes_go_to_the_team_server() {
+    use crate::store::Store;
+    use crate::store::agent::note_ref;
+    use crate::team::knowledge::{Cache, tests::knowledge_server};
+    use crate::team::tests::{client, fake};
+    let f = fixture().await;
+    let server = fake(knowledge_server).await;
+    let store = Store::new(f.dir.join("config"));
+    let cache = Arc::new(Cache::default());
+    let shared = cache.notes(&client(&server.url), "team:c_1").await.unwrap();
+    let schema = db::introspect(&f.pool, Kind::Sqlite).await.unwrap();
+    let login_ref = note_ref("kn_bbbb2222");
+    let turns = vec![MockTurn::Tools(vec![(
+        "finish",
+        json!({
+            "answer": "Sign-ins are in users.last_seen_at.",
+            "confidence": "high",
+            "notes": [
+                { "text": "users.last_seen_at is set on every sign-in", "replaces": login_ref,
+                  "evidence": "last_login_at no longer exists." },
+                "tenants.tier is the plan the tenant pays for"
+            ]
+        }),
+    )])];
+    let input = RunInput {
+        run_id: "r1".into(),
+        question: "When did people last sign in?".into(),
+        kind: Kind::Sqlite,
+        schema_text: crate::schema::render_full(&schema),
+        schema,
+        notes: shared.notes,
+        notes_home: Some(run::NotesHome {
+            store: store.clone(),
+            connection_id: "team:c_1".into(),
+            database: None,
+            team: Some(run::TeamNotes {
+                client: client(&server.url),
+                cache: cache.clone(),
+            }),
+        }),
+        focus: vec![],
+        skill: None,
+        access: access(Results::Counts, false),
+        limits: AgentSettings {
+            skip_plan: true,
+            ..Default::default()
+        },
+        history: None,
+    };
+    let (_tx, rx) = tokio::sync::mpsc::unbounded_channel();
+    let events = Arc::new(Mutex::new(Vec::new()));
+    let sink = events.clone();
+    let mut io = Io {
+        emit: Arc::new(move |e| sink.lock().unwrap().push(e)),
+        replies: rx,
+        stop: CancellationToken::new(),
+    };
+    let mut llm = Llm::Mock(Mock::new(turns));
+    run::run(&mut llm, &f.pool, input, &mut io).await;
+    let Llm::Mock(mock) = llm else { unreachable!() };
+    let seen = mock.seen.lock().unwrap().clone();
+    assert!(
+        seen[0].contains("users.last_login_at is set on every sign-in")
+            && seen[0]
+                .contains("may be out of date: the column users.last_login_at no longer exists"),
+        "the prompt has the team's notes: {}",
+        seen[0]
+    );
+
+    let events = events.lock().unwrap().clone();
+    let Some(Event::Done {
+        answer: Some(answer),
+        ..
+    }) = events.last()
+    else {
+        panic!("no answer: {:?}", events.last());
+    };
+    assert!(answer.notes_shared && answer.notes_queued);
+    assert_eq!(answer.notes.len(), 2);
+    assert!(
+        store.note_suggestions().unwrap().is_empty(),
+        "nothing waits on this computer"
+    );
+    let posted: Vec<serde_json::Value> = server
+        .seen
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|s| s.path == "/api/v1/connections/c_1/knowledge/suggestions")
+        .map(|s| s.body.clone())
+        .collect();
+    assert_eq!(posted.len(), 2);
+    assert_eq!(posted[0]["replaces"], "kn_bbbb2222", "the server's own id");
+    assert_eq!(posted[0]["source"], "Investigate");
+    assert_eq!(posted[0]["evidence"], "last_login_at no longer exists.");
+    assert_eq!(
+        posted[1]["text"],
+        "tenants.tier is the plan the tenant pays for"
     );
 }

@@ -83,6 +83,11 @@ export const commands = {
   agentAccess: (connectionId: string) => invoke<AgentAccess>("agent_access", { id: connectionId }),
   saveAgentAccess: (connectionId: string, access: AgentAccess) => invoke<AgentAccess>("save_agent_access", { id: connectionId, access }),
   listNotes: (t: Target) => invoke<DbNote[]>("list_notes", { id: t.connectionId, database: t.database }),
+  /** The team's shared notes on a team connection whose server keeps them (read-only); null to use the notes saved here. */
+  listSharedNotes: (connectionId: string) => invoke<DbNote[] | null>("list_shared_notes", { id: connectionId }),
+  /** Suggests a note on a team connection for the team's knowledge owners to approve; resolves with what to tell the person. */
+  suggestNote: (connectionId: string, text: string, check: string) =>
+    invoke<string>("suggest_note", { id: connectionId, text, check: check.trim() || null }),
   /** Creates the note when `id` is empty; refuses notes that hold values from the data. */
   saveNote: (note: DbNote) => invoke<DbNote>("save_note", { note }),
   deleteNote: (id: string) => invoke<void>("delete_note", { id }),
