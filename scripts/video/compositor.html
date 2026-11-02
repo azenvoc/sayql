@@ -124,7 +124,7 @@
 <div id="caption" class="caption" style="opacity:0"></div>
 <script>
   const CURSOR = `<svg class="cursor" viewBox="0 0 22 33"><path d="M2 2v25l6.5-6.2 4.3 9.7 4-1.8-4.2-9.5H21z" fill="#fff" stroke="#000" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
-  // The terminal scenes: Claude Code asking SayQL over MCP, as the desktop app answers it (src-tauri/src/mcp.rs):
+  // The terminal scenes: Claude Code asking SayQL over MCP, as the desktop app answers it (src-tauri/src/mcp/):
   // counts and summaries by default, and a never-send column refused. Each line shows at `at` seconds into its
   // card; `type` types it at that many characters a second.
   const esc = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");

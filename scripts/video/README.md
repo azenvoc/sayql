@@ -40,7 +40,7 @@ node scripts/video/render.mjs dark stills 12,40  # single frames at those times,
   draws each frame with `compositor.html`: the window on the brand background, the eased
   zoom, the cursor, the captions, the title and end cards, and the two terminal scenes. Those
   are drawn, not recorded: Claude Code calling SayQL's `run_query` over MCP, with the answers
-  in the shape `src-tauri/src/mcp.rs` gives (a summary on a counts connection, and its
+  in the shape `src-tauri/src/mcp/shape.rs` gives (a summary on a counts connection, and its
   never-send refusal). Keep them in step with that file.
 - Captures go to `scripts/video/out/` (git-ignored, ~500 MB each).
 

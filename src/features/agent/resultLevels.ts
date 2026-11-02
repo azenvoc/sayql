@@ -8,7 +8,7 @@ import type { AgentAccess, AgentResults, AppResults } from "../../api";
  * Every line here has to match the backend:
  * - agent mode: src-tauri/src/ai/agent/run.rs (`Results::Off | Counts | Rows`; Rows sends up to
  *   `ROWS_SENT` = 20 rows per query through the masker),
- * - AI apps: src-tauri/src/mcp.rs `shape` (`AppResults::Off | Counts | Masked | All`).
+ * - AI apps: src-tauri/src/mcp/shape.rs `shape` (`AppResults::Off | Counts | Masked | All`).
  * Defaults (src-tauri/src/store/agent.rs): agent mode `off`, AI apps `counts`.
  */
 export type ResultLevel = "nothing" | "counts" | "masked" | "all";
@@ -126,7 +126,7 @@ export const appLevelShort = (apps: AppResults) => LEVELS[APP_LEVEL[apps]].short
 
 /**
  * Where never-send columns apply, in one sentence. They're enforced for agent mode
- * (src-tauri/src/safety/mask/mod.rs) and for AI apps over MCP (src-tauri/src/mcp.rs). The Ask box
+ * (src-tauri/src/safety/mask/mod.rs) and for AI apps over MCP (src-tauri/src/mcp/shape.rs). The Ask box
  * sends no values from your tables (src-tauri/src/commands/generation.rs: the question, the
  * schema, notes and the editor's SQL), so there is nothing for them to hold back there.
  */
@@ -151,7 +151,7 @@ export interface PrivacySummary {
  * set). The label is the most of these. `provider` is where the Ask box and Investigate send:
  * on a team connection with team AI, the team's AI.
  *
- * Team connections aren't served to AI apps on this computer (src-tauri/src/mcp.rs serves the
+ * Team connections aren't served to AI apps on this computer (src-tauri/src/mcp/ serves the
  * connections saved here); AI agents reach them only through the team's agent gateway.
  */
 export function privacySummary(

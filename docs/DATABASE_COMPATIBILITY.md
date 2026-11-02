@@ -1,7 +1,7 @@
 # Database compatibility
 
 What SayQL was tested against, what each check covers, what was fixed, and what isn't supported. The
-tests behind it are in `src-tauri/src/db/integration_tests.rs` and `src-tauri/src/mcp.rs`.
+tests behind it are in `src-tauri/src/db/integration_tests.rs` and `src-tauri/src/mcp/tests.rs`.
 `scripts/test-databases.sh` reruns them against every version below, and CI runs three combinations on every
 pull request (the `integration` job). Last full run: 2026-10-22, against real servers in Docker.
 

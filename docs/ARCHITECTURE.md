@@ -57,7 +57,14 @@ src/
 ```
 src-tauri/src/
   lib.rs                plugin + state + command registration only
-  mcp.rs                sayql-mcp: MCP server over stdio (read-only tools), reusing state/db/schema
+  mcp/                  sayql-mcp: MCP server over stdio (read-only tools), reusing state/db/schema
+    mod.rs              the server, its tool router, the app gate and activity log, connections, schema, handoffs
+    query.rs            run_query through the AI query gate
+    shape.rs            results and errors as "AI apps may see" allows (off, counts, masked, all)
+    export.rs           export_csv: a CSV in Downloads
+    notes.rs            suggest_note
+    prompt.rs           the audit prompt
+    tests.rs            the tools end to end (SQLite always; PostgreSQL/MySQL/SQL Server when set up)
   bin/sayql-mcp.rs      its entry point
   safety/               the product's promise in one place: what keeps data from an AI that may not see it
     gate.rs             the AI query gate: every query run for an AI (MCP, agent mode, note checks) is checked and
