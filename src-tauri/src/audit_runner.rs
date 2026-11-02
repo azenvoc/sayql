@@ -615,19 +615,19 @@ pub struct Line {
 }
 
 impl Line {
-    fn step(text: impl Into<String>) -> Self {
+    pub(crate) fn step(text: impl Into<String>) -> Self {
         Line {
             kind: "step",
             text: text.into(),
         }
     }
-    fn note(text: impl Into<String>) -> Self {
+    pub(crate) fn note(text: impl Into<String>) -> Self {
         Line {
             kind: "note",
             text: text.into(),
         }
     }
-    fn warn(text: impl Into<String>) -> Self {
+    pub(crate) fn warn(text: impl Into<String>) -> Self {
         Line {
             kind: "warn",
             text: text.into(),
@@ -674,6 +674,40 @@ fn short(s: &str, max: usize) -> String {
     }
 }
 
+/// A path as the person knows it: relative to its code source, after the source's label when
+/// there are several. macOS temp and app folders may be named with or without `/private`, so
+/// both are tried.
+pub(crate) fn rel_path(sources: &[(String, PathBuf)], p: &str) -> String {
+    let path = Path::new(p);
+    let labelled = sources.len() > 1;
+    let inside = sources
+        .iter()
+        .filter_map(|(label, dir)| {
+            let bare = dir
+                .strip_prefix("/private")
+                .ok()
+                .map(|d| Path::new("/").join(d));
+            let r = path
+                .strip_prefix(dir)
+                .ok()
+                .or_else(|| bare.as_deref().and_then(|b| path.strip_prefix(b).ok()))?;
+            Some((label, dir.as_os_str().len(), r.to_path_buf()))
+        })
+        // The deepest source wins when one is inside another.
+        .max_by_key(|(_, depth, _)| *depth);
+    match inside {
+        Some((label, _, r)) => {
+            let r = if r.as_os_str().is_empty() {
+                ".".to_string()
+            } else {
+                r.to_string_lossy().into_owned()
+            };
+            if labelled { format!("{label}:{r}") } else { r }
+        }
+        None => p.to_string(),
+    }
+}
+
 impl ClaudeStream {
     /// A run over one folder: paths are shown relative to it.
     #[cfg(test)]
@@ -689,39 +723,8 @@ impl ClaudeStream {
         }
     }
 
-    /// A path as the person knows it: relative to its code source, after the source's label
-    /// when there are several. macOS temp and app folders may be named with or without
-    /// `/private`, so both are tried.
     fn rel(&self, p: &str) -> String {
-        let path = Path::new(p);
-        let labelled = self.sources.len() > 1;
-        let inside = self
-            .sources
-            .iter()
-            .filter_map(|(label, dir)| {
-                let bare = dir
-                    .strip_prefix("/private")
-                    .ok()
-                    .map(|d| Path::new("/").join(d));
-                let r = path
-                    .strip_prefix(dir)
-                    .ok()
-                    .or_else(|| bare.as_deref().and_then(|b| path.strip_prefix(b).ok()))?;
-                Some((label, dir.as_os_str().len(), r.to_path_buf()))
-            })
-            // The deepest source wins when one is inside another.
-            .max_by_key(|(_, depth, _)| *depth);
-        match inside {
-            Some((label, _, r)) => {
-                let r = if r.as_os_str().is_empty() {
-                    ".".to_string()
-                } else {
-                    r.to_string_lossy().into_owned()
-                };
-                if labelled { format!("{label}:{r}") } else { r }
-            }
-            None => p.to_string(),
-        }
+        rel_path(&self.sources, p)
     }
 
     /// The progress lines one output line gives (often none).
@@ -887,6 +890,60 @@ impl ClaudeStream {
     }
 }
 
+/// A run's output as the window sees it, whichever agent prints it.
+pub trait RunStream: Send {
+    /// The progress lines one output line gives (often none).
+    fn feed(&mut self, line: &str) -> Vec<Line>;
+    /// Suggestions SayQL received for review.
+    fn suggested(&self) -> u32;
+    /// The agent's closing summary, when it finished well.
+    fn summary(&self) -> Option<String>;
+    fn succeeded(&self) -> bool;
+    /// Stop the run now: waiting on it can't help (a refused credit key).
+    fn give_up(&self) -> bool {
+        false
+    }
+    /// What to tell the person when the run failed.
+    fn failure(&self, stderr: &str, exit: Option<i32>) -> String;
+}
+
+impl RunStream for ClaudeStream {
+    fn feed(&mut self, line: &str) -> Vec<Line> {
+        ClaudeStream::feed(self, line)
+    }
+    fn suggested(&self) -> u32 {
+        self.suggested
+    }
+    fn summary(&self) -> Option<String> {
+        self.ending
+            .as_ref()
+            .filter(|e| !e.is_error && !e.text.trim().is_empty())
+            .map(|e| e.text.clone())
+    }
+    fn succeeded(&self) -> bool {
+        self.ending.as_ref().is_some_and(|e| !e.is_error)
+    }
+    // Claude Code retries a refused key for minutes; a credit key that was refused once won't
+    // be accepted on a retry.
+    fn give_up(&self) -> bool {
+        self.credits && self.api_error.as_deref() == Some("authentication_failed")
+    }
+    fn failure(&self, stderr: &str, exit: Option<i32>) -> String {
+        let payment = if self.credits {
+            AuditPayment::Credits
+        } else {
+            AuditPayment::Subscription
+        };
+        failure(
+            self.ending.as_ref(),
+            stderr,
+            self.api_error.as_deref(),
+            exit,
+            payment,
+        )
+    }
+}
+
 /// A tool result's text, whether it came as a string or as content blocks.
 fn result_text(c: &Value) -> String {
     match c.get("content") {
@@ -903,7 +960,7 @@ fn result_text(c: &Value) -> String {
 /// The credits service's refusals (site/api/ai/v1/messages.js), which Claude Code reports as
 /// "API Error: <status> <message>" or, for a refused key, as `authentication_failed` retries.
 /// `all` is lowercase.
-fn credits_failure(all: &str, api_error: Option<&str>) -> Option<&'static str> {
+pub(crate) fn credits_failure(all: &str, api_error: Option<&str>) -> Option<&'static str> {
     let has = |w: &str| all.contains(w);
     Some(
         if api_error == Some("authentication_failed")

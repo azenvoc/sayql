@@ -5,6 +5,7 @@ mod ai;
 #[cfg(target_os = "macos")]
 mod app_menu;
 mod audit;
+mod audit_opencode;
 mod audit_runner;
 mod coding_agents;
 mod commands;

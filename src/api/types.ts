@@ -312,6 +312,12 @@ export interface AuditAgent {
   /** Why it can't run, when found but not ready. */
   problem: string | null;
   installUrl: string;
+  /** SayQL's built-in OpenCode, rather than an agent the person installed. */
+  builtIn?: boolean;
+  /** What its first run downloads, in bytes, while it isn't downloaded yet. */
+  downloadBytes?: number | null;
+  /** The AI it talks to: "SayQL AI credits · claude-sonnet-5-5". */
+  detail?: string | null;
 }
 
 /** Where a knowledge source is; mirrors `store::code_sources::SourceKind`. */
@@ -367,6 +373,8 @@ export interface AuditPaymentView {
 /** Progress of an audit run, as `audit://event`; mirrors `commands::audit::AuditEvent`. */
 export type AuditEvent =
   | { type: "line"; runId: string; kind: "step" | "note" | "warn"; text: string }
+  /** Downloading SayQL's built-in OpenCode before the run. */
+  | { type: "download"; runId: string; received: number; total: number }
   | {
       type: "done";
       runId: string;

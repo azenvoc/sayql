@@ -66,6 +66,8 @@ pub struct LoadedSchema {
 pub struct AppState {
     pub store: Store,
     pub demo_path: PathBuf,
+    /// Where runners SayQL downloads are kept (`<app data>/runners`): the built-in OpenCode.
+    pub runners_dir: PathBuf,
     pub http: reqwest::Client,
     /// Serializes `init` so a double call (React StrictMode in dev) can't add the demo twice.
     pub init_lock: tokio::sync::Mutex<()>,
@@ -104,6 +106,7 @@ impl AppState {
         Ok(AppState {
             store: Store::new(config_dir),
             demo_path: data_dir.join("demo.sqlite"),
+            runners_dir: data_dir.join("runners"),
             voice: Voice::new(&data_dir),
             http,
             init_lock: tokio::sync::Mutex::new(()),

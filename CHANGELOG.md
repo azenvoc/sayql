@@ -3,6 +3,18 @@
 All notable changes to SayQL are listed here. Downloads are on the
 [releases page](https://github.com/dithzz/sayql-releases/releases).
 
+## Unreleased
+
+### Audits without Claude Code
+
+- **SayQL's built-in OpenCode.** Without Claude Code, **Run audit** downloads OpenCode 1.19.5 (and the ripgrep
+  it searches with, about 66 MB) once, checks both against pinned SHA-256s, and runs the audit with the AI you
+  chose in Settings → AI provider: SayQL AI credits, your own Anthropic, OpenAI or Gemini key, or a local model.
+  People with Claude Code keep using it; when both are there, **Audit with** picks.
+- It runs read-only: only reading and searching the knowledge sources and SayQL's audit tools. No commands,
+  file edits, web or subagents, no `.env` files or keys, and nothing from your own or the project's OpenCode
+  setup. SayQL won't run it under an administrator's OpenCode policy.
+
 ## 0.5.3 (2026-11-02)
 
 ### Knowledge from the database itself

@@ -725,6 +725,10 @@ fn known_client(info: &Implementation) -> Option<&'static str> {
         Some("Claude")
     } else if name.contains("cursor") {
         Some("Cursor")
+    } else if name == "opencode" {
+        // OpenCode's MCP client name (packages/opencode/src/mcp/index.ts), also SayQL's built-in
+        // audit runner.
+        Some("OpenCode")
     } else {
         None
     }
@@ -1829,6 +1833,10 @@ mod tests {
             Some("Cursor")
         );
         assert_eq!(client_label(&info("Zed")).as_deref(), Some("Zed"));
+        assert_eq!(
+            client_label(&info("opencode")).as_deref(),
+            Some(crate::audit_opencode::APP)
+        );
         // The title an app sends is not used, and an unknown name is marked unverified.
         let mut spoof = info("x-agent");
         spoof.title = Some("SayQL Support".into());

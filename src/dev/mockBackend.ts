@@ -523,6 +523,9 @@ function installedCodingAgents(): string[] {
  * otherwise Claude Code is ready and Codex is found but not offered.
  */
 const AGENTS = new URLSearchParams(window.location.search).get("agents");
+// The built-in OpenCode is downloaded by its first mock run.
+let openCodeDownloaded = false;
+
 function auditAgents(): AuditAgent[] {
   const none = AGENTS === "none";
   const old = AGENTS === "old";
@@ -534,6 +537,10 @@ function auditAgents(): AuditAgent[] {
       problem: none ? null : "Codex reads code by running shell commands, so SayQL can't limit it to reading files. Copy the audit prompt into Codex instead." },
     { id: "gemini", label: "Gemini CLI", path: null, version: null, supported: false, ready: false, installUrl: "https://geminicli.com", problem: null },
     { id: "cursor", label: "Cursor CLI", path: null, version: null, supported: false, ready: false, installUrl: "https://cursor.com/cli", problem: null },
+    // SayQL's built-in OpenCode, not downloaded yet, on the mock's AI provider.
+    { id: "opencode", label: "SayQL's built-in OpenCode", path: openCodeDownloaded ? "/Users/you/Library/Application Support/com.sayql.app/runners/opencode/1.19.5/bin/opencode" : null,
+      version: "1.19.5", supported: true, ready: true, installUrl: "https://opencode.ai", problem: null, builtIn: true,
+      downloadBytes: openCodeDownloaded ? null : 66_056_854, detail: "SayQL AI credits · claude-sonnet-5-5" },
   ];
 }
 // What each connection's audit reads: a folder and a GitHub repository for analytics.
@@ -561,8 +568,17 @@ let auditModel = "sonnet";
 const mockCreditKey = typeof location === "undefined" || !location.search.includes("nocredits");
 
 /** A scripted audit: schema, searches, reads, two suggestions, a summary. */
-async function mockAuditRun(runId: string, connectionId: string, database: string | null) {
+async function mockAuditRun(runId: string, connectionId: string, database: string | null, agent = "claude") {
   const pause = () => new Promise((r) => setTimeout(r, 650));
+  if (agent === "opencode" && !openCodeDownloaded) {
+    const total = 66_056_854;
+    for (let received = 0; received < total; received += 8_000_000) {
+      await emit("audit://event", { type: "download", runId, received, total });
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    await emit("audit://event", { type: "download", runId, received: total, total });
+    openCodeDownloaded = true;
+  }
   const line = (kind: "step" | "note" | "warn", text: string) => emit("audit://event", { type: "line", runId, kind, text });
   const done = (e: Record<string, unknown>) => emit("audit://event", { type: "done", runId, suggested: 0, summary: null, error: null, ...e });
   for (const s of sourcesOf(connectionId)) {
@@ -768,7 +784,7 @@ export function installMockBackend() {
           const agent = auditAgents().find((x) => x.id === a.agent);
           if (!agent?.ready) return Promise.reject(agent?.problem ?? "Claude Code isn't installed on this computer, or SayQL can't find it.");
           if (sourcesOf(a.id).length === 0) return Promise.reject("Add a code source first: a folder or repository with this database's code.");
-          void mockAuditRun(a.runId as string, a.id as string, (a.database as string | null) ?? null);
+          void mockAuditRun(a.runId as string, a.id as string, (a.database as string | null) ?? null, a.agent as string);
           return null;
         }
         case "audit_model":
