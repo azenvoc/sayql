@@ -3,6 +3,32 @@
 All notable changes to SayQL are listed here. Downloads are on the
 [releases page](https://github.com/dithzz/sayql-releases/releases).
 
+## 0.5.3 (2026-11-02)
+
+### Knowledge from the database itself
+
+- **Comments and CHECK constraints.** SayQL reads what your database already says about its tables and
+  columns (comments, and SQLite's `--` comments in `CREATE TABLE`) and its CHECK constraints, and shows them
+  to the AI with the schema. Postgres, MySQL, MariaDB, SQL Server and SQLite. Nothing to turn on.
+- The demo database now has comments, so new installs see this on day one.
+
+### Knowledge sources
+
+- **Code sources become knowledge sources.** Besides local folders and git repositories, a connection can
+  now read **files** (Markdown, text, CSV, JSON, YAML, SQL, HTML, PDF and Word) and **web pages** (one page, or
+  the pages in its folder on the same site). The audit reads them all, cites documents as `label:page@version`,
+  and treats documents as possibly out of date: the code and the database win, and conflicts are shown.
+- Web pages are fetched without cookies, follow robots.txt when crawling, and never reach addresses on your
+  computer or private network.
+- Up to 3 sources per connection are free. SayQL for teams keeps unlimited sources in sync for everyone.
+
+### Shared notes on team connections
+
+- On a connection from a team server that shares knowledge, the Ask box and Investigate use the team's
+  approved notes. The navigator shows them read-only, and **Suggest a note…** sends a suggestion to the
+  team's knowledge owners. Notes Investigate suggests go to them too.
+- Older team servers keep using your local notes.
+
 ## 0.5.2 (2026-10-30)
 
 ### Notes that stay true
