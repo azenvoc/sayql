@@ -19,6 +19,7 @@ mod notes;
 mod pii;
 mod readonly;
 mod repos;
+mod safety;
 mod schema;
 mod sql_lex;
 mod state;

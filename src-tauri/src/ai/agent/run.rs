@@ -7,6 +7,7 @@ use super::model::{Block, Llm, Msg, Role, ToolMode, Turn, Usage};
 use super::{checks, prompt, tools};
 use crate::db::{self, DbPool, Kind, QueryResult};
 use crate::readonly;
+use crate::safety::gate::{self, Refusal};
 use crate::schema::{self, Schema, Table};
 use crate::store::Store;
 use crate::store::agent::{AgentAccess, AgentSettings, Note, Results, clean_note, note_ref};
@@ -929,33 +930,24 @@ impl Run<'_> {
     /// The SQL with real values in place of tokens, if it may run: one read-only statement
     /// that names no never-send column.
     async fn real_sql(&mut self, sql: &str) -> Result<String, String> {
-        let real = self.real_sql_text(sql)?;
-        // Never-send columns in any form (whole rows, renames, views on Postgres), and functions
-        // that read server files: see never_send.rs.
-        let guard = crate::never_send::check(self.pool, &real, &self.input.access.never_send)
+        let real = self.masker.unmask_sql(sql, self.input.kind)?;
+        // The AI query gate with agent mode's options (see safety/gate.rs): one statement, no
+        // writes (a team server refuses writes itself and audits the attempt, so it gets to see
+        // them), and never-send columns in any form and functions that read server files.
+        let guard = gate::prepare(self.pool, &real, &self.input.access.never_send, gate::AGENT)
             .await
-            .map_err(|f| self.masker.remask_text(&f.safe))?;
+            .map_err(|r| match r {
+                Refusal::Statements => "Run one statement at a time.".to_string(),
+                Refusal::Write => readonly::AGENT_WRITE_REFUSED.to_string(),
+                Refusal::NeverSend(f) => self.masker.remask_text(&f.safe),
+            })?;
         self.withheld = guard.withheld;
-        Ok(real)
-    }
-
-    fn real_sql_text(&self, sql: &str) -> Result<String, String> {
-        let kind = self.input.kind;
-        let real = self.masker.unmask_sql(sql, kind)?;
-        if checks::statements(&real) > 1 {
-            return Err("Run one statement at a time.".into());
-        }
-        // A team server refuses writes itself and audits the attempt, so it gets to see them.
-        let team = matches!(self.pool, DbPool::Team(_));
-        if !team && !db::is_read_only(&real, kind) {
-            return Err(readonly::AGENT_WRITE_REFUSED.into());
-        }
         Ok(real)
     }
 
     async fn run_sql(&mut self, sql: &str) -> Result<QueryResult, String> {
         let secs = Duration::from_secs(self.input.limits.query_seconds);
-        let r = readonly::run_limited_checked(self.pool, sql, ROWS_READ, secs, &self.io.stop).await;
+        let r = gate::run(self.pool, sql, ROWS_READ, secs, &self.io.stop).await;
         // Database messages can quote values; the model gets a fixed message for the kind of
         // error (see ai/redact.rs).
         let e = match r {

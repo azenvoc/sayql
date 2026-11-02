@@ -61,6 +61,8 @@ src-tauri/src/
   readonly.rs           read-only access shared by MCP and agent mode: schema search (describe), queries stopped
                         on the server after a time limit (run_limited), row caps, the write refusal
   bin/sayql-mcp.rs      its entry point
+  safety/gate.rs        the AI query gate: every query run for an AI (MCP, agent mode, note checks) is checked and
+                        run here (read-only, never-send, time limit, redacted errors), with per-caller options
   sql_lex.rs            the SQL lexer every check shares (strings, quoted names and comments per dialect)
   never_send.rs         never-send columns: refuses SQL that could read one (names, the Postgres plan, shapes)
   pii.rs                likely personal data in text, for the masker and note checks

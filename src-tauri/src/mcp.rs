@@ -10,9 +10,8 @@ use crate::audit;
 use crate::db::{self, Kind, QueryResult};
 use crate::handoff::{self, Action, Handoff, ScriptRef};
 use crate::never_send::{self, Guard};
-use crate::readonly::{
-    DEFAULT_ROWS, MAX_ROWS, QueryFailure, WRITE_REFUSED, describe_with, run_limited_checked,
-};
+use crate::readonly::{DEFAULT_ROWS, MAX_ROWS, QueryFailure, WRITE_REFUSED, describe_with};
+use crate::safety::gate::{self, Refusal};
 use crate::schema::Schema;
 use crate::state::{AppState, Target};
 use crate::store::agent::{AgentAccess, AppResults};
@@ -1003,14 +1002,11 @@ impl SayqlServer {
             .target_pool(&target)
             .await
             .map_err(|e| e.to_string())?;
-        if !db::is_read_only(&p.sql, pool.kind()) {
-            return Err(refused(log, "could change data", WRITE_REFUSED.into()));
-        }
         // Columns the user marked never to send to an AI are refused in any form, and withheld
         // when a query returns them anyway (SELECT *); see never_send.rs.
         let guard = self.checked(&pool, &p.sql, &access.never_send, log).await?;
         let mut never = Masker::new(&access.never_send);
-        let r = run_limited_checked(
+        let r = gate::run(
             &pool,
             &p.sql,
             db::MAX_ROWS,
@@ -1033,7 +1029,8 @@ impl SayqlServer {
         .to_string())
     }
 
-    /// The never-send and forbidden-function check, logged when it refuses.
+    /// The AI query gate with MCP's options (see safety/gate.rs): the write refusal, on every
+    /// pool, then the never-send and forbidden-function check, logged when it refuses.
     async fn checked(
         &self,
         pool: &db::DbPool,
@@ -1041,12 +1038,23 @@ impl SayqlServer {
         never_send: &[String],
         log: &mut Activity,
     ) -> Result<Guard, String> {
-        never_send::check(pool, sql, never_send).await.map_err(|f| {
-            // SayQL's own refusal, or the database rejecting the plan (an error in the SQL).
-            log.status = if f.full == f.safe { "refused" } else { "error" }.into();
-            log.detail = Some(f.safe.chars().take(160).collect());
-            f.safe
-        })
+        gate::prepare(pool, sql, never_send, gate::MCP)
+            .await
+            .map_err(|r| match r {
+                Refusal::Write => refused(log, "could change data", WRITE_REFUSED.into()),
+                // MCP's options leave this to the read-only check, so it doesn't happen.
+                Refusal::Statements => refused(
+                    log,
+                    "more than one statement",
+                    "Run one statement at a time.".into(),
+                ),
+                Refusal::NeverSend(f) => {
+                    // SayQL's own refusal, or the database rejecting the plan (an error in the SQL).
+                    log.status = if f.full == f.safe { "refused" } else { "error" }.into();
+                    log.detail = Some(f.safe.chars().take(160).collect());
+                    f.safe
+                }
+            })
     }
 
     /// Saves a read-only query's rows to a CSV in Downloads, where the connection allows all rows.
@@ -1063,16 +1071,13 @@ impl SayqlServer {
             .target_pool(&target)
             .await
             .map_err(|e| e.to_string())?;
-        if !db::is_read_only(&p.sql, pool.kind()) {
-            return Err(refused(log, "could change data", WRITE_REFUSED.into()));
-        }
-        // The same never-send check as run_query: the AI app could read the file back.
+        // The same checks as run_query: the AI app could read the file back.
         let guard = self.checked(&pool, &p.sql, &access.never_send, log).await?;
         let mut never = Masker::new(&access.never_send);
         let dir = dirs::download_dir()
             .or_else(dirs::home_dir)
             .ok_or("Could not find the Downloads folder.")?;
-        let mut r = run_limited_checked(
+        let mut r = gate::run(
             &pool,
             &p.sql,
             EXPORT_ROWS,

@@ -74,6 +74,7 @@ Where new code goes:
 | Tauri commands | `commands/<area>.rs`, thin: check input, call a module, map the result |
 | Database access, decoding, introspection | `db/` (no Tauri types) |
 | SQL lexing, read-only and never-send checks, personal-data detection, error redaction | `sql_lex`, `db/classify`, `never_send`, `pii`, `ai/redact`, `ai/agent/mask` |
+| The AI query gate | `safety/gate` |
 | AI providers, prompts, agent mode | `ai/` |
 | The audit and its runners, knowledge sources | `audit*`, `knowledge`, `repos` |
 | Saved files and secrets | `store/` (secrets only through `store::secrets`) |
@@ -90,10 +91,13 @@ Where new code goes:
 
 ## The AI query gate
 
-SQL that runs for an AI (the MCP server, agent mode, and checks on notes) goes through
-`never_send::check` and `db::is_read_only` before it runs, and through `ai::redact::safe_error`
-when it fails. Only `mcp.rs`, `ai/agent/run.rs` and `notes.rs` call the check. A new place that
-runs SQL for an AI calls one of them, never the database directly.
+SQL that runs for an AI (the MCP server, agent mode, and checks on notes) goes through the AI
+query gate, `safety/gate.rs`: `gate::prepare` checks it (`db::is_read_only`, then
+`never_send::check` with its forbidden functions) and `gate::run` runs it with a time limit,
+keeping `ai::redact::safe_error`'s form of a failure. Only the gate calls `never_send::check`.
+The callers' differences are its `Options` (`gate::MCP`, `gate::AGENT`, `gate::NOTE_CHECK`),
+documented there. A new place that runs SQL for an AI goes through the gate, never the database
+directly.
 
 These rules are the product's promise ("Let agents into your database. Not your data."):
 

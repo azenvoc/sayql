@@ -115,6 +115,7 @@ const TOP_LEVEL = new Set([
   "pii",
   "readonly",
   "repos",
+  "safety",
   "schema",
   "sql_lex",
   "state",
@@ -139,13 +140,10 @@ const OWN_HTTP_CLIENT = new Set([
   "src-tauri/src/state.rs", // the shared client
   "src-tauri/src/knowledge.rs", // the crawler: pinned DNS, no redirects followed
 ]);
-// The only places that check SQL for an AI (never-send and forbidden functions). A new path
-// that runs SQL for an AI must go through one of them.
-const AI_QUERY_GATES = new Set([
-  "src-tauri/src/mcp.rs",
-  "src-tauri/src/ai/agent/run.rs",
-  "src-tauri/src/notes.rs",
-]);
+// The only place that checks SQL for an AI (never-send and forbidden functions): the AI query
+// gate. The MCP server, agent mode and note checks call it; a new path that runs SQL for an AI
+// must too.
+const AI_QUERY_GATES = new Set(["src-tauri/src/safety/gate.rs"]);
 
 for (const path of files(rustRoot, /\.rs$/)) {
   const file = rel(path);

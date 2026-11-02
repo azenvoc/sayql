@@ -6,15 +6,16 @@
 //! note's text without the person. A note's check, a read-only query answering true or false,
 //! tells whether what it says about the data still holds.
 
-use crate::db::{self, DbPool};
+use crate::db::DbPool;
 use crate::error::AppResult;
-use crate::readonly;
+use crate::safety::gate::{self, Refusal};
 use crate::schema::Schema;
 use crate::schema::anchors::{self, Change, Snapshot};
 use crate::store::Store;
 use crate::store::agent::{CheckRun, Note, now_ms};
 use crate::store::suggestions::Change as Suggest;
 use std::time::Duration;
+use tokio_util::sync::CancellationToken;
 
 /// How SayQL signs the fixes it suggests.
 pub const APP: &str = "SayQL";
@@ -183,14 +184,17 @@ pub async fn run_check(pool: &DbPool, sql: &str, never_send: &[String]) -> Check
         at,
         error: Some(e),
     };
-    if !matches!(pool, DbPool::Team(_)) && !db::is_read_only(sql, pool.kind()) {
-        return fail("A check can only read.".into());
+    // The AI query gate with a note check's options (see safety/gate.rs): a team server
+    // refuses writes itself and audits them.
+    match gate::prepare(pool, sql, never_send, gate::NOTE_CHECK).await {
+        Ok(_) => {}
+        // NOTE_CHECK doesn't refuse more statements itself; the read-only check does.
+        Err(Refusal::Write | Refusal::Statements) => return fail("A check can only read.".into()),
+        Err(Refusal::NeverSend(f)) => return fail(first_line(&f.safe)),
     }
-    if let Err(f) = crate::never_send::check(pool, sql, never_send).await {
-        return fail(first_line(&f.safe));
-    }
-    match readonly::run_limited(pool, sql, 2, CHECK_TIME).await {
-        Err(e) => fail(first_line(&e)),
+    // The database's own message, as before: the check's error is shown to the person.
+    match gate::run(pool, sql, 2, CHECK_TIME, &CancellationToken::new()).await {
+        Err(e) => fail(first_line(&e.full)),
         Ok(r) if r.rows.len() != 1 || r.columns.len() != 1 => {
             fail("A check must return one row with one column: true or false.".into())
         }
