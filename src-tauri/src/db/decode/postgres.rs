@@ -109,10 +109,17 @@ fn pg_array(elem: &PgTypeInfo, b: &[u8]) -> Option<Value> {
         dims.push(usize::try_from(r.i32()?).ok()?);
         r.i32()?; // lower bound
     }
-    if dims.is_empty() {
+    // A zero dimension holds nothing, however large the others claim to be.
+    if dims.is_empty() || dims.contains(&0) {
         return Some(Value::Array(vec![]));
     }
-    let total: usize = dims.iter().product();
+    // Every element takes at least its 4-byte length, so more elements than that leaves room
+    // for is nonsense, as is a product that overflows. With no zero dimension, the nested
+    // arrays number at most `ndim` times the elements, so this bounds them too.
+    let total = dims.iter().try_fold(1usize, |n, &d| n.checked_mul(d))?;
+    if total > r.0.len() / 4 {
+        return None;
+    }
     let mut flat = Vec::with_capacity(total.min(MAX_ROWS));
     for _ in 0..total {
         flat.push(match r.field()? {
@@ -121,7 +128,9 @@ fn pg_array(elem: &PgTypeInfo, b: &[u8]) -> Option<Value> {
         });
     }
     fn nest(dims: &[usize], it: &mut std::vec::IntoIter<Value>) -> Value {
-        let (n, rest) = dims.split_first().unwrap();
+        let Some((n, rest)) = dims.split_first() else {
+            return Value::Array(vec![]);
+        };
         Value::Array(
             (0..*n)
                 .map(|_| {
@@ -400,4 +409,58 @@ fn pg_interval(us: i64, days: i32, months: i32) -> String {
         parts.push(format!("{}{}", if plus { "+" } else { "" }, clock(us)));
     }
     parts.join(" ")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::pg_array;
+    use serde_json::json;
+    use sqlx::Postgres;
+
+    /// An `int4[]` in Postgres' binary format: the header, `dims` (lower bound 1) and `items`.
+    fn int4_array(dims: &[i32], items: &[i32]) -> Vec<u8> {
+        let mut b = Vec::new();
+        b.extend(i32::try_from(dims.len()).unwrap().to_be_bytes());
+        b.extend(0i32.to_be_bytes()); // has nulls
+        b.extend(23u32.to_be_bytes()); // element oid
+        for d in dims {
+            b.extend(d.to_be_bytes());
+            b.extend(1i32.to_be_bytes());
+        }
+        for v in items {
+            b.extend(4i32.to_be_bytes());
+            b.extend(v.to_be_bytes());
+        }
+        b
+    }
+
+    fn decode(b: &[u8]) -> Option<serde_json::Value> {
+        pg_array(&<i32 as sqlx::Type<Postgres>>::type_info(), b)
+    }
+
+    #[test]
+    fn decodes_arrays_of_any_shape() {
+        assert_eq!(
+            decode(&int4_array(&[2, 2], &[1, 2, 3, 4])),
+            Some(json!([[1, 2], [3, 4]]))
+        );
+        assert_eq!(
+            decode(&int4_array(&[1, 1, 1, 1, 1, 1], &[7])),
+            Some(json!([[[[[[7]]]]]]))
+        );
+        assert_eq!(decode(&int4_array(&[], &[])), Some(json!([])));
+    }
+
+    #[test]
+    fn crafted_array_dimensions_decode_as_empty_or_not_at_all() {
+        // 2^31 empty arrays used to be built for this, ~64 GB.
+        assert_eq!(decode(&int4_array(&[i32::MAX, 0], &[])), Some(json!([])));
+        assert_eq!(decode(&int4_array(&[3, 0, 5], &[])), Some(json!([])));
+        // 65536^4 overflows usize: a panic in debug, a wrapped count in release.
+        assert_eq!(decode(&int4_array(&[65536; 4], &[1])), None);
+        // More elements than the bytes could hold.
+        assert_eq!(decode(&int4_array(&[i32::MAX, 2], &[1, 2])), None);
+        assert_eq!(decode(&int4_array(&[3], &[1, 2])), None);
+        assert_eq!(decode(&int4_array(&[-1], &[])), None);
+    }
 }
