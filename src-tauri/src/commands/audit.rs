@@ -1158,6 +1158,19 @@ async fn start_opencode(
         };
         let sources = prepare_sources(state, id, database, true, &say).await?;
         let dirs: Vec<PathBuf> = sources.sources.iter().map(|(_, d)| d.clone()).collect();
+        // OpenCode would follow a link out of the sources: say which one rather than run.
+        let scan = dirs.clone();
+        if let Some((link, target)) = tokio::task::spawn_blocking(move || opencode::link_out(&scan))
+            .await
+            .map_err(|e| AppError::User(e.to_string()))?
+        {
+            return Err(format!(
+                "{} is a link to {}, outside this connection's knowledge sources, and SayQL's built-in OpenCode would follow it. Remove the link, or add what it points to as a source, then run the audit again.",
+                link.display(),
+                target.display()
+            )
+            .into());
+        }
         let env_for_mcp = mcp_env();
         let config = opencode::config_json(&opencode::RunConfig {
             model: &model,
@@ -1167,7 +1180,7 @@ async fn start_opencode(
         })?;
         let run_dir = run_dir()?;
         let home = opencode::Home::new(&run_dir);
-        opencode::prepare_home(&home)?;
+        opencode::prepare_home(&home, &installed.bin_dir.join(opencode::exe("rg")))?;
         let mut cmd = tokio::process::Command::new(&installed.opencode);
         cmd.args(opencode::run_args(&model, &sources.folder))
             .current_dir(&sources.folder)
@@ -1175,7 +1188,7 @@ async fn start_opencode(
             .envs(opencode::child_env(
                 &home,
                 &sources.folder,
-                &installed.bin_dir,
+                &opencode::search_dir(&home, &installed),
                 config,
                 key.clone(),
                 std::env::vars_os(),

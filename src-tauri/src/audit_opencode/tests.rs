@@ -255,9 +255,11 @@ fn the_agent_may_only_read_search_and_use_sayqls_tools() {
     ] {
         assert_eq!(evaluate(&rules, tool, "*"), "deny", "{tool}");
     }
+    // Searching contents only where SayQL's ripgrep script keeps secret files out.
+    assert_eq!(evaluate(&rules, "grep", "*"), GREP);
+    assert_eq!(GREP == "allow", cfg!(unix));
     for tool in [
         "glob",
-        "grep",
         "sayql_list_connections",
         "sayql_list_databases",
         "sayql_describe_schema",
@@ -580,7 +582,7 @@ fn the_run_gets_a_private_home_and_no_inherited_opencode_settings() {
 fn the_private_home_has_a_stub_so_nothing_is_installed_from_npm() {
     let run = temp("home");
     let h = Home::new(&run);
-    prepare_home(&h).unwrap();
+    prepare_home(&h, Path::new("/app/runners/opencode/1.19.5/bin/rg")).unwrap();
     let oc = h.config.join("opencode");
     assert!(oc.join("node_modules").is_dir());
     let pkg: Value =
@@ -719,6 +721,113 @@ fn explains_why_an_opencode_run_failed() {
     );
 }
 
+#[test]
+fn every_secret_file_is_kept_out_of_searches() {
+    for p in SECRET_FILES {
+        if p.contains(".git") {
+            continue;
+        }
+        assert!(RG_SECRET_GLOBS.contains(&p), "{p} isn't excluded from grep");
+    }
+    assert!(RG_SECRET_GLOBS.contains(&"**/.git/**"));
+}
+
+/// Runs SayQL's `rg` script over a stand-in ripgrep that prints its arguments, one per line.
+#[cfg(unix)]
+#[test]
+fn the_rg_script_adds_the_excludes_after_opencodes_globs() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = temp("rg");
+    let real = dir.join("real rg's");
+    std::fs::write(
+        &real,
+        "#!/bin/sh\nfor a in \"$@\"; do printf '%s\\n' \"$a\"; done\n",
+    )
+    .unwrap();
+    std::fs::set_permissions(&real, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let h = Home::new(&dir.join("run"));
+    prepare_home(&h, &real).unwrap();
+    let rg = h.bin.join("rg");
+    let run = |args: &[&str]| -> Vec<String> {
+        let out = std::process::Command::new(&rg).args(args).output().unwrap();
+        assert!(out.status.success());
+        String::from_utf8(out.stdout)
+            .unwrap()
+            .lines()
+            .map(String::from)
+            .collect()
+    };
+    let excludes: Vec<String> = RG_SECRET_GLOBS
+        .iter()
+        .map(|g| format!("--glob=!{g}"))
+        .collect();
+    // grep: the excludes come after the model's include and before `--`, so they win and the
+    // pattern and path stay where they were.
+    let got = run(&[
+        "--no-config",
+        "--json",
+        "--hidden",
+        "--no-messages",
+        "--glob=*.env",
+        "--glob=!**/.git/**",
+        "--",
+        "--glob=x y",
+        ".",
+    ]);
+    let mut want: Vec<String> = [
+        "--no-config",
+        "--json",
+        "--hidden",
+        "--no-messages",
+        "--glob=*.env",
+        "--glob=!**/.git/**",
+    ]
+    .map(String::from)
+    .to_vec();
+    want.extend(excludes.iter().cloned());
+    want.extend(["--", "--glob=x y", "."].map(String::from));
+    assert_eq!(got, want);
+    // --files (glob): no `--`, so at the end.
+    let got = run(&["--no-config", "--files", "--glob=**/*", "."]);
+    assert_eq!(&got[..4], ["--no-config", "--files", "--glob=**/*", "."]);
+    assert_eq!(got[4..], excludes[..]);
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[cfg(unix)]
+#[test]
+fn a_link_out_of_the_sources_is_found() {
+    let dir = temp("links").canonicalize().unwrap();
+    let src = dir.join("shop");
+    let other = dir.join("backend");
+    let outside = dir.join("outside");
+    for d in [&src, &other, &outside, &src.join("lib/deep")] {
+        std::fs::create_dir_all(d).unwrap();
+    }
+    std::fs::write(outside.join("secret.txt"), "x").unwrap();
+    std::fs::write(other.join("billing.py"), "x").unwrap();
+    std::os::unix::fs::symlink(src.join("lib"), src.join("lib-again")).unwrap();
+    std::os::unix::fs::symlink(other.join("billing.py"), src.join("billing.py")).unwrap();
+    std::os::unix::fs::symlink(dir.join("nothing-here"), src.join("broken")).unwrap();
+    let sources = [src.clone(), other.clone()];
+    assert_eq!(
+        link_out(&sources),
+        None,
+        "links within the sources are fine"
+    );
+    std::os::unix::fs::symlink(&outside, src.join("lib/deep/escape")).unwrap();
+    assert_eq!(
+        link_out(&sources),
+        Some((src.join("lib/deep/escape"), outside.clone()))
+    );
+    // A link out from inside `.git` doesn't count: OpenCode can't read there.
+    std::fs::remove_file(src.join("lib/deep/escape")).unwrap();
+    std::fs::create_dir_all(src.join(".git")).unwrap();
+    std::os::unix::fs::symlink(&outside, src.join(".git/escape")).unwrap();
+    assert_eq!(link_out(&sources), None);
+    let _ = std::fs::remove_dir_all(dir);
+}
+
 // ---------------------------------------------------------------------------------------------
 // Live runs of the real OpenCode, against models served on this computer.
 
@@ -791,7 +900,7 @@ fn run_opencode(
 ) -> (String, String, Option<i32>) {
     let run = root.join("run");
     let home = Home::new(&run);
-    prepare_home(&home).unwrap();
+    prepare_home(&home, &oc.bin_dir.join(exe("rg"))).unwrap();
     let config = config_json(&RunConfig {
         model,
         sayql_mcp: mcp,
@@ -809,7 +918,7 @@ fn run_opencode(
         .envs(child_env(
             &home,
             &sources[0],
-            &oc.bin_dir,
+            &search_dir(&home, oc),
             config,
             key.map(String::from),
             std::env::vars_os(),
@@ -952,6 +1061,18 @@ fn real_opencode_stays_read_only() {
     assert!(init.success());
     std::fs::write(project.join("orders.ts"), "export const PAID = 'p';\n").unwrap();
     std::fs::write(project.join(".env"), "DB_PASSWORD=walrus-7781\n").unwrap();
+    // Secret files grep must not search, each with the same marker.
+    for f in [
+        "prod.env",
+        "config.env",
+        ".env.local",
+        "deploy.pem",
+        "id_rsa",
+        ".npmrc",
+        "aws-credentials",
+    ] {
+        std::fs::write(project.join(f), "TOKEN = 'puffin-3307'\n").unwrap();
+    }
     std::fs::write(sibling.join("notes.txt"), "MARKER = 'lynx-2210'\n").unwrap();
     std::fs::write(backend.join("billing.py"), "MARKER = 'heron-4512'\n").unwrap();
     std::fs::write(outside.join("secret.txt"), "MARKER = 'otter-9031'\n").unwrap();
@@ -988,6 +1109,20 @@ fn real_opencode_stays_read_only() {
         ("read", json!({"filePath": backend.join("billing.py")})),
         ("read", json!({"filePath": project.join("orders.ts")})),
         ("glob", json!({"pattern": "**/*.py", "path": backend})),
+        // Searching works, but never in secret files, even when asked for them by name.
+        ("grep", json!({"pattern": "PAID|puffin", "path": project})),
+        (
+            "grep",
+            json!({"pattern": "puffin", "path": project, "include": "*.env"}),
+        ),
+        (
+            "grep",
+            json!({"pattern": "puffin", "path": project.join("prod.env")}),
+        ),
+        (
+            "grep",
+            json!({"pattern": "puffin", "path": project, "include": "{prod.env,id_rsa,.npmrc}"}),
+        ),
         ("sayql_list_connections", json!({})),
         (
             "sayql_export_csv",
@@ -1072,6 +1207,13 @@ fn real_opencode_stays_read_only() {
     assert!(all.contains("PAID"), "the working folder wasn't readable");
     assert!(all.contains("Smoke"), "SayQL's tools didn't answer");
     assert!(!all.contains("walrus-7781"), "a .env file was read");
+    if cfg!(unix) {
+        assert!(
+            all.contains("Line 1: export const PAID"),
+            "grep didn't search the sources"
+        );
+    }
+    assert!(!all.contains("puffin-3307"), "grep searched a secret file");
     assert!(
         !all.contains("otter-9031"),
         "a folder outside the sources was read"
@@ -1099,6 +1241,98 @@ fn real_opencode_stays_read_only() {
     // SayQL's MCP server logged the run as OpenCode.
     let activity = crate::store::Store::new(config).app_activity(50).unwrap();
     assert!(activity.iter().any(|a| a.app == APP), "{activity:?}");
+    let _ = std::fs::remove_dir_all(root);
+}
+
+/// Checks what OpenCode does with a symbolic link inside a source that leads out of it: it
+/// follows it (its folder check doesn't resolve links), which is why SayQL refuses to run over
+/// such a source ([`link_out`], checked here too). `SAYQL_SMOKE=1 SAYQL_OPENCODE_ARCHIVES=<folder>
+/// cargo test --lib opencode_follows_links -- --ignored --nocapture`
+#[cfg(unix)]
+#[test]
+#[ignore]
+fn opencode_follows_links_so_sayql_refuses_them() {
+    if std::env::var("SAYQL_SMOKE").is_err() {
+        return;
+    }
+    let root = temp("links").canonicalize().unwrap();
+    let project = root.join("shop");
+    let outside = root.join("outside");
+    for d in [&project, &outside] {
+        std::fs::create_dir_all(d).unwrap();
+    }
+    std::fs::write(project.join("orders.ts"), "export const PAID = 'p';\n").unwrap();
+    std::fs::write(outside.join("secret.txt"), "MARKER = 'otter-9031'\n").unwrap();
+    std::os::unix::fs::symlink(&outside, project.join("vendor")).unwrap();
+    std::os::unix::fs::symlink(outside.join("secret.txt"), project.join("notes.txt")).unwrap();
+    // SayQL won't start over this source, and names the link.
+    let found = link_out(std::slice::from_ref(&project)).expect("the link is found");
+    println!(
+        "SayQL refuses: {} -> {}",
+        found.0.display(),
+        found.1.display()
+    );
+    assert!(found.0 == project.join("vendor") || found.0 == project.join("notes.txt"));
+    assert!(found.1.starts_with(root.join("outside")));
+
+    // What OpenCode itself would do with it.
+    let (config, mcp) = scratch_sayql(&root);
+    let oc = real_opencode(&root.join("runners"));
+    let (base, seen) = scripted_model(vec![
+        (
+            "read",
+            json!({"filePath": project.join("vendor/secret.txt")}),
+        ),
+        ("read", json!({"filePath": project.join("notes.txt")})),
+        ("grep", json!({"pattern": "otter", "path": project})),
+    ]);
+    let model = model_for(
+        find_provider("custom").unwrap(),
+        &ProviderSettings {
+            base_url: base,
+            typing_model: "scripted".into(),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let (stdout, stderr, code) = run_opencode(
+        &oc,
+        &model,
+        None,
+        &root,
+        std::slice::from_ref(&project),
+        &config,
+        &mcp,
+        "Audit this.",
+    );
+    let mut stream = OpenCodeStream::new(vec![(String::new(), project.clone())], &model);
+    for line in stdout.lines() {
+        for l in stream.feed(line) {
+            println!("{}: {}", l.kind, l.text);
+        }
+    }
+    println!("exit: {code:?}\nstderr: {stderr}");
+    let results: Vec<String> = seen
+        .lock()
+        .unwrap()
+        .iter()
+        .flat_map(|v| v["messages"].as_array().cloned().unwrap_or_default())
+        .filter(|m| m["role"] == "tool")
+        .map(|m| m["content"].to_string())
+        .collect();
+    for r in &results {
+        println!("result: {}", r.chars().take(200).collect::<String>());
+    }
+    let read_through = results
+        .iter()
+        .take(2)
+        .filter(|r| r.contains("otter-9031"))
+        .count();
+    println!("reads that followed the link out: {read_through} of 2");
+    assert!(
+        read_through > 0,
+        "OpenCode no longer follows links out of a source: link_out may be unneeded"
+    );
     let _ = std::fs::remove_dir_all(root);
 }
 

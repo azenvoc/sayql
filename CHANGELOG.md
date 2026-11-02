@@ -13,7 +13,8 @@ All notable changes to SayQL are listed here. Downloads are on the
   People with Claude Code keep using it; when both are there, **Audit with** picks.
 - It runs read-only: only reading and searching the knowledge sources and SayQL's audit tools. No commands,
   file edits, web or subagents, no `.env` files or keys, and nothing from your own or the project's OpenCode
-  setup. SayQL won't run it under an administrator's OpenCode policy.
+  setup. Searches skip secret files too, and a symbolic link out of the sources stops the run with its name.
+  SayQL won't run it under an administrator's OpenCode policy.
 
 ## 0.5.3 (2026-11-02)
 

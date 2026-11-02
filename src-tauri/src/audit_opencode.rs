@@ -27,6 +27,15 @@
 //!   `npm install @opencode-ai/plugin` into the config folder is skipped by a stub package.json
 //!   ([`prepare_home`]). OpenCode downloads ripgrep when there's none on PATH; SayQL puts its
 //!   own pinned copy first on PATH instead.
+//! - **Search** (`packages/core/src/ripgrep.ts`): `grep` runs ripgrep with `--no-config
+//!   --hidden`, so a ripgrep config can't exclude anything and dotfiles such as `.env` are
+//!   searched. On macOS and Linux the `rg` on the run's PATH is a script SayQL writes for the
+//!   run ([`rg_wrapper`]) that adds an exclude for every secret file ([`RG_SECRET_GLOBS`]) after
+//!   OpenCode's own globs, where ripgrep gives it precedence. On Windows, where OpenCode looks
+//!   for `rg.exe` and a script can't stand in, `grep` is denied; `read` and `glob` remain.
+//! - **Symbolic links**: OpenCode checks a path against the sources as written, without
+//!   resolving links, so a link inside a source could lead `read` anywhere. SayQL refuses to run
+//!   over a source with a link out of the sources ([`link_out`]).
 //! - **Git** (`packages/core/src/git.ts`, `src/project/project.ts`): in a git repository OpenCode
 //!   reads anywhere in the repository, not only the folder it runs in, and writes a project id
 //!   into its `.git` folder. The run's `GIT_DIR` names a folder that doesn't exist, so OpenCode
@@ -206,7 +215,8 @@ pub struct Installed {
     pub bin_dir: PathBuf,
 }
 
-fn exe(name: &str) -> String {
+/// `name`, with `.exe` on Windows.
+pub fn exe(name: &str) -> String {
     if cfg!(windows) {
         format!("{name}.exe")
     } else {
@@ -601,6 +611,10 @@ const SAYQL_DENIED: [&str; 5] = [
     "list_scripts",
 ];
 
+/// Whether the model may search file contents: only where SayQL's ripgrep script keeps secret
+/// files out of the search (not on Windows).
+pub const GREP: &str = if cfg!(windows) { "deny" } else { "allow" };
+
 /// One permission's rules: `(pattern, action)` in order; a lone `*` is written as the action.
 pub type Rules = (String, Vec<(String, &'static str)>);
 
@@ -630,7 +644,7 @@ pub fn rules(sources: &[PathBuf]) -> Vec<Rules> {
         ("*".into(), all("deny")),
         ("read".into(), read),
         ("glob".into(), all("allow")),
-        ("grep".into(), all("allow")),
+        ("grep".into(), all(GREP)),
         ("list".into(), all("allow")),
         ("external_directory".into(), external),
     ];
@@ -816,6 +830,8 @@ pub struct Home {
     pub tmp: PathBuf,
     /// Never created (see `GIT_DIR` in [`child_env`]).
     pub no_git: PathBuf,
+    /// SayQL's `rg` script for the run, first on its PATH (not on Windows).
+    pub bin: PathBuf,
 }
 
 impl Home {
@@ -828,18 +844,87 @@ impl Home {
             state: home.join(".local").join("state"),
             tmp: run.join("tmp"),
             no_git: run.join("no-git"),
+            bin: run.join("bin"),
             home,
         }
     }
 }
 
+/// Secret files ripgrep never searches, as ripgrep globs: [`SECRET_FILES`] (a glob without a
+/// slash matches the file name in any folder).
+pub const RG_SECRET_GLOBS: [&str; 12] = [
+    "*.env",
+    "*.env.*",
+    "*.pem",
+    "*.key",
+    "*.p12",
+    "*.pfx",
+    "*id_rsa*",
+    "*id_ed25519*",
+    "*.npmrc",
+    "*.netrc",
+    "*credentials*",
+    "**/.git/**",
+];
+
+/// The `rg` OpenCode runs on macOS and Linux: SayQL's ripgrep with an exclude per secret file.
+/// The excludes go just before the first `--` (after it come the pattern and the path), or at the
+/// end: after OpenCode's own `--glob` options, so they win over an include the model chose.
+pub fn rg_wrapper(real: &Path) -> String {
+    let quote = |s: &str| format!("'{}'", s.replace('\'', r"'\''"));
+    let globs: Vec<String> = RG_SECRET_GLOBS
+        .iter()
+        .map(|g| quote(&format!("--glob=!{g}")))
+        .collect();
+    let globs = globs.join(" ");
+    format!(
+        "#!/bin/sh\n\
+         # Written by SayQL for one audit: ripgrep that never searches secret files.\n\
+         n=$#\n\
+         added=0\n\
+         for a in \"$@\"; do\n\
+         \x20 if [ \"$added\" = 0 ] && [ \"$a\" = \"--\" ]; then\n\
+         \x20   set -- \"$@\" {globs}\n\
+         \x20   added=1\n\
+         \x20 fi\n\
+         \x20 set -- \"$@\" \"$a\"\n\
+         done\n\
+         shift \"$n\"\n\
+         if [ \"$added\" = 0 ]; then\n\
+         \x20 set -- \"$@\" {globs}\n\
+         fi\n\
+         exec {} \"$@\"\n",
+        quote(&real.to_string_lossy())
+    )
+}
+
+/// The folder whose `rg` the run uses, first on its PATH: SayQL's script for the run, or on
+/// Windows (where `grep` is denied) the downloaded ripgrep itself.
+pub fn search_dir(h: &Home, installed: &Installed) -> PathBuf {
+    if cfg!(windows) {
+        installed.bin_dir.clone()
+    } else {
+        h.bin.clone()
+    }
+}
+
 /// Creates the private folders, with a stub package in OpenCode's config folder so it doesn't
 /// install `@opencode-ai/plugin` from npm in the background (`core/src/npm.ts` skips a folder
-/// whose node_modules exists and whose lock lists what package.json does).
-pub fn prepare_home(h: &Home) -> std::io::Result<()> {
-    for d in [&h.home, &h.data, &h.cache, &h.state, &h.tmp] {
+/// whose node_modules exists and whose lock lists what package.json does), and SayQL's `rg`
+/// script for `rg` (the downloaded ripgrep).
+pub fn prepare_home(h: &Home, rg: &Path) -> std::io::Result<()> {
+    for d in [&h.home, &h.data, &h.cache, &h.state, &h.tmp, &h.bin] {
         std::fs::create_dir_all(d)?;
     }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let script = h.bin.join("rg");
+        std::fs::write(&script, rg_wrapper(rg))?;
+        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755))?;
+    }
+    #[cfg(not(unix))]
+    let _ = rg;
     let oc = h.config.join("opencode");
     std::fs::create_dir_all(oc.join("node_modules"))?;
     let deps = json!({ "@opencode-ai/plugin": VERSION });
@@ -937,6 +1022,37 @@ pub fn run_args(model: &Model, folder: &Path) -> Vec<String> {
         "--dir".into(),
         folder.to_string_lossy().into_owned(),
     ]
+}
+
+/// A symbolic link in one of `sources` that leads out of all of them, if there is one: `(link,
+/// where it leads)`. OpenCode would follow it. Links that lead to nothing are left alone (nothing
+/// to read), as are `.git` folders (OpenCode can't read them).
+pub fn link_out(sources: &[PathBuf]) -> Option<(PathBuf, PathBuf)> {
+    let roots: Vec<PathBuf> = sources
+        .iter()
+        .map(|s| s.canonicalize().unwrap_or_else(|_| s.clone()))
+        .collect();
+    let inside = |p: &Path| roots.iter().any(|r| p.starts_with(r));
+    let mut stack: Vec<PathBuf> = sources.to_vec();
+    while let Some(dir) = stack.pop() {
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
+        for e in entries.flatten() {
+            let Ok(kind) = e.file_type() else { continue };
+            let path = e.path();
+            if kind.is_symlink() {
+                if let Ok(target) = path.canonicalize()
+                    && !inside(&target)
+                {
+                    return Some((path, target));
+                }
+            } else if kind.is_dir() && e.file_name() != ".git" {
+                stack.push(path);
+            }
+        }
+    }
+    None
 }
 
 // ---------------------------------------------------------------------------------------------
