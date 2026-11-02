@@ -472,7 +472,7 @@ fn starts_operand(t: Option<&Tok>) -> bool {
 /// `*` expansions are fine at the top level (result columns keep their names and are
 /// withheld by name), not inside a subquery or CTE where they can be renamed. `count(*)` and
 /// `EXISTS (SELECT * …)` are fine. With a top-level `*`, positional `ORDER BY 3` / `GROUP BY 3`
-/// are refused (they could sort or group by a withheld column).
+/// are refused (they could sort or group by a withheld column), see [`positional_by`].
 fn check_stars(t: &[Tok]) -> Result<(), String> {
     let mut stack: Vec<bool> = Vec::new();
     let mut top_star = false;
@@ -503,27 +503,69 @@ fn check_stars(t: &[Tok]) -> Result<(), String> {
             _ => {}
         }
     }
-    if top_star {
-        let mut in_by = false;
-        for (i, tok) in t.iter().enumerate() {
-            if tok.is_word("by")
-                && i > 0
-                && (t[i - 1].is_word("order") || t[i - 1].is_word("group"))
-            {
-                in_by = true;
-            } else if in_by && *tok == Tok::Num {
-                let prev = &t[i - 1];
-                if prev.is_word("by") || prev.is_punct(',') {
-                    return Err(SHAPE.into());
-                }
-            } else if matches!(tok, Tok::Word(w) if ENDS_FROM.contains(&w.to_lowercase().as_str()))
-                || tok.is_punct(')')
-            {
-                in_by = false;
-            }
-        }
+    if top_star && positional_by(t) {
+        return Err(SHAPE.into());
     }
     Ok(())
+}
+
+/// Whether an ORDER BY or GROUP BY item is a result position. Every engine reads `3` so;
+/// MySQL, MariaDB and SQLite also read `+3`, `(3)`, `+(3)` and `((3))`, and Postgres `(3)`.
+/// A minus sign is included too: the engines reject `-3` as a position or read it as one.
+fn positional_by(t: &[Tok]) -> bool {
+    let mut depth = 0usize;
+    // The parenthesis depth of the BY list being read, if any.
+    let mut by_depth: Option<usize> = None;
+    let mut prev: Option<&Tok> = None;
+    for (i, tok) in t.iter().enumerate() {
+        match tok {
+            Tok::Punct('(') => depth += 1,
+            Tok::Punct(')') => {
+                depth = depth.saturating_sub(1);
+                if by_depth.is_some_and(|d| depth < d) {
+                    by_depth = None;
+                }
+            }
+            Tok::Word(w) => {
+                if tok.is_word("by")
+                    && prev.is_some_and(|p| p.is_word("order") || p.is_word("group"))
+                {
+                    by_depth = Some(depth);
+                } else if by_depth == Some(depth) && ENDS_FROM.contains(&w.to_lowercase().as_str())
+                {
+                    by_depth = None;
+                }
+            }
+            _ => {}
+        }
+        let item_starts = by_depth == Some(depth) && (tok.is_word("by") || tok.is_punct(','));
+        if item_starts && is_position(t.get(i + 1..).unwrap_or_default()) {
+            return true;
+        }
+        prev = Some(tok);
+    }
+    false
+}
+
+/// Whether the tokens start with a number wrapped only in signs and parentheses, ending the
+/// item (`3`, `+3`, `(3) DESC`), not starting a longer expression (`3 + a`, `(3 * a)`).
+fn is_position(item: &[Tok]) -> bool {
+    let mut open = 0usize;
+    let mut rest = item.iter();
+    loop {
+        match rest.next() {
+            Some(Tok::Punct('(')) => open += 1,
+            Some(Tok::Punct('+' | '-')) => {}
+            Some(Tok::Num) => break,
+            _ => return false,
+        }
+    }
+    let mut next = rest.next();
+    while open > 0 && next.is_some_and(|n| n.is_punct(')')) {
+        open -= 1;
+        next = rest.next();
+    }
+    open == 0 && !matches!(next, Some(Tok::Punct(c)) if !matches!(c, ',' | ')' | ';'))
 }
 
 /// Protected tables may be read as `FROM patients [AS] p`, but not renamed with a column alias
@@ -1224,6 +1266,47 @@ mod tests {
                 "SELECT c.id, c.name, o.total FROM customers c JOIN orders o ON o.customer_id = c.id",
                 "SELECT count(*), avg(o.total) FROM orders o GROUP BY o.status",
                 "SELECT id FROM customers WHERE EXISTS (SELECT * FROM orders o WHERE o.customer_id = customers.id)",
+            ] {
+                check(sql, &never, d).unwrap_or_else(|e| panic!("{d:?}: {sql}: {e}"));
+            }
+        }
+    }
+
+    /// The 2026-11-02 audit (L1): `ORDER BY +3` sorted by a withheld column on SQLite.
+    /// Checked by hand on MariaDB 11.4, SQLite 3 and Postgres 16: each form below that the
+    /// engine accepts sorts by the third column.
+    #[test]
+    fn positional_order_and_group_by_are_refused_however_written() {
+        let never = ["customers.ssn"];
+        for d in [
+            Dialect::MySql,
+            Dialect::Sqlite,
+            Dialect::Mssql,
+            Dialect::Postgres,
+        ] {
+            for sql in [
+                "SELECT * FROM customers ORDER BY 3",
+                "SELECT * FROM customers ORDER BY +3",
+                "SELECT * FROM customers ORDER BY -3",
+                "SELECT * FROM customers ORDER BY (3)",
+                "SELECT * FROM customers ORDER BY ((3)) DESC",
+                "SELECT * FROM customers ORDER BY +(3)",
+                "SELECT * FROM customers ORDER BY (+3)",
+                "SELECT * FROM customers ORDER BY + + 3",
+                "SELECT * FROM customers ORDER BY id, +3",
+                "SELECT * FROM customers ORDER BY (1), 3",
+                "SELECT * FROM customers ORDER BY name COLLATE nocase, (3) LIMIT 5",
+                "SELECT * FROM customers GROUP BY +3",
+            ] {
+                assert!(check(sql, &never, d).is_err(), "{d:?}: {sql}");
+            }
+            for sql in [
+                "SELECT * FROM customers ORDER BY id",
+                "SELECT * FROM customers ORDER BY id + 3",
+                "SELECT * FROM customers ORDER BY 3 + id",
+                "SELECT * FROM customers ORDER BY (3 * id) DESC",
+                "SELECT * FROM customers WHERE id IN (SELECT o.customer_id FROM orders o) ORDER BY name",
+                "SELECT id FROM customers ORDER BY 3",
             ] {
                 check(sql, &never, d).unwrap_or_else(|e| panic!("{d:?}: {sql}: {e}"));
             }
