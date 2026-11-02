@@ -31,6 +31,9 @@ describe("isReadOnly (dev copy of classify.rs)", () => {
       "SELECT pg_create_physical_replication_slot('s')",
       "SELECT pg_stat_reset_shared('bgwriter')",
       "SELECT GET_LOCK('sayql', 10)",
+      "SELECT 1; SETUSER 'dbo'",
+      "SELECT 1; WRITETEXT t.notes @ptr 'x'",
+      "SELECT 1; UPDATETEXT t.notes @ptr 0 NULL 'x'",
     ]) {
       expect(rwEverywhere(sql), sql).toBe(true);
     }
