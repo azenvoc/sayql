@@ -43,7 +43,7 @@ impl fmt::Display for AppError {
 /// The database's own message, without sqlx's "error returned from database:" prefix or the
 /// line in the Postgres source code that raised it (which reads like a line of the query).
 /// Postgres' DETAIL and HINT lines are kept: they name the key or value at fault and the fix.
-/// Values in them are masked before an error goes to the AI (see ai/redact.rs).
+/// Values in them are masked before an error goes to the AI (see safety/redact.rs).
 fn database_error(e: &sqlx::Error) -> String {
     match e {
         sqlx::Error::Database(db) => match db.try_downcast_ref::<sqlx::postgres::PgDatabaseError>()

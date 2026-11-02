@@ -9,10 +9,9 @@ mod models;
 pub(crate) mod openai;
 mod prompt;
 mod providers;
-pub(crate) mod redact;
 
 #[cfg(test)]
-pub(crate) use redact::database_error as mask_database_error;
+pub(crate) use crate::safety::redact::database_error as mask_database_error;
 mod sse;
 pub mod subscription;
 #[cfg(test)]

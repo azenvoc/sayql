@@ -101,7 +101,7 @@ export const CLAUDE_PLAN = "claude-plan";
  * What the Ask box sends, and where, in two sentences. It must match
  * src-tauri/src/commands/generation.rs: the question, the schema (names, types, keys, enum
  * values, row estimates) and saved notes; the editor's SQL for follow-ups and fixes; a failed
- * query's error with quoted values masked (ai/redact.rs). Rows only go in agent mode, per
+ * query's error with quoted values masked (safety/redact.rs). Rows only go in agent mode, per
  * connection (ai/agent/run.rs).
  */
 export function privacyNote(p: Pick<AiProvider, "id" | "key" | "label" | "local">): string {

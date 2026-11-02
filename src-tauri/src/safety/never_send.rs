@@ -27,9 +27,9 @@
 //! name the view or result uses.
 
 use crate::db::{DbPool, Kind};
-use crate::readonly::{QueryFailure, run_limited_checked};
+use crate::safety::readonly::{QueryFailure, run_limited_checked};
+use crate::safety::sql_lex::{Dialect, Tok, lex};
 use crate::schema::Schema;
-use crate::sql_lex::{Dialect, Tok, lex};
 use serde_json::Value;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};

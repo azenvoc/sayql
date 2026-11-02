@@ -110,14 +110,10 @@ const TOP_LEVEL = new Set([
   "lib",
   "main",
   "mcp",
-  "never_send",
   "notes",
-  "pii",
-  "readonly",
   "repos",
   "safety",
   "schema",
-  "sql_lex",
   "state",
   "store",
   "team",
@@ -158,7 +154,7 @@ for (const path of files(rustRoot, /\.rs$/)) {
   }
   if (
     /never_send::check\(/.test(text) &&
-    file !== "src-tauri/src/never_send.rs" &&
+    file !== "src-tauri/src/safety/never_send.rs" &&
     !AI_QUERY_GATES.has(file)
   ) {
     fail(file, "a new place that checks SQL for an AI", "The AI query gate");

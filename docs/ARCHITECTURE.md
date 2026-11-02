@@ -58,14 +58,20 @@ src/
 src-tauri/src/
   lib.rs                plugin + state + command registration only
   mcp.rs                sayql-mcp: MCP server over stdio (read-only tools), reusing state/db/schema
-  readonly.rs           read-only access shared by MCP and agent mode: schema search (describe), queries stopped
-                        on the server after a time limit (run_limited), row caps, the write refusal
   bin/sayql-mcp.rs      its entry point
-  safety/gate.rs        the AI query gate: every query run for an AI (MCP, agent mode, note checks) is checked and
+  safety/               the product's promise in one place: what keeps data from an AI that may not see it
+    gate.rs             the AI query gate: every query run for an AI (MCP, agent mode, note checks) is checked and
                         run here (read-only, never-send, time limit, redacted errors), with per-caller options
-  sql_lex.rs            the SQL lexer every check shares (strings, quoted names and comments per dialect)
-  never_send.rs         never-send columns: refuses SQL that could read one (names, the Postgres plan, shapes)
-  pii.rs                likely personal data in text, for the masker and note checks
+    sql_lex.rs          the SQL lexer every check shares (strings, quoted names and comments per dialect)
+    classify.rs         is_read_only (also db::is_read_only): per-dialect lexer; reading first keyword and no
+                        write keyword anywhere
+    never_send.rs       never-send columns: refuses SQL that could read one (names, the Postgres plan, shapes)
+    readonly.rs         read-only access shared by MCP and agent mode: schema search (describe), queries stopped
+                        on the server after a time limit (run_limited), row caps, the write refusal
+    redact.rs           database error messages in a fixed form for an AI that may not see values (safe_error)
+    pii.rs              likely personal data in text, for the masker and note checks
+    mask/               masks likely personal data in results as per-run tokens (‹email-3›), puts real values back
+                        into SQL as dialect literals, and builds the "counts and summaries only" view
   notes.rs              database notes: checks, review after a schema change, suggested fixes
   knowledge.rs          knowledge sources: file text (PDF, DOCX, HTML) and the web crawler
   knowledge/pdf.rs      PDF text, read by SayQL's own executable in a child process (`--extract-pdf`,
@@ -98,7 +104,6 @@ src-tauri/src/
     connect.rs          pools per database kind
     databases.rs        the databases on a server, and connecting to one of them
     mssql_pool.rs       SQL Server connection (tiberius), Azure redirects, host,port parsing
-    classify.rs         is_read_only: per-dialect lexer; reading first keyword and no write keyword anywhere
     execute.rs          run_query: read-only transactions, row cap, column headers
     decode/             driver values → JSON for display (postgres binary wire format, mysql, sqlite, mssql)
     introspect/         schema reading per database kind, shared assembly in mod.rs
@@ -123,8 +128,6 @@ src-tauri/src/
       prompt.rs         instructions, the "why" playbook, the schema and notes block
       checks.rs         checks in code: joins that repeat rows before a sum, numbers no step backs, big scans
       text_protocol.rs  one fenced JSON action per reply, for models without tool calling
-      mask/             masks likely personal data in results as per-run tokens (‹email-3›), puts real values back
-                        into SQL as dialect literals, and builds the "counts and summaries only" view
       eval/             tests only: the evaluation question set (questions.json, demo store and tenant fixture);
                         `Reference` checks the set, `agent.rs` runs it with a real model (opt-in, API key)
   schema/               schema model (mod.rs) and compact prompt rendering (render.rs)
@@ -138,7 +141,7 @@ src-tauri/src/
 
 ### Rules
 
-- **Commands are thin.** Business logic lives in `db/`, `ai/`, `schema/`, `store/` and `voice/`, which never import Tauri command types; only `commands/` and `state.rs` know about Tauri state.
+- **Commands are thin.** Business logic lives in `db/`, `ai/`, `safety/`, `schema/`, `store/` and `voice/`, which never import Tauri command types; only `commands/` and `state.rs` know about Tauri state.
 - **Errors:** functions return `AppResult<T>`. Use `?` on sqlx/io/keychain/JSON errors (converted by `From`), and `"message".into()` for messages written for the user. A message that mentions "Settings" makes the UI offer an Open Settings button.
 - **Secrets** only go through `store::secrets`; they are never written to JSON or sent to the UI.
 - **Tests** sit next to the code (`#[cfg(test)] mod tests`).

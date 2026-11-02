@@ -19,9 +19,11 @@
 //! summaries only" setting (`summarize`) sends no values at all.
 
 use crate::db::{Kind, QueryResult};
-use crate::never_send::Entry;
-use crate::pii::{is_card, is_email, is_long_id, is_phone, is_ssn, starts_with_date as is_date};
-use crate::sql_lex::{Dialect, Tok, lex};
+use crate::safety::never_send::Entry;
+use crate::safety::pii::{
+    is_card, is_email, is_long_id, is_phone, is_ssn, starts_with_date as is_date,
+};
+use crate::safety::sql_lex::{Dialect, Tok, lex};
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
@@ -100,7 +102,7 @@ impl Masker {
             .into_iter()
             .map(|c| c.as_ref().to_string())
             .collect();
-        let entries = crate::never_send::entries(&list);
+        let entries = crate::safety::never_send::entries(&list);
         Masker {
             never_send: entries.iter().map(|e| e.column.clone()).collect(),
             entries,
@@ -299,7 +301,7 @@ impl Masker {
     /// or an aggregate of one (only those get min and max in `summarize`).
     pub fn learn_aliases(&mut self, sql: &str) {
         self.aliases.clear();
-        self.never_send = crate::never_send::active_columns(sql, &self.entries);
+        self.never_send = crate::safety::never_send::active_columns(sql, &self.entries);
         self.shape = None;
         self.learn_names(sql);
         let shape = Shape::of(sql, &|w: &str| self.column_rule(w).is_some());
@@ -307,7 +309,7 @@ impl Masker {
     }
 
     fn learn_names(&mut self, sql: &str) {
-        let toks: Vec<String> = super::checks::tokens(sql)
+        let toks: Vec<String> = crate::ai::agent::checks::tokens(sql)
             .iter()
             .map(|t| t.to_lowercase())
             .collect();
@@ -667,7 +669,7 @@ fn plain(v: &Value) -> String {
 }
 
 /// The value as a SQL literal of `kind`'s dialect.
-pub(super) fn literal(v: &Value, kind: Kind) -> Result<String, String> {
+pub(crate) fn literal(v: &Value, kind: Kind) -> Result<String, String> {
     match v {
         Value::Number(n) => return Ok(n.to_string()),
         Value::Bool(b) if kind == Kind::Mssql => return Ok(if *b { "1" } else { "0" }.into()),

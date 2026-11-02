@@ -65,11 +65,11 @@ pub struct LoadedSchema {
 
 impl LoadedSchema {
     /// The schema and its text as an AI may read them on a connection with these never-send
-    /// columns (see [`crate::never_send::schema_for_ai`]). The cached text is kept when nothing
+    /// columns (see [`crate::safety::never_send::schema_for_ai`]). The cached text is kept when nothing
     /// is left out.
     pub fn for_ai(self: &Arc<Self>, never_send: &[String]) -> Arc<LoadedSchema> {
-        let never = crate::never_send::entries(never_send);
-        match crate::never_send::schema_for_ai(&self.schema, &never) {
+        let never = crate::safety::never_send::entries(never_send);
+        match crate::safety::never_send::schema_for_ai(&self.schema, &never) {
             std::borrow::Cow::Borrowed(_) => Arc::clone(self),
             std::borrow::Cow::Owned(schema) => Arc::new(LoadedSchema {
                 schema_text: schema::render_full(&schema),

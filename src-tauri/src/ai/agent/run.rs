@@ -2,12 +2,12 @@
 //! masks or summarizes the result per the connection's setting, and reports every step to
 //! the tab. Ends with a cited answer, an error, or Stop.
 
-use super::mask::{Masker, ResultSummary};
 use super::model::{Block, Llm, Msg, Role, ToolMode, Turn, Usage};
 use super::{checks, prompt, tools};
 use crate::db::{self, DbPool, Kind, QueryResult};
-use crate::readonly;
 use crate::safety::gate::{self, Refusal};
+use crate::safety::mask::{Masker, ResultSummary};
+use crate::safety::readonly;
 use crate::schema::{self, Schema, Table};
 use crate::store::Store;
 use crate::store::agent::{AgentAccess, AgentSettings, Note, Results, clean_note, note_ref};
@@ -889,9 +889,9 @@ impl Run<'_> {
         let fresh = db::introspect(self.pool, self.input.kind).await.ok()?;
         // The run's schema is the one the AI may read (see `never_send::schema_for_ai`); the
         // notes are reviewed against the whole one.
-        let shown = crate::never_send::schema_for_ai(
+        let shown = crate::safety::never_send::schema_for_ai(
             &fresh,
-            &crate::never_send::entries(&self.input.access.never_send),
+            &crate::safety::never_send::entries(&self.input.access.never_send),
         )
         .into_owned();
         let before = crate::schema::anchors::Snapshot::of(&self.input.schema);
@@ -949,7 +949,7 @@ impl Run<'_> {
         let secs = Duration::from_secs(self.input.limits.query_seconds);
         let r = gate::run(self.pool, sql, ROWS_READ, secs, &self.io.stop).await;
         // Database messages can quote values; the model gets a fixed message for the kind of
-        // error (see ai/redact.rs).
+        // error (see safety/redact.rs).
         let e = match r {
             Ok(v) => return Ok(v),
             Err(e) => e,
@@ -1079,9 +1079,9 @@ impl Run<'_> {
              MIN({c}) AS min_value, MAX({c}) AS max_value FROM {t}"
         );
         // A never-send column isn't profiled at all.
-        let never = crate::never_send::entries(&self.input.access.never_send);
-        let dialect = crate::never_send::dialect(self.input.kind);
-        if let Err(e) = crate::never_send::check_text(&stats, &never, dialect, false) {
+        let never = crate::safety::never_send::entries(&self.input.access.never_send);
+        let dialect = crate::safety::never_send::dialect(self.input.kind);
+        if let Err(e) = crate::safety::never_send::check_text(&stats, &never, dialect, false) {
             let i = self.new_step(tools::PROFILE, text, None);
             return Ok(self.end_step(i, Err(e), "sent the refusal"));
         }
@@ -1100,12 +1100,13 @@ impl Run<'_> {
             || [get(3), get(4)]
                 .iter()
                 .chain(top_r.rows.iter().filter_map(|r| r.first()))
-                .any(|v| super::mask::value_kind(v).is_some());
+                .any(|v| crate::safety::mask::value_kind(v).is_some());
         let numeric_or_date = [get(3), get(4)].iter().all(|v| {
             v.is_null()
                 || v.is_number()
-                || v.as_str()
-                    .is_some_and(|s| s.parse::<f64>().is_ok() || crate::pii::starts_with_date(s))
+                || v.as_str().is_some_and(|s| {
+                    s.parse::<f64>().is_ok() || crate::safety::pii::starts_with_date(s)
+                })
         });
         let mut out = json!({ "rows": get(0), "nulls": get(1), "distinct": get(2) });
         let summary;
@@ -1253,7 +1254,7 @@ impl Run<'_> {
             Value::String(s) if s.contains('‹') => Value::String(self.masker.unmask_text(s)),
             other => other.clone(),
         };
-        let literal = match super::mask::literal(&key, self.input.kind) {
+        let literal = match crate::safety::mask::literal(&key, self.input.kind) {
             Ok(l) if !key.is_null() && !key.is_array() && !key.is_object() => l,
             _ => {
                 let i = self.new_step(tools::SHOW, text, None);

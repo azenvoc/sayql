@@ -126,7 +126,7 @@ export const appLevelShort = (apps: AppResults) => LEVELS[APP_LEVEL[apps]].short
 
 /**
  * Where never-send columns apply, in one sentence. They're enforced for agent mode
- * (src-tauri/src/ai/agent/mask.rs) and for AI apps over MCP (src-tauri/src/mcp.rs). The Ask box
+ * (src-tauri/src/safety/mask/mod.rs) and for AI apps over MCP (src-tauri/src/mcp.rs). The Ask box
  * sends no values from your tables (src-tauri/src/commands/generation.rs: the question, the
  * schema, notes and the editor's SQL), so there is nothing for them to hold back there.
  */

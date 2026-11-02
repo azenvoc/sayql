@@ -5,7 +5,6 @@
 pub mod checks;
 #[cfg(test)]
 mod eval;
-pub mod mask;
 pub mod model;
 pub mod prompt;
 pub mod run;

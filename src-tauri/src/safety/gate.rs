@@ -4,7 +4,7 @@
 //! `prepare` refuses what may not run (more than one statement, a statement that could change
 //! data, never-send columns and functions that read server files); `run` runs it, stopping it
 //! on the server after the time limit, and keeps both forms of a failure (the database's own
-//! message and `ai::redact::safe_error`'s). Each caller picks what the AI gets.
+//! message and `safety::redact::safe_error`'s). Each caller picks what the AI gets.
 //!
 //! The callers differ on purpose, and the differences are the `Options` each one passes:
 //!
@@ -18,8 +18,8 @@
 //! `prepare`, since that is what runs; the gate checks the SQL exactly as it will run.
 
 use crate::db::{self, DbPool, QueryResult};
-use crate::never_send::{self, Guard};
-use crate::readonly::{self, QueryFailure};
+use crate::safety::never_send::{self, Guard};
+use crate::safety::readonly::{self, QueryFailure};
 use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 

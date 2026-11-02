@@ -1,5 +1,5 @@
-use super::Kind;
-use crate::sql_lex::{Tok, lex};
+use crate::db::Kind;
+use crate::safety::sql_lex::{Tok, lex};
 
 /// Keywords that can change data, structure, permissions, session or transaction state.
 /// `INTO` covers `SELECT ... INTO new_table` and `INSERT INTO`; `USE` and `SET` change
@@ -114,7 +114,7 @@ const WRITE_PREFIXES: &[&str] = &[
 pub fn is_read_only(sql: &str, kind: Kind) -> bool {
     // Some settings change where strings end (MySQL's NO_BACKSLASH_ESCAPES, Postgres'
     // standard_conforming_strings), so the statement must read as read-only every way.
-    lex(sql, crate::never_send::dialect(kind))
+    lex(sql, crate::safety::never_send::dialect(kind))
         .iter()
         .all(|l| reads_only(sql, &l.toks))
 }

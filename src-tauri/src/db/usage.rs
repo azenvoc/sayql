@@ -290,7 +290,7 @@ pub async fn read(pool: &DbPool) -> Stats {
         DbPool::My(_) => MYSQL_SQL,
         DbPool::Lite(_) | DbPool::Team(_) => return Stats::None,
     };
-    match crate::readonly::run_limited(pool, sql, MAX_TABLES, TIMEOUT).await {
+    match crate::safety::readonly::run_limited(pool, sql, MAX_TABLES, TIMEOUT).await {
         Ok(r) => parse(pool.kind(), &r),
         Err(_) => Stats::Unavailable,
     }

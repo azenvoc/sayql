@@ -202,7 +202,7 @@ describe("mock backend", () => {
   });
 });
 
-// The cases from the tests in src-tauri/src/db/classify.rs.
+// The cases from the tests in src-tauri/src/safety/classify.rs.
 describe("isReadOnly matches classify.rs", () => {
   it("classifies read-only statements", () => {
     expect(isReadOnly("select 1")).toBe(true);

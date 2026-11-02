@@ -369,7 +369,7 @@ async fn writes_go_to_the_server_to_be_refused_and_audited() {
     assert_eq!(seen.last().unwrap().body["sql"], "delete from patients");
     // Agent mode's read-only runner sends it too.
     let agent = p.with_context(Source::Agent, None);
-    let e = crate::readonly::run_limited(
+    let e = crate::safety::readonly::run_limited(
         &agent,
         "update patients set ssn = null",
         10,
@@ -837,7 +837,7 @@ async fn real_server() {
     let agent = pool
         .clone()
         .with_context(Source::Agent, Some("How many patients?".into()));
-    let r = crate::readonly::run_limited(
+    let r = crate::safety::readonly::run_limited(
         &agent,
         "select count(*) as n from patients",
         10,

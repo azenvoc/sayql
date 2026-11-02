@@ -5,13 +5,13 @@
 //! dialog, where the person types the password, and SQL or a saved script in a tab, which
 //! they run. `export_csv` writes a read-only query's rows to a new file in Downloads.
 
-use crate::ai::agent::mask::Masker;
 use crate::audit;
 use crate::db::{self, Kind, QueryResult};
 use crate::handoff::{self, Action, Handoff, ScriptRef};
-use crate::never_send::{self, Guard};
-use crate::readonly::{DEFAULT_ROWS, MAX_ROWS, QueryFailure, WRITE_REFUSED, describe_with};
 use crate::safety::gate::{self, Refusal};
+use crate::safety::mask::Masker;
+use crate::safety::never_send::{self, Guard};
+use crate::safety::readonly::{DEFAULT_ROWS, MAX_ROWS, QueryFailure, WRITE_REFUSED, describe_with};
 use crate::schema::Schema;
 use crate::state::{AppState, Target};
 use crate::store::agent::{AgentAccess, AppResults};
@@ -527,7 +527,7 @@ fn shape(
 
 /// A failed query's error as the AI app may see it: the database's message only at `all` on a
 /// query that reads no table with never-send columns; otherwise a fixed description of the
-/// error (see ai/redact.rs), since messages can quote values.
+/// error (see safety/redact.rs), since messages can quote values.
 fn shown_error(level: AppResults, guard: &Guard, e: QueryFailure) -> String {
     if level == AppResults::All && !guard.protected {
         e.full
@@ -547,10 +547,10 @@ fn failed(log: &mut Activity, level: AppResults, guard: &Guard, e: QueryFailure)
 /// `sql` with the text of every string literal and comment replaced by `…`, read as `kind`'s
 /// database reads it (every engine's way when the connection is gone).
 fn mask_literals(sql: &str, kind: Option<crate::db::Kind>) -> String {
-    use crate::sql_lex::Dialect;
+    use crate::safety::sql_lex::Dialect;
     match kind {
-        Some(k) => crate::sql_lex::mask_values(sql, &[never_send::dialect(k)]),
-        None => crate::sql_lex::mask_values(
+        Some(k) => crate::safety::sql_lex::mask_values(sql, &[never_send::dialect(k)]),
+        None => crate::safety::sql_lex::mask_values(
             sql,
             &[
                 Dialect::Postgres,

@@ -247,7 +247,7 @@ pub(super) fn is_opaque(t: &[Tok]) -> bool {
         }
     }
     // Whole-row references and column alias lists on tables.
-    crate::never_send::whole_rows_or_alias_lists(t)
+    crate::safety::never_send::whole_rows_or_alias_lists(t)
 }
 
 /// The top-level SELECT's items, if the SQL has one that can be read.

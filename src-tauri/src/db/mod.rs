@@ -1,7 +1,6 @@
 //! Database access for PostgreSQL, MySQL, SQLite and SQL Server: connecting, running queries
 //! safely, decoding values for display and reading the schema.
 
-mod classify;
 mod connect;
 mod databases;
 mod decode;
@@ -12,7 +11,7 @@ mod mssql_pool;
 pub mod schema_hash;
 pub mod usage;
 
-pub use classify::is_read_only;
+pub use crate::safety::classify::is_read_only;
 pub use connect::connect;
 pub use databases::{DatabaseList, list_databases, open_database};
 pub use demo::ensure_demo;

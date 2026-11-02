@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { DatabaseKind } from "../api";
 import { isReadOnly } from "./readOnly";
 
-// The same cases as the tests in src-tauri/src/db/classify.rs, so the preview's check stays in
+// The same cases as the tests in src-tauri/src/safety/classify.rs, so the preview's check stays in
 // step with the app's.
 const ALL: DatabaseKind[] = ["postgres", "mysql", "sqlite", "mssql"];
 const roEverywhere = (sql: string) => ALL.every((k) => isReadOnly(sql, k));
