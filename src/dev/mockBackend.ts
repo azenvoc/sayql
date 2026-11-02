@@ -1,8 +1,9 @@
 // Development only: lets the UI run in a plain browser (`pnpm dev`) with fake data,
 // for design work without the Rust backend. Never loaded inside the Tauri app.
 import { emit } from "@tauri-apps/api/event";
+import { MAX_SOURCES_FREE, SOURCE_CAP_MESSAGE } from "../api/types";
 import { mockIPC } from "@tauri-apps/api/mocks";
-import type { MyActivity, AgentAccess, AgentReply, AgentStep, AiProvider, AuditAgent, AuditRun, Bootstrap, CodeSource, DbNote, NoteSuggestion, QueryResult, Schema, Settings, Skill, Table } from "../api";
+import type { MyActivity, AgentAccess, AgentReply, AgentStep, AiProvider, AuditAgent, AuditRun, Bootstrap, KnowledgeSource, DbNote, NoteSuggestion, QueryResult, Schema, Settings, Skill, Table } from "../api";
 import { EXAMPLE_SKILLS, skillError } from "../features/skills";
 import { version } from "../../package.json";
 import { isReadOnly } from "./readOnly";
@@ -535,8 +536,8 @@ function auditAgents(): AuditAgent[] {
     { id: "cursor", label: "Cursor CLI", path: null, version: null, supported: false, ready: false, installUrl: "https://cursor.com/cli", problem: null },
   ];
 }
-// The code each connection's audit reads: a folder and a GitHub repository for analytics.
-const codeSources = new Map<string, CodeSource[]>([
+// What each connection's audit reads: a folder and a GitHub repository for analytics.
+const knowledgeSources = new Map<string, KnowledgeSource[]>([
   [
     "pg",
     [
@@ -547,7 +548,13 @@ const codeSources = new Map<string, CodeSource[]>([
   ],
 ]);
 let mockSourceId = 0;
-const sourcesOf = (id: unknown) => codeSources.get(id as string) ?? [];
+const sourcesOf = (id: unknown) => knowledgeSources.get(id as string) ?? [];
+/** Adds a source as the app does: a 4th is refused. */
+const addSource = (id: unknown, source: KnowledgeSource) => {
+  if (sourcesOf(id).length >= MAX_SOURCES_FREE) return Promise.reject(SOURCE_CAP_MESSAGE);
+  knowledgeSources.set(id as string, [...sourcesOf(id), source]);
+  return source;
+};
 const auditStops = new Set<string>();
 let auditModel = "sonnet";
 // `?nocredits` in the mock's URL: no SayQL credit key saved.
@@ -717,35 +724,44 @@ export function installMockBackend() {
         case "audit_agents":
           await new Promise((r) => setTimeout(r, 250));
           return auditAgents();
-        case "code_sources":
+        case "knowledge_sources":
           return sourcesOf(a.id).map((s) => ({ ...s }));
-        case "add_code_folder": {
+        case "add_knowledge_folder": {
           const path = a.id === "demo" ? "/Users/you/code/shop" : "/Users/you/code/analytics";
-          if (sourcesOf(a.id).some((s) => s.kind.type === "local" && s.kind.path === path)) return Promise.reject("This connection already has that code source.");
-          const source: CodeSource = { id: `src_mock${++mockSourceId}`, label: path.split("/").pop() ?? "code", kind: { type: "local", path }, lastFetch: Date.now(), lastCommit: null, error: null };
-          codeSources.set(a.id as string, [...sourcesOf(a.id), source]);
-          return source;
+          if (sourcesOf(a.id).some((s) => s.kind.type === "local" && s.kind.path === path)) return Promise.reject("This connection already has that source.");
+          return addSource(a.id, { id: `src_mock${++mockSourceId}`, label: path.split("/").pop() ?? "code", kind: { type: "local", path }, lastFetch: Date.now(), lastCommit: null, error: null });
         }
-        case "add_code_repo": {
+        case "add_knowledge_files":
+          return addSource(a.id, {
+            id: `src_mock${++mockSourceId}`, label: "docs", lastFetch: Date.now(), lastCommit: "4e5f6a7b8c9d", error: null,
+            kind: { type: "files", paths: ["/Users/you/Documents/billing-spec.pdf", "/Users/you/Documents/status-codes.md"] },
+          });
+        case "add_knowledge_url": {
+          const url = String(a.url ?? "").trim();
+          if (!/^https?:\/\/[^/]+/.test(url)) return Promise.reject("Enter the page's full address, starting with https://.");
+          if (/^https?:\/\/(localhost|127\.|10\.|192\.168\.)/.test(url)) return Promise.reject("SayQL reads public web pages only, and that address is on this computer or a private network.");
+          const label = url.replace(/^https?:\/\//, "").split(/[/:]/)[0] || "docs";
+          return addSource(a.id, { id: `src_mock${++mockSourceId}`, label, lastFetch: Date.now(), lastCommit: "a1b2c3d4e5f6", error: null, kind: { type: "url", url, crawl: !!a.crawl } });
+        }
+        case "add_knowledge_repo": {
           await new Promise((r) => setTimeout(r, 250));
           const url = String(a.url ?? "").trim();
           if (!/^(https:\/\/|ssh:\/\/|git@)/.test(url)) return Promise.reject("Use the repository's https:// or SSH address (git@host:owner/repo.git), as its Clone button shows it.");
           if (url.includes("private")) return Promise.reject("github.com didn't accept the sign-in. Add a read-only token for this repository, or set up git's credential helper for github.com.");
           const subdir = String(a.subdir ?? "").trim() || null;
           const label = (subdir ?? url).replace(/\.git$/, "").split(/[/:]/).pop() || "code";
-          const source: CodeSource = { id: `src_mock${++mockSourceId}`, label, lastFetch: null, lastCommit: null, error: null,
-            kind: { type: "git", url, branch: String(a.branch ?? "").trim(), subdir, hasToken: !!a.token, tokenUser: (a.tokenUser as string | null) ?? null } };
-          codeSources.set(a.id as string, [...sourcesOf(a.id), source]);
-          return source;
+          return addSource(a.id, { id: `src_mock${++mockSourceId}`, label, lastFetch: null, lastCommit: null, error: null,
+            kind: { type: "git", url, branch: String(a.branch ?? "").trim(), subdir, hasToken: !!a.token, tokenUser: (a.tokenUser as string | null) ?? null } });
         }
-        case "remove_code_source":
-          codeSources.set(a.id as string, sourcesOf(a.id).filter((s) => s.id !== a.sourceId));
+        case "remove_knowledge_source":
+          knowledgeSources.set(a.id as string, sourcesOf(a.id).filter((s) => s.id !== a.sourceId));
           return null;
-        case "check_code_source": {
+        case "refresh_knowledge_source": {
           await new Promise((r) => setTimeout(r, 150));
           const s = sourcesOf(a.id).find((x) => x.id === a.sourceId);
-          if (!s) return Promise.reject("That code source was removed.");
+          if (!s) return Promise.reject("That source was removed.");
           s.error = null;
+          if (s.kind.type === "files" || s.kind.type === "url") s.lastFetch = Date.now();
           return { ...s };
         }
         case "start_audit": {

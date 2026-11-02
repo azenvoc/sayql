@@ -1,7 +1,9 @@
-//! "Run audit": finds the person's coding agents, runs one read-only over a connection's code
-//! sources (local folders and git repositories, fetched first) with the audit instructions,
+//! "Run audit": finds the person's coding agents, runs one read-only over a connection's
+//! knowledge sources (local folders, git repositories, files and web pages, each fetched or
+//! read again first) with the audit instructions,
 //! streams its progress to the window as `audit://event`, and opens the same run in a terminal
-//! instead. See src/audit_runner.rs for what's enforced, and src/repos.rs for git.
+//! instead. See src/audit_runner.rs for what's enforced, src/repos.rs for git, and
+//! src/knowledge.rs for files and web pages.
 
 use crate::agent_process::{TerminalRun, kill_tree, launch_terminal, no_window, version_of};
 use crate::ai::{SAYQL_CREDITS, endpoint};
@@ -11,10 +13,11 @@ use crate::audit_runner::{
 };
 use crate::commands::settings::mcp_binary;
 use crate::error::{AppError, AppResult};
+use crate::knowledge;
 use crate::repos;
 use crate::state::AppState;
 use crate::store::apps::AppGate;
-use crate::store::code_sources::{CodeSource, SourceKind, default_label};
+use crate::store::code_sources::{KnowledgeSource, SourceKind, default_label};
 use crate::store::secrets;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -116,7 +119,7 @@ fn now_ms() -> u64 {
 
 /// A git source's token from the keychain, with the user name its host expects. The keychain
 /// is only read when a token was saved.
-fn token_for(source: &CodeSource) -> Option<repos::Token> {
+fn token_for(source: &KnowledgeSource) -> Option<repos::Token> {
     let SourceKind::Git {
         url,
         has_token: true,
@@ -135,19 +138,22 @@ fn token_for(source: &CodeSource) -> Option<repos::Token> {
     })
 }
 
-/// The code an audit of this connection reads, in the order added.
+/// The knowledge an audit of this connection reads, in the order added.
 #[tauri::command]
-pub fn code_sources(state: State<'_, AppState>, id: String) -> AppResult<Vec<CodeSource>> {
-    state.store.code_sources(&id)
+pub fn knowledge_sources(
+    state: State<'_, AppState>,
+    id: String,
+) -> AppResult<Vec<KnowledgeSource>> {
+    state.store.knowledge_sources(&id)
 }
 
-/// Asks for a folder and adds it as a code source; `None` when cancelled.
+/// Asks for a folder and adds it as a source; `None` when cancelled.
 #[tauri::command]
-pub async fn add_code_folder(
+pub async fn add_knowledge_folder(
     app: AppHandle,
     state: State<'_, AppState>,
     id: String,
-) -> AppResult<Option<CodeSource>> {
+) -> AppResult<Option<KnowledgeSource>> {
     use tauri_plugin_dialog::DialogExt;
     let dialog = app
         .dialog()
@@ -169,23 +175,23 @@ pub async fn add_code_folder(
     let source =
         state
             .store
-            .add_code_source(&id, SourceKind::Local { path: path.clone() }, &label)?;
+            .add_knowledge_source(&id, SourceKind::Local { path: path.clone() }, &label)?;
     let commit = repos::head(std::path::Path::new(&path)).await;
     Ok(state
         .store
-        .update_code_source(&id, &source.id, |s| {
+        .update_knowledge_source(&id, &source.id, |s| {
             s.last_fetch = Some(now_ms());
             s.last_commit = commit;
         })?
         .or(Some(source)))
 }
 
-/// Adds a git repository as a code source once git can read it (`git ls-remote`). `token`:
+/// Adds a git repository as a source once git can read it (`git ls-remote`). `token`:
 /// an optional read-only token, kept in the keychain; `token_user`: the user name sent with
 /// it, needed for hosts SayQL doesn't know.
 #[tauri::command]
 #[allow(clippy::too_many_arguments)]
-pub async fn add_code_repo(
+pub async fn add_knowledge_repo(
     state: State<'_, AppState>,
     id: String,
     url: String,
@@ -193,7 +199,7 @@ pub async fn add_code_repo(
     subdir: String,
     token: Option<String>,
     token_user: Option<String>,
-) -> AppResult<CodeSource> {
+) -> AppResult<KnowledgeSource> {
     let url = repos::check_url(&url)?;
     let branch = repos::check_branch(&branch)?;
     let subdir = repos::check_subdir(&subdir)?;
@@ -225,7 +231,7 @@ pub async fn add_code_repo(
     };
     repos::check_access(&url, &branch, token.as_ref()).await?;
     let label = default_label(subdir.as_deref().unwrap_or(&url));
-    let source = state.store.add_code_source(
+    let source = state.store.add_knowledge_source(
         &id,
         SourceKind::Git {
             url,
@@ -239,35 +245,176 @@ pub async fn add_code_repo(
     if let Some(t) = &token
         && let Err(e) = secrets::set_repo_token(&source.id, &t.secret)
     {
-        let _ = state.store.remove_code_source(&id, &source.id);
+        let _ = state.store.remove_knowledge_source(&id, &source.id);
         return Err(e);
     }
     Ok(source)
 }
 
-/// Removes a code source, its token and SayQL's copy of it.
+/// Asks for files (documents, exports) and adds them as one source, their text read now;
+/// `None` when cancelled.
 #[tauri::command]
-pub fn remove_code_source(
+pub async fn add_knowledge_files(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    id: String,
+) -> AppResult<Option<KnowledgeSource>> {
+    use tauri_plugin_dialog::DialogExt;
+    let dialog = app
+        .dialog()
+        .file()
+        .set_title("Choose files about this database")
+        .add_filter("Documents", knowledge::FILE_EXTENSIONS);
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    dialog.pick_files(move |picked| {
+        let _ = tx.send(picked);
+    });
+    let Some(picked) = rx.await.ok().flatten().filter(|p| !p.is_empty()) else {
+        return Ok(None);
+    };
+    if picked.len() > knowledge::MAX_FILES {
+        return Err(format!(
+            "Choose at most {} files for one source.",
+            knowledge::MAX_FILES
+        )
+        .into());
+    }
+    let mut paths = Vec::new();
+    for p in picked {
+        let path = p
+            .into_path()
+            .map_err(|e| AppError::User(format!("Could not use that file: {e}")))?;
+        let path = path.canonicalize().unwrap_or(path);
+        paths.push(path.to_string_lossy().into_owned());
+    }
+    let label = match paths.as_slice() {
+        [one] => default_label(
+            &std::path::Path::new(one)
+                .file_stem()
+                .map(|s| s.to_string_lossy().into_owned())
+                .unwrap_or_default(),
+        ),
+        _ => "docs".to_string(),
+    };
+    let source = state
+        .store
+        .add_knowledge_source(&id, SourceKind::Files { paths }, &label)?;
+    added(&state, &id, source).await.map(Some)
+}
+
+/// Adds a web page as a source, or with `crawl` the pages in its folder on the same site,
+/// once they've been read.
+#[tauri::command]
+pub async fn add_knowledge_url(
+    state: State<'_, AppState>,
+    id: String,
+    url: String,
+    crawl: bool,
+) -> AppResult<KnowledgeSource> {
+    let url = knowledge::check_web_url(&url)?;
+    let label = default_label(url.host_str().unwrap_or("docs"));
+    let source = state.store.add_knowledge_source(
+        &id,
+        SourceKind::Url {
+            url: url.to_string(),
+            crawl,
+        },
+        &label,
+    )?;
+    added(&state, &id, source).await
+}
+
+/// Reads a just-added files or web source; it's removed again when nothing could be read.
+async fn added(state: &AppState, id: &str, source: KnowledgeSource) -> AppResult<KnowledgeSource> {
+    match snapshot(state, &source).await {
+        Ok((version, problem)) => Ok(state
+            .store
+            .update_knowledge_source(id, &source.id, |s| {
+                s.last_fetch = Some(now_ms());
+                s.last_commit = Some(version);
+                s.error = problem;
+            })?
+            .unwrap_or(source)),
+        Err(e) => {
+            let _ = state.store.remove_knowledge_source(id, &source.id);
+            Err(e.into())
+        }
+    }
+}
+
+/// Reads a files or web source again into its copy: the new version, and which files
+/// couldn't be read if some couldn't. An error when none could; the copy is kept then.
+async fn snapshot(
+    state: &AppState,
+    source: &KnowledgeSource,
+) -> Result<(String, Option<String>), String> {
+    let (docs, problem) = match &source.kind {
+        SourceKind::Files { paths } => {
+            let paths = paths.clone();
+            let (docs, problems) =
+                tokio::task::spawn_blocking(move || knowledge::read_files(&paths))
+                    .await
+                    .map_err(|e| format!("Couldn't read the files: {e}"))?;
+            if docs.is_empty() {
+                return Err(problems
+                    .into_iter()
+                    .next()
+                    .unwrap_or_else(|| "None of its files could be read.".into()));
+            }
+            let problem = match problems.as_slice() {
+                [] => None,
+                [one] => Some(one.clone()),
+                [first, rest @ ..] => Some(format!(
+                    "{first} ({} more files couldn't be read.)",
+                    rest.len()
+                )),
+            };
+            (docs, problem)
+        }
+        SourceKind::Url { url, crawl } => (
+            knowledge::fetch_web(url, *crawl)
+                .await
+                .map_err(|e| e.to_string())?,
+            None,
+        ),
+        SourceKind::Local { .. } | SourceKind::Git { .. } => {
+            return Err("Only files and web pages are read into a copy.".into());
+        }
+    };
+    let dest = state
+        .store
+        .repo_dir(&source.id)
+        .map_err(|e| e.to_string())?;
+    let version = knowledge::write_snapshot(&dest, &docs).map_err(|e| e.to_string())?;
+    Ok((version, problem))
+}
+
+/// Removes a source, its token and SayQL's copy of it.
+#[tauri::command]
+pub fn remove_knowledge_source(
     state: State<'_, AppState>,
     id: String,
     source_id: String,
 ) -> AppResult<()> {
-    state.store.remove_code_source(&id, &source_id)
+    state.store.remove_knowledge_source(&id, &source_id)
 }
 
 /// Checks a source can still be read: the folder is there, or git can reach the repository.
-/// Its status is updated either way.
+/// Files and web pages are read again. Its status is updated either way.
 #[tauri::command]
-pub async fn check_code_source(
+pub async fn refresh_knowledge_source(
     state: State<'_, AppState>,
     id: String,
     source_id: String,
-) -> AppResult<CodeSource> {
-    let source = state.store.code_source(&id, &source_id)?;
+) -> AppResult<KnowledgeSource> {
+    let source = state.store.knowledge_source(&id, &source_id)?;
+    // Read just now (a folder found, files or pages read), rather than only reachable.
+    let mut read_now = false;
     let (commit, error) = match &source.kind {
         SourceKind::Local { path } => {
             let dir = std::path::Path::new(path);
             if dir.is_dir() {
+                read_now = true;
                 (repos::head(dir).await, None)
             } else {
                 (
@@ -283,12 +430,20 @@ pub async fn check_code_source(
                 Err(e) => (source.last_commit.clone(), Some(e.to_string())),
             }
         }
+        SourceKind::Files { .. } | SourceKind::Url { .. } => {
+            match snapshot(&state, &source).await {
+                Ok((version, problem)) => {
+                    read_now = true;
+                    (Some(version), problem)
+                }
+                Err(e) => (source.last_commit.clone(), Some(e)),
+            }
+        }
     };
-    let local = !source.is_git();
     Ok(state
         .store
-        .update_code_source(&id, &source_id, |s| {
-            if local && error.is_none() {
+        .update_knowledge_source(&id, &source_id, |s| {
+            if read_now {
                 s.last_fetch = Some(now_ms());
             }
             s.last_commit = commit;
@@ -297,31 +452,37 @@ pub async fn check_code_source(
         .unwrap_or(source))
 }
 
-/// A source ready for the run: where its code is on this computer.
+/// A source ready for the run: where its code or text is on this computer.
 struct Ready {
     label: String,
+    kind: &'static str,
+    /// Documents (files, web pages) rather than code.
+    document: bool,
     dir: PathBuf,
     url: Option<String>,
     commit: Option<String>,
 }
 
-/// Brings each source up to date (git sources are fetched) and records how it went. A source
-/// that fails is left out with a warning; a repository that can't be fetched is read from
-/// the copy fetched before, if any. `say(kind, text)`: progress for the window.
+/// Brings each source up to date (git sources are fetched, files and web pages read again)
+/// and records how it went. A source that fails is left out with a warning; one that can't
+/// be fetched is read from the copy made before, if any. `say(kind, text)`: progress for the window.
 async fn ready_sources(
     state: &AppState,
     connection_id: &str,
     say: &(dyn Fn(&'static str, String) + Send + Sync),
 ) -> AppResult<Vec<Ready>> {
-    let sources = state.store.code_sources(connection_id)?;
+    let sources = state.store.knowledge_sources(connection_id)?;
     if sources.is_empty() {
         return Err(
-            "Add a code source first: a folder or repository with this database's code.".into(),
+            "Add a source first: the folder, repository, files or web pages about this database."
+                .into(),
         );
     }
     let mut out = Vec::new();
     let mut first_error = None;
     for source in &sources {
+        // Files read just now, even when some of them couldn't be.
+        let mut read_now = false;
         let (ready, error) = match &source.kind {
             SourceKind::Local { path } => {
                 let dir = std::path::Path::new(path);
@@ -331,6 +492,8 @@ async fn ready_sources(
                         (
                             Some(Ready {
                                 label: source.label.clone(),
+                                kind: source.kind.name(),
+                                document: false,
                                 dir,
                                 url: None,
                                 commit,
@@ -377,6 +540,8 @@ async fn ready_sources(
                     (Some(_), Ok(dir)) if dir.is_dir() => (
                         Some(Ready {
                             label: source.label.clone(),
+                            kind: source.kind.name(),
+                            document: false,
                             dir,
                             url: Some(url.clone()),
                             commit: commit.clone(),
@@ -393,12 +558,55 @@ async fn ready_sources(
                     (None, _) => (None, error),
                 }
             }
+            SourceKind::Files { .. } | SourceKind::Url { .. } => {
+                say("step", format!("Reading {}…", source.label));
+                let (version, error) = match snapshot(state, source).await {
+                    Ok((version, problem)) => {
+                        if let Some(p) = &problem {
+                            say("warn", format!("{}: {p}", source.label));
+                        }
+                        read_now = true;
+                        (Some(version), problem)
+                    }
+                    Err(e) => {
+                        let old = source.last_commit.clone();
+                        if old.is_some() {
+                            say(
+                                "warn",
+                                format!(
+                                    "Couldn't read {}: {e} Reading the copy made before.",
+                                    source.label
+                                ),
+                            );
+                        }
+                        (old, Some(e))
+                    }
+                };
+                let dir = state.store.repo_dir(&source.id)?;
+                match (&version, dir.canonicalize()) {
+                    (Some(_), Ok(dir)) if dir.is_dir() => (
+                        Some(Ready {
+                            label: source.label.clone(),
+                            kind: source.kind.name(),
+                            document: true,
+                            dir,
+                            url: match &source.kind {
+                                SourceKind::Url { url, .. } => Some(url.clone()),
+                                _ => None,
+                            },
+                            commit: version.clone(),
+                        }),
+                        error,
+                    ),
+                    _ => (None, error),
+                }
+            }
         };
-        let fetched = ready.is_some() && error.is_none();
+        let fetched = ready.is_some() && (error.is_none() || read_now);
         let commit = ready.as_ref().and_then(|r| r.commit.clone());
         let _ = state
             .store
-            .update_code_source(connection_id, &source.id, |s| {
+            .update_knowledge_source(connection_id, &source.id, |s| {
                 if fetched {
                     s.last_fetch = Some(now_ms());
                 }
@@ -419,7 +627,7 @@ async fn ready_sources(
     }
     if out.is_empty() {
         return Err(format!(
-            "None of this connection's code sources could be read. {}",
+            "None of this connection's sources could be read. {}",
             first_error.unwrap_or_default()
         )
         .trim()
@@ -536,9 +744,10 @@ async fn prepare(
     if let Some(why) = spec.unsupported {
         return Err(why.into());
     }
-    if state.store.code_sources(id)?.is_empty() {
+    if state.store.knowledge_sources(id)?.is_empty() {
         return Err(
-            "Add a code source first: a folder or repository with this database's code.".into(),
+            "Add a source first: the folder, repository, files or web pages about this database."
+                .into(),
         );
     }
     let credits = credits(state)?;
@@ -599,6 +808,8 @@ async fn prepare(
         .zip(&dirs)
         .map(|(r, dir)| audit::Source {
             label: &r.label,
+            kind: r.kind,
+            document: r.document,
             dir,
             url: r.url.as_deref(),
             commit: r.commit.as_deref(),

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import type { AuditAgent, AuditEvent, CodeSource } from "../../api";
+import type { AuditAgent, AuditEvent, KnowledgeSource } from "../../api";
 import { AuditButton, AuditDialog, auditButtonLabel, auditButtonTitle } from "./AuditRun";
 import { SUGGESTIONS_CHANGED } from "./useNoteSuggestions";
 
@@ -28,7 +28,7 @@ const codex: AuditAgent = {
 };
 
 let agents: AuditAgent[] = [];
-const shop: CodeSource = {
+const shop: KnowledgeSource = {
   id: "src_shop",
   label: "shop",
   kind: { type: "local", path: "/Users/me/code/shop" },
@@ -36,7 +36,7 @@ const shop: CodeSource = {
   lastCommit: null,
   error: null,
 };
-let sources: CodeSource[] = [];
+let sources: KnowledgeSource[] = [];
 let emit: (e: AuditEvent) => void = () => {};
 const startAudit = vi.fn((_run: string, _agent: string, _id: string, _db: string | null) => Promise.resolve());
 const cancelAudit = vi.fn((_run: string) => Promise.resolve());
@@ -56,8 +56,8 @@ vi.mock("../../api", async (orig) => ({
   ...(await orig<typeof import("../../api")>()),
   commands: {
     auditAgents: () => Promise.resolve(agents),
-    codeSources: () => Promise.resolve(sources),
-    addCodeFolder: () => Promise.resolve(shop),
+    knowledgeSources: () => Promise.resolve(sources),
+    addKnowledgeFolder: () => Promise.resolve(shop),
     startAudit: (r: string, a: string, i: string, d: string | null) => startAudit(r, a, i, d),
     cancelAudit: (r: string) => cancelAudit(r),
     openAuditInTerminal: (a: string, i: string, d: string | null) => openAuditInTerminal(a, i, d),
@@ -106,7 +106,7 @@ it("opens the run dialog from the button, or hands it off", async () => {
   fireEvent.click(await screen.findByRole("button", { name: "Run audit on Shop" }));
   expect(await screen.findByRole("dialog", { name: "Run an audit" })).toBeTruthy();
   expect(screen.getByText(/Runs your installed Claude Code, read-only, over this database's code/)).toBeTruthy();
-  expect(screen.getByText("Code sources")).toBeTruthy();
+  expect(screen.getByText("Knowledge sources")).toBeTruthy();
   expect(screen.getByText(/SayQL never reads your Claude Code credentials/)).toBeTruthy();
 });
 

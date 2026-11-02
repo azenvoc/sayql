@@ -11,6 +11,7 @@ mod commands;
 mod db;
 mod error;
 pub mod handoff;
+mod knowledge;
 pub mod mcp;
 mod never_send;
 mod notes;
@@ -132,11 +133,13 @@ pub fn run() {
             settings::mcp_audits,
             settings::audit_prompt,
             audits::audit_agents,
-            audits::code_sources,
-            audits::add_code_folder,
-            audits::add_code_repo,
-            audits::remove_code_source,
-            audits::check_code_source,
+            audits::knowledge_sources,
+            audits::add_knowledge_folder,
+            audits::add_knowledge_repo,
+            audits::add_knowledge_files,
+            audits::add_knowledge_url,
+            audits::remove_knowledge_source,
+            audits::refresh_knowledge_source,
             audits::start_audit,
             audits::cancel_audit,
             audits::open_audit_in_terminal,

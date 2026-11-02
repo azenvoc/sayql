@@ -94,3 +94,14 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  cursor: pointer;
+}
+.link:hover {
+  text-decoration: underline;
+}

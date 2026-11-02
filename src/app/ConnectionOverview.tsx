@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Bot, Database, Pencil, Plug, ShieldCheck, StickyNote } from "lucide-react";
 import { commands, type ConnectionConfig, type McpActivity, type Schema } from "../api";
 import { Button, Dialog } from "../components/ui";
-import { AuditButton, CodeSources, auditAge, lastAudit, privacySummary, useAgentAccess, useAudits } from "../features/agent";
+import { AuditButton, KnowledgeSources, auditAge, lastAudit, privacySummary, useAgentAccess, useAudits } from "../features/agent";
 import { MyActivityLog } from "../features/settings";
 import { DATABASE_KINDS, ProdBadge } from "../features/connections";
 import styles from "./ConnectionOverview.module.css";
@@ -148,9 +148,9 @@ export function ConnectionOverview(p: ConnectionOverviewProps) {
 
         {!c.team && (
           <>
-            <h3 className={styles.sectionTitle}>Code sources</h3>
-            <p className={styles.muted}>The folders and git repositories the audit reads for this connection.</p>
-            <CodeSources connectionId={c.id} />
+            <h3 className={styles.sectionTitle}>Knowledge sources</h3>
+            <p className={styles.muted}>The code and documents the audit reads for this connection. They stay on this computer and go only to the AI you choose, when you run an audit.</p>
+            <KnowledgeSources connectionId={c.id} />
           </>
         )}
 
