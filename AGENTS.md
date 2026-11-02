@@ -50,7 +50,8 @@ in a feature pull request.
 
 Dependencies point inward: `app → features → components/ui, hooks, lib, api`.
 
-- Only `src/api/` calls the backend (`invoke`); everything else goes through `api/commands.ts`.
+- Only `src/api/` calls the backend; everything else goes through `api/commands.ts`. Inside
+  `src/api/`, only the generated `bindings.ts` calls `invoke`.
 - `components/ui`, `lib`, `hooks` and `api` never import from `features/` or `app/`;
   `components/` never imports from `api/` (it takes data as props).
 - A feature uses another feature only through its `index.ts`, or through a pure helper module
@@ -59,6 +60,25 @@ Dependencies point inward: `app → features → components/ui, hooks, lib, api`
   component, using only tokens from `styles/tokens.css` (`scripts/check-tokens.mjs`).
 - Naming: components `PascalCase.tsx`, hooks `useCamelCase.ts`, helpers `camelCase.ts`, tests
   `*.test.ts(x)` next to the code.
+
+## Types shared with the backend
+
+`src/api/bindings.ts` is generated from the Rust types with tauri-specta: every command's typed
+wrapper, the types of command arguments, results and event payloads, and the shared constants
+(`WRITE_CONFIRM`, `QUERY_CANCELLED`, event names, …). It is the only source of the backend's types.
+
+- Never edit `bindings.ts`, and never write a backend shape by hand. Change the Rust type, then
+  run `pnpm gen:types` and commit the result. CI fails when the committed file is stale.
+- A type that crosses the boundary (a command argument or result, an event payload) derives
+  `specta::Type`, and every command has `#[specta::specta]` under `#[tauri::command]` and is listed
+  once, in `with_commands!` in `src-tauri/src/lib.rs`. An event payload or shared constant is
+  added to the builder in `src-tauri/src/commands/bindings.rs`.
+- `src/api/types.ts` only renames the generated types for the UI (`Note_Serialize as DbNote`) and
+  holds the few frontend-only helpers listed in `API_TYPE_HELPERS` in
+  `scripts/check-architecture.mjs`. Only `src/api/` imports `bindings.ts`.
+- `X_Serialize` is the JSON the backend sends, `X_Deserialize` what a command accepts. Fixtures and
+  the browser preview's mock (`src/dev/mockBackend.ts`, typed per command by `CommandArgs` and
+  `CommandResult`) use the real shapes, with the fields the backend always sends.
 
 ## Backend map
 
@@ -119,7 +139,8 @@ These rules are the product's promise ("Let agents into your database. Not your 
 
 - Doc comments (`///`, `/** */`) say what a thing is for and why, in plain sentences. Don't
   restate the code.
-- A constant shared with the other side says where its twin is: `Must match X in src/api/types.ts`.
+- A constant the UI needs is exported through `src/api/bindings.ts` (see "Types shared with the
+  backend"), not copied. One that can't be says where its twin is: `Must match X in src/...`.
 - Tests are named for the behaviour they check, as a sentence:
   `fn never_send_columns_are_refused_in_where()`.
 
