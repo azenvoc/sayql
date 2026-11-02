@@ -9,7 +9,7 @@ import type {
   AuditPaymentView,
   AuditRun,
   Bootstrap,
-  CodeSource,
+  KnowledgeSource,
   DbNote,
   ConnectionConfig,
   DatabaseList,
@@ -151,17 +151,21 @@ export const commands = {
   auditPrompt: (connectionId: string, database: string | null) => invoke<string>("audit_prompt", { id: connectionId, database }),
   /** The coding agents SayQL knows, whether each is installed and can run an audit read-only. */
   auditAgents: () => invoke<AuditAgent[]>("audit_agents"),
-  /** The code an audit of this connection reads: local folders and git repositories. */
-  codeSources: (connectionId: string) => invoke<CodeSource[]>("code_sources", { id: connectionId }),
-  /** Asks for a folder and adds it as a code source; null when cancelled. */
-  addCodeFolder: (connectionId: string) => invoke<CodeSource | null>("add_code_folder", { id: connectionId }),
+  /** What an audit of this connection reads: folders, git repositories, files and web pages. */
+  knowledgeSources: (connectionId: string) => invoke<KnowledgeSource[]>("knowledge_sources", { id: connectionId }),
+  /** Asks for a folder and adds it as a source; null when cancelled. */
+  addKnowledgeFolder: (connectionId: string) => invoke<KnowledgeSource | null>("add_knowledge_folder", { id: connectionId }),
   /** Adds a git repository once git can read it. `token`: optional, read-only, kept in the keychain. */
-  addCodeRepo: (connectionId: string, repo: { url: string; branch: string; subdir: string; token: string | null; tokenUser: string | null }) =>
-    invoke<CodeSource>("add_code_repo", { id: connectionId, ...repo }),
-  removeCodeSource: (connectionId: string, sourceId: string) => invoke<void>("remove_code_source", { id: connectionId, sourceId }),
-  /** Checks the folder is there, or that git can reach the repository; returns its new status. */
-  checkCodeSource: (connectionId: string, sourceId: string) => invoke<CodeSource>("check_code_source", { id: connectionId, sourceId }),
-  /** Runs the audit with `agent` over the connection's code sources, read-only; progress comes as `audit://event`. */
+  addKnowledgeRepo: (connectionId: string, repo: { url: string; branch: string; subdir: string; token: string | null; tokenUser: string | null }) =>
+    invoke<KnowledgeSource>("add_knowledge_repo", { id: connectionId, ...repo }),
+  /** Asks for files and adds them as one source, their text read now; null when cancelled. */
+  addKnowledgeFiles: (connectionId: string) => invoke<KnowledgeSource | null>("add_knowledge_files", { id: connectionId }),
+  /** Adds a web page once it's been read; with `crawl`, the pages in its folder on the same site. */
+  addKnowledgeUrl: (connectionId: string, url: string, crawl: boolean) => invoke<KnowledgeSource>("add_knowledge_url", { id: connectionId, url, crawl }),
+  removeKnowledgeSource: (connectionId: string, sourceId: string) => invoke<void>("remove_knowledge_source", { id: connectionId, sourceId }),
+  /** Checks the folder is there or that git can reach the repository, and reads files and web pages again; returns its new status. */
+  refreshKnowledgeSource: (connectionId: string, sourceId: string) => invoke<KnowledgeSource>("refresh_knowledge_source", { id: connectionId, sourceId }),
+  /** Runs the audit with `agent` over the connection's sources, read-only; progress comes as `audit://event`. */
   startAudit: (runId: string, agent: string, connectionId: string, database: string | null) =>
     invoke<void>("start_audit", { runId, agent, id: connectionId, database }),
   cancelAudit: (runId: string) => invoke<void>("cancel_audit", { runId }),

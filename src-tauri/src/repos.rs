@@ -422,7 +422,7 @@ pub async fn sync(
 }
 
 /// Creates `dir` if needed, readable by this user only.
-fn private_dir(dir: &Path) -> AppResult<()> {
+pub(crate) fn private_dir(dir: &Path) -> AppResult<()> {
     std::fs::create_dir_all(dir)?;
     #[cfg(unix)]
     {

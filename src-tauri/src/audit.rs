@@ -78,15 +78,21 @@ pub fn find_connection<'a>(list: &'a [ConnConfig], wanted: &str) -> Result<&'a C
     }
 }
 
-/// A code source as the audit is told about it: `label (origin @ commit)`, and where it is.
+/// A knowledge source as the audit is told about it: `label (kind, origin @ version)`, and
+/// where it is.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Source<'a> {
-    /// The short name evidence cites it by: `label:path@commit`.
+    /// The short name evidence cites it by: `label:path@commit`, `label:page@version`.
     pub label: &'a str,
+    /// What it is: "folder", "git repository", "files", "web page(s)".
+    pub kind: &'a str,
+    /// Documents (files, web pages) rather than code: they can be out of date.
+    pub document: bool,
     /// The folder on this computer the agent reads.
     pub dir: &'a str,
-    /// The repository's address, for a git source.
+    /// The repository's or web page's address.
     pub url: Option<&'a str>,
+    /// The commit, or for documents the version of their text.
     pub commit: Option<&'a str>,
 }
 
@@ -96,18 +102,35 @@ pub fn instructions(target: Option<&Target>, copied: bool) -> String {
     instructions_for(target, copied, &[])
 }
 
-/// "backend (https://github.com/acme/api @ 1a2b3c4d): /path/to/copy".
+/// "backend (git repository, https://github.com/acme/api @ 1a2b3c4d): /path/to/copy". A
+/// folder is read where it is; SayQL's copies are named with where they came from.
 fn source_line(s: &Source) -> String {
-    let origin = s.url.unwrap_or(s.dir);
     let at = match s.commit {
         Some(c) => format!(" @ {}", &c[..c.len().min(10)]),
         None => String::new(),
     };
-    if s.url.is_some() {
-        format!("- {} ({origin}{at}): {}\n", s.label, s.dir)
-    } else {
-        format!("- {} ({origin}{at})\n", s.label)
+    match s.url {
+        Some(url) => format!("- {} ({}, {url}{at}): {}\n", s.label, s.kind, s.dir),
+        None if s.document => format!("- {} ({}{at}): {}\n", s.label, s.kind, s.dir),
+        None => format!("- {} ({}, {}{at})\n", s.label, s.kind, s.dir),
     }
+}
+
+/// How documents are cited, and that they lose to the code and the database.
+fn documents_note(sources: &[Source]) -> String {
+    let Some(doc) = sources.iter().find(|s| s.document) else {
+        return String::new();
+    };
+    let example = doc
+        .commit
+        .map_or(String::new(), |c| format!("@{}", &c[..c.len().min(7)]));
+    format!(
+        "Some sources are documents (files, web pages): cite them as `label:page@version`, such as \
+         `{}:billing/refunds.txt{example}`. Documents can be out of date: base notes on the code and the database. \
+         Where a document disagrees with them, don't choose between the two: say what each says in the evidence, \
+         and list the conflict in your summary.\n\n",
+        doc.label
+    )
 }
 
 /// [`instructions`] for a run over `sources`, the code SayQL gave the agent (none: the
@@ -161,17 +184,33 @@ pub fn instructions_for(target: Option<&Target>, copied: bool, sources: &[Source
         )
     } else {
         let list: String = sources.iter().map(source_line).collect();
-        let example = sources[0]
-            .commit
-            .map_or(String::new(), |c| format!("@{}", &c[..c.len().min(7)]));
+        let what = if sources.iter().any(|s| s.document) {
+            if sources.iter().all(|s| s.document) {
+                "the documents"
+            } else {
+                "the code and documents"
+            }
+        } else {
+            "the code"
+        };
+        let evidence = match sources.iter().find(|s| !s.document) {
+            Some(code) => {
+                let example = code
+                    .commit
+                    .map_or(String::new(), |c| format!("@{}", &c[..c.len().min(7)]));
+                format!(
+                    "files as `label:path@commit`, such as `{}:src/db/orders.ts{example}`, and usage figures",
+                    code.label
+                )
+            }
+            None => "documents as `label:page@version`, and usage figures".to_string(),
+        };
         (
-            format!("the code in these sources (read them all):\n{list}"),
-            format!(
-                "files as `label:path@commit`, such as `{}:src/db/orders.ts{example}`, and usage figures",
-                sources[0].label
-            ),
+            format!("{what} in these sources (read them all):\n{list}"),
+            evidence,
         )
     };
+    out.push_str(&documents_note(sources));
     out.push_str(&format!(
         "1. Call describe_schema with {args}. For a large database it lists table names only: call it again with \
          `search` words for the tables you look into. Where the database keeps statistics it shows each table's usage \
@@ -295,12 +334,16 @@ mod tests {
             &[
                 Source {
                     label: "backend",
+                    kind: "git repository",
+                    document: false,
                     dir: "/app/repos/src_1",
                     url: Some("https://github.com/acme/api.git"),
                     commit: Some("1a2b3c4d5e6f7a8b9c0d"),
                 },
                 Source {
                     label: "web",
+                    kind: "folder",
+                    document: false,
                     dir: "/Users/me/web",
                     url: None,
                     commit: None,
@@ -308,10 +351,64 @@ mod tests {
             ],
         );
         assert!(text.contains(
-            "the code in these sources (read them all):\n- backend (https://github.com/acme/api.git @ 1a2b3c4d5e): /app/repos/src_1\n- web (/Users/me/web)\nfor where"
+            "the code in these sources (read them all):\n- backend (git repository, https://github.com/acme/api.git @ 1a2b3c4d5e): /app/repos/src_1\n- web (folder, /Users/me/web)\nfor where"
         ), "{text}");
         assert!(text.contains("`label:path@commit`, such as `backend:src/db/orders.ts@1a2b3c4`"));
         assert!(!text.contains("this project's code"));
         assert!(!text.contains("git log"));
+        assert!(!text.contains("label:page@version"), "no documents");
+    }
+
+    #[test]
+    fn documents_are_cited_by_page_and_lose_to_the_code() {
+        let t = Target {
+            connection_id: "c1",
+            name: "Shop",
+            database: None,
+        };
+        let code = Source {
+            label: "backend",
+            kind: "git repository",
+            document: false,
+            dir: "/app/repos/src_1",
+            url: Some("https://github.com/acme/api.git"),
+            commit: Some("1a2b3c4d5e6f"),
+        };
+        let docs = Source {
+            label: "docs",
+            kind: "web pages",
+            document: true,
+            dir: "/app/repos/src_2",
+            url: Some("https://docs.acme.com/db/"),
+            commit: Some("ab12cd34ef56ab78"),
+        };
+        let specs = Source {
+            label: "specs",
+            kind: "files",
+            document: true,
+            dir: "/app/repos/src_3",
+            url: None,
+            commit: Some("99ff"),
+        };
+        let text = instructions_for(Some(&t), false, &[code.clone(), docs.clone(), specs]);
+        assert!(
+            text.contains("the code and documents in these sources (read them all):\n"),
+            "{text}"
+        );
+        assert!(text.contains(
+            "- docs (web pages, https://docs.acme.com/db/ @ ab12cd34ef): /app/repos/src_2\n"
+        ));
+        assert!(text.contains("- specs (files @ 99ff): /app/repos/src_3\n"));
+        assert!(text.contains("`label:page@version`, such as `docs:billing/refunds.txt@ab12cd3`"));
+        assert!(
+            text.contains("Documents can be out of date: base notes on the code and the database")
+        );
+        assert!(
+            text.contains("don't choose between the two") && text.contains("list the conflict")
+        );
+        assert!(text.contains("`backend:src/db/orders.ts@1a2b3c4`"));
+        let only_docs = instructions_for(Some(&t), false, &[docs]);
+        assert!(only_docs.contains("the documents in these sources"));
+        assert!(only_docs.contains("documents as `label:page@version`, and usage figures"));
     }
 }

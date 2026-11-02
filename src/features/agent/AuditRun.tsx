@@ -7,14 +7,14 @@ import {
   type AuditAgent,
   type AuditEvent,
   type AuditModel,
-  type CodeSource,
+  type KnowledgeSource,
   type ConnectionConfig,
 } from "../../api";
 import { Alert, Button, Dialog, Markdown, Select, Spinner } from "../../components/ui";
 import { cx } from "../../lib/cx";
 import { errorText } from "../../lib/errors";
 import { AUDITS_CHANGED, copyAuditPrompt, type AuditTarget } from "./audit";
-import { CodeSources } from "./CodeSources";
+import { KnowledgeSources } from "./KnowledgeSources";
 import { SUGGESTIONS_CHANGED } from "./useNoteSuggestions";
 import styles from "./AuditRun.module.css";
 
@@ -72,7 +72,7 @@ export interface AuditButtonProps {
   variant?: "primary" | "secondary" | "ghost";
 }
 
-/** Runs the audit with the person's coding agent, read-only, over the connection's code sources. */
+/** Runs the audit with the person's coding agent, read-only, over the connection's knowledge sources. */
 export function AuditButton({ target, connections, onReview, onOpen, variant = "secondary" }: AuditButtonProps) {
   const { agents } = useAuditAgents();
   const [open, setOpen] = useState(false);
@@ -125,7 +125,7 @@ export function AuditDialog({ target, connections = [], onReview, onClose }: Aud
   const [connectionId, setConnectionId] = useState(target?.connectionId ?? local[0]?.id ?? "");
   const database = target && target.connectionId === connectionId ? target.database : null;
   const connectionName = target?.connectionId === connectionId ? target.name : (local.find((c) => c.id === connectionId)?.name ?? "");
-  const [sources, setSources] = useState<CodeSource[]>([]);
+  const [sources, setSources] = useState<KnowledgeSource[]>([]);
   const [model, setModel] = useState<AuditModel>("sonnet");
   const [phase, setPhase] = useState<"setup" | "running" | "done">("setup");
   const [lines, setLines] = useState<Line[]>([]);
@@ -335,9 +335,9 @@ export function AuditDialog({ target, connections = [], onReview, onClose }: Aud
                     </>
                   )}
                   <div className={styles.sources}>
-                    <span className={styles.label}>Code sources</span>
+                    <span className={styles.label}>Knowledge sources</span>
                     {connectionId ? (
-                      <CodeSources connectionId={connectionId} onChange={setSources} />
+                      <KnowledgeSources connectionId={connectionId} onChange={setSources} />
                     ) : (
                       <span className={styles.muted}>Choose a connection first.</span>
                     )}

@@ -59,6 +59,9 @@ cpal = "0.18"
 sha2 = "0.10"
 base64 = "0.22"
 tauri-plugin-dialog = "2"
+html2text = "0.17"
+pdf-extract = "0.12"
+zip = { version = "4", default-features = false, features = ["deflate"] }
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]

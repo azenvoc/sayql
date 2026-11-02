@@ -308,8 +308,8 @@ export interface AuditAgent {
   installUrl: string;
 }
 
-/** Where a code source's code is; mirrors `store::code_sources::SourceKind`. */
-export type CodeSourceKind =
+/** Where a knowledge source is; mirrors `store::code_sources::SourceKind`. */
+export type KnowledgeSourceKind =
   | { type: "local"; path: string }
   | {
       type: "git";
@@ -321,17 +321,26 @@ export type CodeSourceKind =
       /** A read-only token is saved in the keychain for it. */
       hasToken: boolean;
       tokenUser: string | null;
-    };
+    }
+  /** Files on this computer, read again on each refresh. */
+  | { type: "files"; paths: string[] }
+  /** A web page, or the pages in its folder on the same site when `crawl`. */
+  | { type: "url"; url: string; crawl: boolean };
 
-/** Code an audit reads: a local folder or a git repository; mirrors `store::code_sources::CodeSource`. */
-export interface CodeSource {
+/** Sources one connection can have in the free app; mirrors `MAX_SOURCES_FREE`. */
+export const MAX_SOURCES_FREE = 3;
+/** Why a 4th source is refused; mirrors `CAP_MESSAGE` in src-tauri/src/store/code_sources.rs. */
+export const SOURCE_CAP_MESSAGE = "SayQL for teams keeps unlimited sources in sync for everyone.";
+
+/** What an audit reads: a folder, a git repository, files or web pages; mirrors `store::code_sources::KnowledgeSource`. */
+export interface KnowledgeSource {
   id: string;
-  /** The short name the audit cites files by (`backend:src/db.ts`). */
+  /** The short name the audit cites files by (`backend:src/db.ts`, `docs:billing.txt`). */
   label: string;
-  kind: CodeSourceKind;
-  /** When it was last fetched (a repository) or found (a folder), in ms since the Unix epoch. */
+  kind: KnowledgeSourceKind;
+  /** When it was last fetched (a repository), found (a folder) or read (files, web pages), in ms since the Unix epoch. */
   lastFetch: number | null;
-  /** The commit read last time. */
+  /** The commit read last time, or for files and web pages the version of their text. */
   lastCommit: string | null;
   /** Why the last fetch or check failed. */
   error: string | null;
