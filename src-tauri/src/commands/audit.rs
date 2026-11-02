@@ -1202,11 +1202,14 @@ async fn start_opencode(
         let sources = prepare_sources(state, id, database, true, &say).await?;
         let dirs: Vec<PathBuf> = sources.sources.iter().map(|(_, d)| d.clone()).collect();
         // OpenCode would follow a link out of the sources: say which one rather than run.
+        // And what looks like a secret in any case, which its rules can only deny one by one.
         let scan = dirs.clone();
-        if let Some((link, target)) = tokio::task::spawn_blocking(move || opencode::link_out(&scan))
-            .await
-            .map_err(|e| AppError::User(e.to_string()))?
-        {
+        let (out, hidden) = tokio::task::spawn_blocking(move || {
+            (opencode::link_out(&scan), opencode::secret_paths(&scan))
+        })
+        .await
+        .map_err(|e| AppError::User(e.to_string()))?;
+        if let Some((link, target)) = out {
             return Err(format!(
                 "{} is a link to {}, outside this connection's knowledge sources, and SayQL's built-in OpenCode would follow it. Remove the link, or add what it points to as a source, then run the audit again.",
                 link.display(),
@@ -1220,6 +1223,7 @@ async fn start_opencode(
             sayql_mcp: &sources.sayql_mcp,
             mcp_env: &env_for_mcp,
             sources: &dirs,
+            hidden: &hidden,
         })?;
         // Dropped on any way out below, it removes the run's files.
         let run_dir = RunDir::create(&audit_dir(app)?, run_dir::RUNS)?;

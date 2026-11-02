@@ -232,7 +232,7 @@ fn an_administrators_policy_stops_the_run() {
 #[test]
 fn the_agent_may_only_read_search_and_use_sayqls_tools() {
     let src2 = PathBuf::from("/data/repos/src_1");
-    let rules = rules(&[PathBuf::from("/Users/me/shop"), src2.clone()]);
+    let rules = rules(&[PathBuf::from("/Users/me/shop"), src2.clone()], &[]);
     // Everything is denied first, so anything not allowed after is denied.
     assert_eq!(rules[0], ("*".to_string(), vec![("*".to_string(), "deny")]));
     for tool in [
@@ -299,7 +299,7 @@ fn the_agent_may_only_read_search_and_use_sayqls_tools() {
         "deny"
     );
     // Both names of a macOS /private folder.
-    let mac = super::rules(&[PathBuf::from("/private/var/folders/x/src")]);
+    let mac = super::rules(&[PathBuf::from("/private/var/folders/x/src")], &[]);
     assert_eq!(
         evaluate(&mac, "external_directory", "/var/folders/x/src/a/*"),
         "allow"
@@ -312,7 +312,7 @@ fn the_agent_may_only_read_search_and_use_sayqls_tools() {
 
 #[test]
 fn the_config_writes_the_rules_in_order() {
-    let perm = permission(&[PathBuf::from("/Users/me/shop")]);
+    let perm = permission(&[PathBuf::from("/Users/me/shop")], &[]);
     assert!(
         perm.starts_with(r#"{"*":"deny","read":{"*":"allow","*.env":"deny","*.env.*":"deny""#),
         "{perm}"
@@ -336,6 +336,7 @@ fn run_config(model: &Model) -> String {
             PathBuf::from("/Users/me/shop"),
             PathBuf::from("/data/src_1"),
         ],
+        hidden: &[],
     })
     .unwrap()
 }
@@ -407,6 +408,7 @@ fn the_config_has_one_read_only_agent_one_provider_and_sayql_only() {
         sayql_mcp: Path::new("/x/sayql-mcp"),
         mcp_env: &[],
         sources: &[PathBuf::from("/Users/me/{file:~/.ssh/id_rsa}")],
+        hidden: &[],
     })
     .unwrap_err();
     assert!(e.contains("has a {"), "{e}");
@@ -723,13 +725,265 @@ fn explains_why_an_opencode_run_failed() {
 
 #[test]
 fn every_secret_file_is_kept_out_of_searches() {
-    for p in SECRET_FILES {
-        if p.contains(".git") {
-            continue;
-        }
-        assert!(RG_SECRET_GLOBS.contains(&p), "{p} isn't excluded from grep");
+    // One list makes both: an exclude per secret, and read rules for each.
+    let globs = rg_secret_globs();
+    assert_eq!(globs.len(), secrets::SECRETS.len());
+    for g in [
+        "*.env",
+        "*.pem",
+        "*id_rsa*",
+        ".envrc",
+        "*.tfstate",
+        "kubeconfig",
+    ] {
+        assert!(globs.iter().any(|x| x == g), "{g} isn't excluded from grep");
     }
-    assert!(RG_SECRET_GLOBS.contains(&"**/.git/**"));
+    assert!(globs.iter().any(|x| x == "**/.git/**"));
+    assert!(globs.iter().any(|x| x == "**/.docker/config.json"));
+    assert!(secret_files().len() >= secrets::SECRETS.len());
+}
+
+/// Common secret files, denied whether OpenCode's worktree is the working folder or `/`
+/// (as it is for plain folders), and ordinary code beside them still readable.
+#[test]
+fn common_secret_files_are_denied_and_code_is_not() {
+    let rules = rules(&[PathBuf::from("/Users/me/shop")], &[]);
+    for (path, want) in [
+        (".envrc", "deny"),
+        ("api/.dev.vars", "deny"),
+        ("infra/terraform.tfstate", "deny"),
+        ("infra/terraform.tfstate.backup", "deny"),
+        ("infra/prod.tfvars", "deny"),
+        ("infra/prod.tfvars.json", "deny"),
+        (".pgpass", "deny"),
+        ("ops/.my.cnf", "deny"),
+        ("keys/id_ecdsa", "deny"),
+        ("keys/id_dsa.pub", "deny"),
+        ("putty.ppk", "deny"),
+        ("android/release.jks", "deny"),
+        ("android/debug.keystore", "deny"),
+        ("vault.kdbx", "deny"),
+        ("kubeconfig", "deny"),
+        ("ops/staging.kubeconfig", "deny"),
+        (".docker/config.json", "deny"),
+        ("ci/.docker/config.json", "deny"),
+        (".pypirc", "deny"),
+        ("gcp/my-service-account-key.json", "deny"),
+        ("config/secrets.yml", "deny"),
+        ("config/secrets.json", "deny"),
+        ("src/secrets.ts", "allow"),
+        ("src/store/secrets.rs", "allow"),
+        ("src/keys.py", "allow"),
+        ("docker/config.json", "allow"),
+        ("deploy/kube.yaml", "allow"),
+        ("config.json", "allow"),
+        (".env.example", "allow"),
+    ] {
+        assert_eq!(evaluate(&rules, "read", path), want, "{path}");
+        let from_root = format!("Users/me/shop/{path}");
+        assert_eq!(evaluate(&rules, "read", &from_root), want, "{from_root}");
+    }
+}
+
+#[test]
+fn secret_names_match_in_any_case() {
+    for rel in [
+        ".ENV",
+        "api/.Env.Local",
+        "ID_RSA",
+        "keys/Id_Ed25519.PUB",
+        "server.PEM",
+        "CREDENTIALS.json",
+        "Kubeconfig",
+        "ci/.DOCKER/Config.json",
+        // The Kelvin sign is `k` to a case-insensitive disk.
+        "tls.\u{212A}EY",
+    ] {
+        assert!(secrets::is_secret_file(rel), "{rel}");
+    }
+    for rel in [
+        "src/app.ts",
+        ".ENV.EXAMPLE",
+        "docker/config.json",
+        "secrets.ts",
+    ] {
+        assert!(!secrets::is_secret_file(rel), "{rel}");
+    }
+    assert!(secrets::is_secret_folder(".GIT"));
+    assert!(!secrets::is_secret_folder("git"));
+}
+
+#[test]
+fn a_shape_matches_every_spelling_of_one_path() {
+    assert_eq!(secrets::shape(".env"), ".???");
+    assert_eq!(secrets::shape("config/.git/"), "??????/.???/*");
+    assert_eq!(secrets::shape("v2/id_rsa"), "?2/??_???");
+    // Outside ASCII any run; `{` never reaches the config, where it would be substituted.
+    assert_eq!(secrets::shape("é.key"), "*.???");
+    assert_eq!(secrets::shape("{env:X}"), "???????");
+}
+
+/// On a case-insensitive disk OpenCode reads `.env` when asked for `.ENV`, and on any disk a file
+/// named `.ENV` misses `*.env`: the scan finds both, and each is denied in every spelling.
+#[test]
+fn secret_files_in_any_case_are_found_and_denied_in_every_spelling() {
+    let dir = temp("cases").canonicalize().unwrap();
+    let src = dir.join("shop");
+    for d in ["config", "src", ".git", "keys"] {
+        std::fs::create_dir_all(src.join(d)).unwrap();
+    }
+    for f in [
+        ".ENV",
+        "config/.env",
+        "keys/ID_RSA",
+        "server.PEM",
+        "CREDENTIALS.json",
+        ".Envrc",
+        ".env.example",
+        "src/app.ts",
+        ".git/config",
+    ] {
+        std::fs::write(src.join(f), "x").unwrap();
+    }
+    let sources = [src.clone()];
+    let hidden = secret_paths(&sources);
+    let mut found: Vec<&str> = hidden.iter().map(|h| h.rel.as_str()).collect();
+    found.sort_unstable();
+    assert_eq!(
+        found,
+        [
+            ".ENV",
+            ".Envrc",
+            ".git/",
+            "CREDENTIALS.json",
+            "config/.env",
+            "keys/ID_RSA",
+            "server.PEM"
+        ]
+    );
+    assert!(hidden.iter().all(|h| h.source == 0));
+    let rules = rules(&sources, &hidden);
+    let root = src.to_string_lossy().trim_start_matches('/').to_string();
+    for (path, want) in [
+        (".ENV", "deny"),
+        (".env", "deny"),
+        (".Env", "deny"),
+        ("config/.ENV", "deny"),
+        ("CONFIG/.eNv", "deny"),
+        ("keys/ID_RSA", "deny"),
+        ("KEYS/id_rsa", "deny"),
+        ("server.PEM", "deny"),
+        ("Server.pem", "deny"),
+        ("CREDENTIALS.json", "deny"),
+        ("credentials.JSON", "deny"),
+        (".ENVRC", "deny"),
+        (".git/config", "deny"),
+        (".GIT/config", "deny"),
+        (".Git/HEAD", "deny"),
+        ("src/app.ts", "allow"),
+        (".env.example", "allow"),
+    ] {
+        assert_eq!(evaluate(&rules, "read", path), want, "{path}");
+        // OpenCode's worktree for plain folders is `/`.
+        let from_root = format!("{root}/{path}");
+        assert_eq!(evaluate(&rules, "read", &from_root), want, "{from_root}");
+    }
+    // macOS also names the folder without `/private`.
+    if let Some(bare) = root.strip_prefix("private/") {
+        assert_eq!(
+            evaluate(&rules, "read", &format!("{bare}/CONFIG/.ENV")),
+            "deny"
+        );
+    }
+    // A second source is reached from the first as `../<path>`: denied there too.
+    let other = dir.join("backend");
+    std::fs::create_dir_all(&other).unwrap();
+    std::fs::write(other.join("Prod.ENV"), "x").unwrap();
+    let both = [src.clone(), other.clone()];
+    let hidden = secret_paths(&both);
+    assert!(hidden.contains(&Hidden {
+        source: 1,
+        rel: "Prod.ENV".into()
+    }));
+    let rules = super::rules(&both, &hidden);
+    let other_root = other.to_string_lossy().trim_start_matches('/').to_string();
+    for p in [
+        "../backend/prod.env".to_string(),
+        "../backend/PROD.ENV".to_string(),
+        format!("{other_root}/pROD.eNV"),
+    ] {
+        assert_eq!(evaluate(&rules, "read", &p), "deny", "{p}");
+    }
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+/// A link reads what it leads to: a link to a secret, or a secret under a linked folder, is
+/// denied by the link's own path too.
+#[cfg(unix)]
+#[test]
+fn links_to_secret_files_are_denied_by_their_own_path() {
+    let dir = temp("secret-links").canonicalize().unwrap();
+    let src = dir.join("shop");
+    std::fs::create_dir_all(src.join("lib")).unwrap();
+    std::fs::write(src.join(".env"), "x").unwrap();
+    std::fs::write(src.join("lib/ID_RSA"), "x").unwrap();
+    std::os::unix::fs::symlink(src.join(".env"), src.join("notes.txt")).unwrap();
+    std::os::unix::fs::symlink(src.join("lib"), src.join("vendor")).unwrap();
+    let sources = [src.clone()];
+    let hidden = secret_paths(&sources);
+    let rels: Vec<&str> = hidden.iter().map(|h| h.rel.as_str()).collect();
+    assert!(rels.contains(&"notes.txt"), "{rels:?}");
+    assert!(rels.contains(&"vendor/ID_RSA"), "{rels:?}");
+    let rules = rules(&sources, &hidden);
+    for p in ["notes.txt", "Notes.TXT", "vendor/id_rsa", "VENDOR/ID_RSA"] {
+        assert_eq!(evaluate(&rules, "read", p), "deny", "{p}");
+    }
+    assert_eq!(evaluate(&rules, "read", "lib/app.ts"), "allow");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_source_with_a_wildcard_in_its_name_is_refused() {
+    let model = credits_model();
+    for name in ["/Users/me/shop*", "/Users/me/sh?p"] {
+        let e = config_json(&RunConfig {
+            model: &model,
+            sayql_mcp: Path::new("/x/sayql-mcp"),
+            mcp_env: &[],
+            sources: &[PathBuf::from(name)],
+            hidden: &[],
+        })
+        .unwrap_err();
+        assert!(e.contains("* or ?"), "{e}");
+    }
+}
+
+#[test]
+fn more_secret_files_than_the_config_can_hold_are_refused() {
+    let model = credits_model();
+    let hidden: Vec<Hidden> = (0..2000)
+        .map(|i| Hidden {
+            source: 0,
+            rel: format!("node_modules/some-package-{i}/test/fixtures/server.pem"),
+        })
+        .collect();
+    let config = |hidden: &[Hidden]| {
+        config_json(&RunConfig {
+            model: &model,
+            sayql_mcp: Path::new("/x/sayql-mcp"),
+            mcp_env: &[],
+            sources: &[PathBuf::from("/Users/me/shop")],
+            hidden,
+        })
+    };
+    let e = config(&hidden).unwrap_err();
+    assert!(e.contains("2000 files that look like secrets"), "{e}");
+    // A few are written into the read rules, after the allow for example files.
+    let some = hidden.get(..3).unwrap();
+    let text = config(some).unwrap();
+    let example = text.find(r#""*.env.example":"allow""#).unwrap();
+    let shaped = text.find(r#"/????/????????/??????.???":"deny""#).unwrap();
+    assert!(example < shaped, "{text}");
 }
 
 /// Runs SayQL's `rg` script over a stand-in ripgrep that prints its arguments, one per line.
@@ -757,9 +1011,9 @@ fn the_rg_script_adds_the_excludes_after_opencodes_globs() {
             .map(String::from)
             .collect()
     };
-    let excludes: Vec<String> = RG_SECRET_GLOBS
+    let excludes: Vec<String> = rg_secret_globs()
         .iter()
-        .map(|g| format!("--glob=!{g}"))
+        .map(|g| format!("--iglob=!{g}"))
         .collect();
     // grep: the excludes come after the model's include and before `--`, so they win and the
     // pattern and path stay where they were.
@@ -912,6 +1166,7 @@ fn run_opencode(
             config_dir.to_string_lossy().into_owned(),
         )],
         sources,
+        hidden: &secret_paths(sources),
     })
     .unwrap();
     let mut child = std::process::Command::new(&oc.opencode)
