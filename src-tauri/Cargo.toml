@@ -83,7 +83,9 @@ base64 = "0.22"
 tauri-plugin-dialog = "2"
 html2text = "0.17"
 pdf-extract = "0.12"
-zip = { version = "4", default-features = false, features = ["deflate"] }
+# 9.0.5+ fixes GHSA-m665-v7pm-7grj and the extract() advisories. SayQL only reads entries by
+# name (DOCX text, the pinned OpenCode archive), so deflate through the flate2 already used here.
+zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2"] }
 # Unpacking the built-in OpenCode and ripgrep on Linux and macOS (.tar.gz).
 flate2 = "1"
 tar = "0.4"

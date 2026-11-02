@@ -292,7 +292,10 @@ pub fn install_from_archive(archive: &Path, asset: &Asset, dest: &Path) -> Resul
             let mut found = false;
             for i in 0..zip.len() {
                 let mut entry = zip.by_index(i).map_err(|e| e.to_string())?;
-                let name = Path::new(entry.name()).file_name().map(|n| n.to_owned());
+                let entry_name = entry.name().map_err(|e| e.to_string())?;
+                let name = Path::new(entry_name.as_ref())
+                    .file_name()
+                    .map(|n| n.to_owned());
                 if entry.is_file() && name.as_deref() == Some(std::ffi::OsStr::new(asset.entry)) {
                     copy_limited(&mut entry, &mut out)?;
                     found = true;
