@@ -671,12 +671,10 @@ pub fn forget_sign_in(store: &Store) {
     if let Err(e) = secrets::delete_team_token() {
         eprintln!("sayql: couldn't remove the team sign-in from the keychain: {e}");
     }
-    if let Ok(mut s) = store.settings()
-        && s.team.is_some()
-    {
+    let _ = store.update_settings(|s| {
         s.team = None;
-        let _ = store.save_settings(&s);
-    }
+        Ok(())
+    });
 }
 
 #[derive(Deserialize)]

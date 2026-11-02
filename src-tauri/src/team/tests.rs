@@ -685,7 +685,10 @@ async fn signed_out_nothing_is_sent_anywhere() {
     // Settings saved by a signed-out app have no team entry at all.
     state
         .store
-        .save_settings(&state.store.settings().unwrap())
+        .update_settings(|s| {
+            s.onboarded = true;
+            Ok(())
+        })
         .unwrap();
     let saved = std::fs::read_to_string(dir.join("config/settings.json")).unwrap();
     assert!(!saved.contains("team"), "{saved}");

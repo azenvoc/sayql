@@ -207,10 +207,11 @@ pub async fn start_agent(
         // Remember a model that needed the text protocol, so it isn't asked for tools again.
         if outcome.mode != mode
             && crate::ai::find_provider(&provider).is_some_and(|p| p.api == Api::OpenAi)
-            && let Ok(mut s) = state.store.settings()
         {
-            s.tool_modes.insert(mode_key, outcome.mode);
-            let _ = state.store.save_settings(&s);
+            let _ = state.store.update_settings(|s| {
+                s.tool_modes.insert(mode_key, outcome.mode);
+                Ok(())
+            });
         }
     });
     Ok(())

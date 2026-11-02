@@ -26,22 +26,20 @@ pub fn save_script(state: State<'_, AppState>, mut script: Script) -> AppResult<
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_millis() as u64)
         .unwrap_or(0);
-    let mut list = state.store.scripts()?;
-    match list.iter_mut().find(|s| s.id == script.id) {
-        Some(existing) => *existing = script.clone(),
-        None => list.push(script.clone()),
-    }
-    state.store.save_scripts(&list)?;
+    state.store.update_scripts(|list| {
+        match list.iter_mut().find(|s| s.id == script.id) {
+            Some(existing) => *existing = script.clone(),
+            None => list.push(script.clone()),
+        }
+        Ok(())
+    })?;
     Ok(script)
 }
 
 #[tauri::command]
 pub fn delete_script(state: State<'_, AppState>, id: String) -> AppResult<()> {
-    let list: Vec<Script> = state
-        .store
-        .scripts()?
-        .into_iter()
-        .filter(|s| s.id != id)
-        .collect();
-    state.store.save_scripts(&list)
+    state.store.update_scripts(|list| {
+        list.retain(|s| s.id != id);
+        Ok(())
+    })
 }

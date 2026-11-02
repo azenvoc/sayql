@@ -161,8 +161,8 @@ impl Store {
         {
             return Err("The user already saved this note; it's in describe_schema.".into());
         }
-        let mut all = self.note_suggestions()?;
         let replaces = target.as_ref().map(|n| n.id.clone());
+        self.update(FILE, |all: &mut Vec<NoteSuggestion>| {
         // One waiting suggestion per note text, and one waiting removal per note.
         if all.iter().any(|s| {
             s.connection_id == connection_id
@@ -201,8 +201,8 @@ impl Store {
             check: if remove { None } else { check },
         };
         all.push(suggestion.clone());
-        self.write(FILE, &all)?;
         Ok(suggestion)
+        })
     }
 
     /// Applies the suggestion and removes it: saves a new note through the usual checks,
@@ -265,24 +265,18 @@ impl Store {
     }
 
     pub fn dismiss_note_suggestion(&self, id: &str) -> AppResult<()> {
-        let mut all = self.note_suggestions()?;
-        let before = all.len();
-        all.retain(|s| s.id != id);
-        if all.len() != before {
-            self.write(FILE, &all)?;
-        }
-        Ok(())
+        self.update(FILE, |all: &mut Vec<NoteSuggestion>| {
+            all.retain(|s| s.id != id);
+            Ok(())
+        })
     }
 
     /// Forgets a deleted connection's suggestions.
     pub(super) fn forget_note_suggestions(&self, connection_id: &str) -> AppResult<()> {
-        let mut all = self.note_suggestions()?;
-        let before = all.len();
-        all.retain(|s| s.connection_id != connection_id);
-        if all.len() != before {
-            self.write(FILE, &all)?;
-        }
-        Ok(())
+        self.update(FILE, |all: &mut Vec<NoteSuggestion>| {
+            all.retain(|s| s.connection_id != connection_id);
+            Ok(())
+        })
     }
 }
 

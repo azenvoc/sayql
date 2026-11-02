@@ -44,11 +44,14 @@ pub async fn init(state: State<'_, AppState>) -> AppResult<InitView> {
     let mut settings = state.store.settings()?;
     if !settings.demo_added {
         db::ensure_demo(&state.demo_path).await?;
-        let mut list = state.store.connections()?;
-        list.insert(0, demo_connection(&state.demo_path));
-        state.store.save_connections(&list)?;
-        settings.demo_added = true;
-        state.store.save_settings(&settings)?;
+        state.store.update_connections(|list| {
+            list.insert(0, demo_connection(&state.demo_path));
+            Ok(())
+        })?;
+        settings = state.store.update_settings(|s| {
+            s.demo_added = true;
+            Ok(s.clone())
+        })?;
     }
     Ok(InitView {
         connections: state.store.connections()?,
@@ -70,12 +73,13 @@ pub fn save_connection(
     if let Some(pw) = password {
         secrets::set_password(&config.id, &pw)?;
     }
-    let mut list = state.store.connections()?;
-    match list.iter_mut().find(|c| c.id == config.id) {
-        Some(existing) => *existing = config.clone(),
-        None => list.push(config.clone()),
-    }
-    state.store.save_connections(&list)?;
+    state.store.update_connections(|list| {
+        match list.iter_mut().find(|c| c.id == config.id) {
+            Some(existing) => *existing = config.clone(),
+            None => list.push(config.clone()),
+        }
+        Ok(())
+    })?;
     // The details may have changed: reconnect on next open.
     state.close(&config.id);
     Ok(config)
@@ -85,13 +89,10 @@ pub fn save_connection(
 #[tauri::command]
 pub fn delete_connection(state: State<'_, AppState>, id: String) -> AppResult<()> {
     refuse_team(&id)?;
-    let list: Vec<ConnConfig> = state
-        .store
-        .connections()?
-        .into_iter()
-        .filter(|c| c.id != id)
-        .collect();
-    state.store.save_connections(&list)?;
+    state.store.update_connections(|list| {
+        list.retain(|c| c.id != id);
+        Ok(())
+    })?;
     state.close(&id);
     if let Err(e) = state.store.forget_agent(&id) {
         eprintln!("sayql: couldn't remove the agent settings of connection {id}: {e}");

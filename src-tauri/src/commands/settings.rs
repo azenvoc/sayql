@@ -149,26 +149,27 @@ pub fn save_settings(
     if let Some(key) = api_key.filter(|_| p.key != KeyNeed::None) {
         secrets::set_api_key(p.id, &key)?;
     }
-    let mut s = state.store.settings()?;
-    s.provider = p.id.to_string();
-    s.workspace_id = workspace_id;
     // Claude's address is fixed; a base URL equal to the default is stored as "use the default".
     let base_url = if p.api != Api::OpenAi || base_url == p.base_url {
         String::new()
     } else {
         base_url
     };
-    let agent_model = s.provider_settings(p.id).agent_model;
-    s.set_provider_settings(
-        p.id,
-        ProviderSettings {
-            base_url,
-            typing_model,
-            expert_model,
-            agent_model,
-        },
-    );
-    state.store.save_settings(&s)?;
+    let s = state.store.update_settings(|s| {
+        s.provider = p.id.to_string();
+        s.workspace_id = workspace_id;
+        let agent_model = s.provider_settings(p.id).agent_model;
+        s.set_provider_settings(
+            p.id,
+            ProviderSettings {
+                base_url,
+                typing_model,
+                expert_model,
+                agent_model,
+            },
+        );
+        Ok(s.clone())
+    })?;
     Ok(settings_view(&s))
 }
 
@@ -191,16 +192,19 @@ pub fn choose_model(
     model: String,
     purpose: ModelUse,
 ) -> AppResult<SettingsView> {
-    let mut s = state.store.settings()?;
-    s.provider = choose(&s, &provider, model.trim(), purpose)?;
-    let p = ai::endpoint::provider(&s.provider)?;
-    let mut chosen = s.provider_settings(p.id);
-    match purpose {
-        ModelUse::Typing => chosen.typing_model = model.trim().to_string(),
-        ModelUse::Agent => chosen.agent_model = model.trim().to_string(),
-    }
-    s.set_provider_settings(p.id, chosen);
-    state.store.save_settings(&s)?;
+    // Checked before the settings file is locked: the check may read the keychain.
+    let provider = choose(&state.store.settings()?, &provider, model.trim(), purpose)?;
+    let p = ai::endpoint::provider(&provider)?;
+    let s = state.store.update_settings(|s| {
+        s.provider = provider;
+        let mut chosen = s.provider_settings(p.id);
+        match purpose {
+            ModelUse::Typing => chosen.typing_model = model.trim().to_string(),
+            ModelUse::Agent => chosen.agent_model = model.trim().to_string(),
+        }
+        s.set_provider_settings(p.id, chosen);
+        Ok(s.clone())
+    })?;
     Ok(settings_view(&s))
 }
 
@@ -229,17 +233,19 @@ pub fn save_agent_settings(
     agent_model: String,
     agent: AgentSettings,
 ) -> AppResult<SettingsView> {
-    let mut s = state.store.settings()?;
-    let p = ai::endpoint::provider(&s.provider)?;
+    let agent = agent.validated()?;
     let agent_model = agent_model.trim().to_string();
-    if p.api != Api::OpenAi && !agent_model.is_empty() && !ai::is_known(&agent_model) {
-        return Err(format!("Unknown model {agent_model}").into());
-    }
-    let mut chosen = s.provider_settings(p.id);
-    chosen.agent_model = agent_model;
-    s.set_provider_settings(p.id, chosen);
-    s.agent = agent.validated()?;
-    state.store.save_settings(&s)?;
+    let s = state.store.update_settings(|s| {
+        let p = ai::endpoint::provider(&s.provider)?;
+        if p.api != Api::OpenAi && !agent_model.is_empty() && !ai::is_known(&agent_model) {
+            return Err(format!("Unknown model {agent_model}").into());
+        }
+        let mut chosen = s.provider_settings(p.id);
+        chosen.agent_model = agent_model;
+        s.set_provider_settings(p.id, chosen);
+        s.agent = agent;
+        Ok(s.clone())
+    })?;
     Ok(settings_view(&s))
 }
 
@@ -335,9 +341,10 @@ pub async fn credits_balance(state: State<'_, AppState>) -> AppResult<Option<f64
 /// Records that the first-run setup was finished or dismissed, so it isn't shown again.
 #[tauri::command]
 pub fn finish_onboarding(state: State<'_, AppState>) -> AppResult<SettingsView> {
-    let mut s = state.store.settings()?;
-    s.onboarded = true;
-    state.store.save_settings(&s)?;
+    let s = state.store.update_settings(|s| {
+        s.onboarded = true;
+        Ok(s.clone())
+    })?;
     Ok(settings_view(&s))
 }
 

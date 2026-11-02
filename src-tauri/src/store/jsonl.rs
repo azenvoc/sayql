@@ -1,8 +1,9 @@
 //! An append-only JSON Lines log in the store folder, shared by the AI apps' activity log and
-//! your own. One small `write` per line in append mode keeps lines whole when several
-//! processes (the app and one `sayql-mcp` per AI app) write at once. Past `max_bytes` the
-//! file moves to its `.1` name (replacing the older one), so a log keeps roughly the last two
-//! files' worth. Lines that don't parse are skipped when reading.
+//! your own. Several processes write it at once (the app and one `sayql-mcp` per AI app), so
+//! every append, move and clear holds the log's lock (see `super::lock`), and a read holds it
+//! shared to see both files from the same moment. Past `max_bytes` the file moves to its `.1`
+//! name (replacing the older one), so a log keeps roughly the last two files' worth. Lines
+//! that don't parse are skipped when reading.
 
 use crate::error::AppResult;
 use serde::Serialize;
@@ -20,8 +21,9 @@ pub(super) struct JsonlLog {
 impl JsonlLog {
     pub fn append<T: Serialize>(&self, dir: &Path, entry: &T) -> AppResult<()> {
         let path = dir.join(self.file);
-        // Two processes can both see a full file; the second move then puts a nearly empty file
-        // at `.1`. That loses at most one file's worth of a log that is history, not a record.
+        // Without the lock, two processes could both see a full file, and the second move
+        // would put a nearly empty file over the full one at `.1`.
+        let _lock = super::lock::lock(dir, self.file, false)?;
         if std::fs::metadata(&path).is_ok_and(|m| m.len() > self.max_bytes) {
             let _ = std::fs::rename(&path, dir.join(self.old));
         }
@@ -42,6 +44,7 @@ impl JsonlLog {
         keep: impl Fn(&T) -> bool,
         limit: usize,
     ) -> AppResult<Vec<T>> {
+        let _lock = super::lock::lock(dir, self.file, true)?;
         let mut all = Vec::new();
         for name in [self.old, self.file] {
             match std::fs::File::open(dir.join(name)) {
@@ -63,6 +66,7 @@ impl JsonlLog {
 
     /// Deletes the log, both files.
     pub fn clear(&self, dir: &Path) -> AppResult<()> {
+        let _lock = super::lock::lock(dir, self.file, false)?;
         for name in [self.file, self.old] {
             match std::fs::remove_file(dir.join(name)) {
                 Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(e.into()),
