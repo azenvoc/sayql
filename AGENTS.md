@@ -37,6 +37,11 @@ in a feature pull request.
 - **The ratchet (`lint-baseline.json`):** code written before a rule existed is counted per file
   and rule. `pnpm lint:ratchet` fails when a count goes up, and also when it goes down without
   the baseline being lowered (`pnpm lint:ratchet --update`). Counts never go back up.
+- **Moving a file** renames its keys in the baseline. In a commit that only moves code, run
+  `pnpm lint:ratchet --update --moved`: it accepts counts under new keys as long as no rule's
+  total across all files rises, and a key the baseline already has still may not rise. On pull
+  requests CI compares the baseline with main's the same way: a key main has may never rise, and
+  a new key is allowed only while its rule's total doesn't rise above main's.
 - **An exception** is written on the line, with its reason:
   `#[expect(clippy::indexing_slicing, reason = "i < len checked above")]`, or
   `// oxlint-disable-next-line no-console -- why`. A reviewer must agree with the reason.
