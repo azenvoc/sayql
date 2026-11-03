@@ -89,9 +89,10 @@ pub async fn credits_balance(state: State<'_, AppState>) -> AppResult<Option<f64
 #[tauri::command]
 #[specta::specta]
 pub fn finish_onboarding(state: State<'_, AppState>) -> AppResult<SettingsView> {
-    let mut s = state.store.settings()?;
-    s.onboarded = true;
-    state.store.save_settings(&s)?;
+    let s = state.store.update_settings(|s| {
+        s.onboarded = true;
+        Ok(s.clone())
+    })?;
     Ok(view(&s))
 }
 

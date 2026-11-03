@@ -8,6 +8,7 @@ pub mod audits;
 pub mod code_sources;
 pub mod digest;
 mod jsonl;
+mod lock;
 pub mod my_activity;
 pub mod note_values;
 pub mod schema_snapshots;
@@ -241,13 +242,73 @@ impl Store {
     /// A missing file reads as the default. A file that doesn't parse is moved aside (see
     /// [`Self::set_aside`]) and is an error: reading it as empty would let the next save
     /// erase everything in it.
+    ///
+    /// Reads take no lock: saves replace a file whole by renaming (see [`Self::replace`]), so a
+    /// read sees the old file or the new one, never half of one. Only moving an unreadable
+    /// file aside takes the lock, after reading it again under it, so a file another process
+    /// has just replaced with a good one is never moved.
     fn read<T: for<'de> Deserialize<'de> + Default>(&self, name: &str) -> AppResult<T> {
         let text = match std::fs::read_to_string(self.dir.join(name)) {
             Ok(text) => text,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(T::default()),
             Err(e) => return Err(e.into()),
         };
-        serde_json::from_str(&text).map_err(|_| self.unreadable(name))
+        if let Ok(value) = serde_json::from_str(&text) {
+            return Ok(value);
+        }
+        if !self.repair || lock::holding() {
+            return Err(self.unreadable(name));
+        }
+        let _lock = lock::lock(&self.dir, name, false)?;
+        match std::fs::read_to_string(self.dir.join(name)) {
+            Ok(text) => serde_json::from_str(&text).map_err(|_| self.unreadable(name)),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(T::default()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    /// Reads, changes and saves one file while holding its lock, so a change made at the
+    /// same time by another thread or process (the app and each `sayql-mcp`) is never lost.
+    /// Every read-modify-write of a store file goes through here. The file is saved only
+    /// when `change` succeeds and changed it. A missing file starts as the default.
+    ///
+    /// `change` must not lock another store file (an update, a save, or a log): a thread
+    /// holds one lock at a time, and a nested one is an error. Plain reads are fine.
+    fn update<T, R>(&self, name: &str, change: impl FnOnce(&mut T) -> AppResult<R>) -> AppResult<R>
+    where
+        T: Serialize + for<'de> Deserialize<'de> + Default,
+    {
+        self.update_or(name, || Ok(T::default()), change)
+    }
+
+    /// [`Self::update`] where a missing file starts as `missing()` (read under the lock) rather
+    /// than the default; that start is saved even when `change` leaves it alone.
+    fn update_or<T, R>(
+        &self,
+        name: &str,
+        missing: impl FnOnce() -> AppResult<T>,
+        change: impl FnOnce(&mut T) -> AppResult<R>,
+    ) -> AppResult<R>
+    where
+        T: Serialize + for<'de> Deserialize<'de> + Default,
+    {
+        let _lock = lock::lock(&self.dir, name, false)?;
+        let (mut value, before) = match std::fs::read_to_string(self.dir.join(name)) {
+            Ok(text) => (
+                serde_json::from_str(&text).map_err(|_| self.unreadable(name))?,
+                text,
+            ),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                (missing()?, serde_json::to_string_pretty(&T::default())?)
+            }
+            Err(e) => return Err(e.into()),
+        };
+        let out = change(&mut value)?;
+        let after = serde_json::to_string_pretty(&value)?;
+        if after != before {
+            self.replace(name, &after)?;
+        }
+        Ok(out)
     }
 
     /// The error for a file that doesn't parse: moved aside in the app, left alone elsewhere.
@@ -284,25 +345,19 @@ impl Store {
         }
     }
 
-    /// Writes to a temporary file in the same folder, flushes it to disk, then renames it
-    /// over the old file, so a crash leaves either the old file or the new one. Never
-    /// replaces a file that doesn't parse.
-    fn write<T: Serialize>(&self, name: &str, value: &T) -> AppResult<()> {
-        let path = self.dir.join(name);
-        if let Ok(text) = std::fs::read_to_string(&path)
-            && serde_json::from_str::<serde_json::Value>(&text).is_err()
-        {
-            return Err(self.unreadable(name));
-        }
+    /// Writes `text` to a temporary file in the same folder, flushes it to disk, then renames
+    /// it over the old file, so a crash leaves either the old file or the new one. Called
+    /// only by [`Self::update_or`], under the file's lock, after the old file parsed.
+    fn replace(&self, name: &str, text: &str) -> AppResult<()> {
         let tmp = self
             .dir
             .join(format!(".{name}.{}.tmp", uuid::Uuid::new_v4()));
         let result = (|| -> AppResult<()> {
             use std::io::Write;
             let mut file = std::fs::File::create(&tmp)?;
-            file.write_all(serde_json::to_string_pretty(value)?.as_bytes())?;
+            file.write_all(text.as_bytes())?;
             file.sync_all()?;
-            std::fs::rename(&tmp, &path)?;
+            std::fs::rename(&tmp, self.dir.join(name))?;
             #[cfg(unix)]
             if let Ok(dir) = std::fs::File::open(&self.dir) {
                 let _ = dir.sync_all();
@@ -331,32 +386,73 @@ impl Store {
             .ok_or_else(|| "Connection not found.".into())
     }
 
+    /// Changes the saved connections under the file's lock (see [`Self::update`]).
+    pub fn update_connections<R>(
+        &self,
+        change: impl FnOnce(&mut Vec<ConnConfig>) -> AppResult<R>,
+    ) -> AppResult<R> {
+        self.update(CONNECTIONS_FILE, change)
+    }
+
+    #[cfg(test)]
     pub fn save_connections(&self, list: &[ConnConfig]) -> AppResult<()> {
-        self.write(CONNECTIONS_FILE, &list)
+        self.update_connections(|all| {
+            *all = list.to_vec();
+            Ok(())
+        })
     }
 
     pub fn settings(&self) -> AppResult<Settings> {
         self.read(SETTINGS_FILE)
     }
 
+    /// Changes the settings under the file's lock (see [`Self::update`]) and returns what
+    /// `change` returns.
+    pub fn update_settings<R>(
+        &self,
+        change: impl FnOnce(&mut Settings) -> AppResult<R>,
+    ) -> AppResult<R> {
+        self.update(SETTINGS_FILE, change)
+    }
+
+    #[cfg(test)]
     pub fn save_settings(&self, s: &Settings) -> AppResult<()> {
-        self.write(SETTINGS_FILE, s)
+        self.update_settings(|all| {
+            *all = s.clone();
+            Ok(())
+        })
     }
 
     pub fn scripts(&self) -> AppResult<Vec<Script>> {
         self.read(SCRIPTS_FILE)
     }
 
-    pub fn save_scripts(&self, list: &[Script]) -> AppResult<()> {
-        self.write(SCRIPTS_FILE, &list)
+    /// Changes the saved scripts under the file's lock (see [`Self::update`]).
+    pub fn update_scripts<R>(
+        &self,
+        change: impl FnOnce(&mut Vec<Script>) -> AppResult<R>,
+    ) -> AppResult<R> {
+        self.update(SCRIPTS_FILE, change)
     }
 
     pub fn skills(&self) -> AppResult<Vec<Skill>> {
         self.read(SKILLS_FILE)
     }
 
+    /// Changes the saved skills under the file's lock (see [`Self::update`]).
+    pub fn update_skills<R>(
+        &self,
+        change: impl FnOnce(&mut Vec<Skill>) -> AppResult<R>,
+    ) -> AppResult<R> {
+        self.update(SKILLS_FILE, change)
+    }
+
+    #[cfg(test)]
     pub fn save_skills(&self, list: &[Skill]) -> AppResult<()> {
-        self.write(SKILLS_FILE, &list)
+        self.update_skills(|all| {
+            *all = list.to_vec();
+            Ok(())
+        })
     }
 }
 
@@ -510,7 +606,176 @@ mod tests {
         store.save_skills(&[skill("c")]).unwrap();
 
         assert_eq!(store.skills().unwrap(), vec![skill("c")]);
-        assert_eq!(files_in(&dir), vec![SKILLS_FILE.to_string()]);
+        assert_eq!(
+            files_in(&dir),
+            vec![format!(".{SKILLS_FILE}.lock"), SKILLS_FILE.to_string()],
+            "only the file and its lock"
+        );
+        let _ = std::fs::remove_dir_all(dir.parent().unwrap());
+    }
+
+    #[test]
+    fn an_update_that_changes_nothing_writes_nothing() {
+        let (dir, store) = temp_store();
+        store
+            .update(SETTINGS_FILE, |_: &mut Settings| Ok(()))
+            .unwrap();
+        assert!(!dir.join(SETTINGS_FILE).exists(), "no file for the default");
+        store
+            .save_skills(&[Skill {
+                slug: "a".into(),
+                description: String::new(),
+                instruction: "x".into(),
+            }])
+            .unwrap();
+        let before = std::fs::metadata(dir.join(SKILLS_FILE))
+            .unwrap()
+            .modified()
+            .unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        store.update_skills(|_| Ok(())).unwrap();
+        let after = std::fs::metadata(dir.join(SKILLS_FILE))
+            .unwrap()
+            .modified()
+            .unwrap();
+        assert_eq!(before, after);
+        let _ = std::fs::remove_dir_all(dir.parent().unwrap());
+    }
+
+    #[test]
+    fn a_failed_change_saves_nothing() {
+        let (dir, store) = temp_store();
+        let err = store.update_scripts(|list| {
+            list.push(Script {
+                id: "s".into(),
+                name: "Half done".into(),
+                connection_id: "c".into(),
+                database: None,
+                question: String::new(),
+                sql: "select 1".into(),
+                updated_at: 0,
+            });
+            Err::<(), _>("Stopped.".into())
+        });
+        assert!(err.is_err());
+        assert!(store.scripts().unwrap().is_empty());
+        let _ = std::fs::remove_dir_all(dir.parent().unwrap());
+    }
+
+    #[test]
+    fn the_mcp_server_never_moves_an_unreadable_file_while_updating() {
+        let (dir, store) = temp_store();
+        std::fs::write(dir.join(SETTINGS_FILE), "{not json").unwrap();
+        let mcp = store.clone().without_repair();
+        let err = mcp
+            .update_settings(|s| {
+                s.onboarded = true;
+                Ok(())
+            })
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("Open SayQL to fix it"), "{err}");
+        assert_eq!(
+            std::fs::read_to_string(dir.join(SETTINGS_FILE)).unwrap(),
+            "{not json"
+        );
+        let _ = std::fs::remove_dir_all(dir.parent().unwrap());
+    }
+
+    const COUNTER: &str = "counter.json";
+    const INCREMENTS: u64 = 40;
+    /// Set for a child process started by `increments_from_several_processes_are_never_lost`.
+    const CHILD_DIR: &str = "SAYQL_STORE_LOCK_TEST_DIR";
+
+    fn increment(store: &Store, times: u64) {
+        for _ in 0..times {
+            store
+                .update(COUNTER, |n: &mut u64| {
+                    *n += 1;
+                    Ok(())
+                })
+                .unwrap();
+        }
+    }
+
+    #[test]
+    fn increments_from_several_threads_are_never_lost() {
+        let (dir, store) = temp_store();
+        let threads: Vec<_> = (0..8)
+            .map(|_| {
+                let store = store.clone();
+                std::thread::spawn(move || increment(&store, INCREMENTS))
+            })
+            .collect();
+        for t in threads {
+            t.join().unwrap();
+        }
+        assert_eq!(store.read::<u64>(COUNTER).unwrap(), 8 * INCREMENTS);
+        let _ = std::fs::remove_dir_all(dir.parent().unwrap());
+    }
+
+    /// The other half of `increments_from_several_processes_are_never_lost`: does nothing
+    /// unless that test started this process.
+    #[test]
+    fn a_child_process_increments_the_shared_counter() {
+        if let Ok(dir) = std::env::var(CHILD_DIR) {
+            increment(&Store::new(PathBuf::from(dir)).without_repair(), INCREMENTS);
+        }
+    }
+
+    #[test]
+    fn increments_from_several_processes_are_never_lost() {
+        let (dir, store) = temp_store();
+        // Like the app and three `sayql-mcp` processes, each with its own `Store`.
+        let children: Vec<_> = (0..3)
+            .map(|_| {
+                std::process::Command::new(std::env::current_exe().unwrap())
+                    .args([
+                        "store::tests::a_child_process_increments_the_shared_counter",
+                        "--exact",
+                        "--test-threads=1",
+                    ])
+                    .env(CHILD_DIR, &dir)
+                    .stdout(std::process::Stdio::null())
+                    .spawn()
+                    .unwrap()
+            })
+            .collect();
+        increment(&store, INCREMENTS);
+        for mut child in children {
+            assert!(child.wait().unwrap().success());
+        }
+        assert_eq!(store.read::<u64>(COUNTER).unwrap(), 4 * INCREMENTS);
+        let _ = std::fs::remove_dir_all(dir.parent().unwrap());
+    }
+
+    #[test]
+    fn notes_saved_by_the_app_and_an_ai_app_at_once_are_all_kept() {
+        let (dir, app) = temp_store();
+        let mcp = app.clone().without_repair();
+        let save = |store: Store, who: &'static str| {
+            std::thread::spawn(move || {
+                for i in 0..15 {
+                    store
+                        .save_note(agent::Note {
+                            id: format!("{who}-{i}"),
+                            connection_id: "c1".into(),
+                            text: format!("table {who}_{i} is a lookup table"),
+                            ..Default::default()
+                        })
+                        .unwrap();
+                }
+            })
+        };
+        let threads = [
+            save(app.clone(), "app"),
+            save(mcp, "mcp"),
+            save(app.clone(), "bg"),
+        ];
+        for t in threads {
+            t.join().unwrap();
+        }
+        assert_eq!(app.all_notes().unwrap().len(), 45);
         let _ = std::fs::remove_dir_all(dir.parent().unwrap());
     }
 }

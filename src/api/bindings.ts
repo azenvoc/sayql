@@ -779,6 +779,7 @@ export type CheckRun_Deserialize = {
 	/**  `None` when the check couldn't run (`error` says why). */
 	ok?: boolean | null,
 	at: number,
+	/**  Why it couldn't run, for the person: the database's own message (it can quote values). */
 	error?: string | null,
 };
 
@@ -786,6 +787,7 @@ export type CheckRun_Serialize = {
 	/**  `None` when the check couldn't run (`error` says why). */
 	ok: boolean | null,
 	at: number,
+	/**  Why it couldn't run, for the person: the database's own message (it can quote values). */
 	error?: string,
 };
 

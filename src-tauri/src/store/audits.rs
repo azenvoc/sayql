@@ -45,22 +45,20 @@ impl Store {
             app: app.to_string(),
             at: chrono::Utc::now().timestamp_millis().max(0) as u64,
         };
-        let mut all = self.audits()?;
-        all.retain(|a| !(a.connection_id == run.connection_id && a.database == run.database));
-        all.push(run.clone());
-        self.write(FILE, &all)?;
+        self.update(FILE, |all: &mut Vec<AuditRun>| {
+            all.retain(|a| !(a.connection_id == run.connection_id && a.database == run.database));
+            all.push(run.clone());
+            Ok(())
+        })?;
         Ok(run)
     }
 
     /// Forgets a deleted connection's audits.
     pub(super) fn forget_audits(&self, connection_id: &str) -> AppResult<()> {
-        let mut all = self.audits()?;
-        let before = all.len();
-        all.retain(|a| a.connection_id != connection_id);
-        if all.len() != before {
-            self.write(FILE, &all)?;
-        }
-        Ok(())
+        self.update(FILE, |all: &mut Vec<AuditRun>| {
+            all.retain(|a| a.connection_id != connection_id);
+            Ok(())
+        })
     }
 }
 
