@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <!-- SayQL app icon, "shape, not data": the schema the AI sees (violet) above the rows it doesn't (dotted blue).
-       Same artwork as src/components/ui/BrandMark.tsx and site/icon-mark.svg. To change it, edit those and
+       Same artwork as src/components/ui/BrandMark.tsx, splash.html and site/icon-mark.svg. To change it, edit those and
        app-icon-small.svg, run `pnpm tauri icon src-tauri/icons/app-icon.svg`, then re-render 32x32.png,
        Square30x30Logo.png, Square44x44Logo.png and the 16-32px layers of icon.ico and icon.icns from
        app-icon-small.svg, which stays readable at those sizes. -->

@@ -1,7 +1,8 @@
 /**
  * The SayQL logo, "shape, not data": a database whose schema (violet, what the AI sees) sits above
- * rows that stay out of sight (dotted blue). Same artwork as src-tauri/icons/app-icon.svg, cropped to
- * the tile; below 28px it draws the simplified mark used for 16 and 32px icons.
+ * rows that stay out of sight (dotted blue). Same artwork as src-tauri/icons/app-icon.svg and
+ * splash.html, cropped to the tile; below 28px it draws the simplified mark used for 16 and 32px
+ * icons.
  *
  * The hex fills in this file are fixed on purpose: brand colors match the app icon and logo
  * everywhere, so they don't follow the light/dark theme tokens.
