@@ -3,12 +3,6 @@
 All notable changes to SayQL are listed here. Downloads are on the
 [releases page](https://github.com/dithzz/sayql-releases/releases).
 
-## Unreleased
-
-- **A splash screen while SayQL starts.** A small card with the logo, "Community Edition" and the version
-  shows while the main window loads, and closes as soon as the window's first screen is ready. The window
-  loads behind it as before, so starting takes no longer, and it's shown after 10 seconds whatever happens.
-
 ## 0.5.5 (2026-11-03)
 
 ### Security fixes from a code audit
