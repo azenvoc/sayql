@@ -25,7 +25,7 @@ They get your schema and the numbers they need, not your rows, unless you say so
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset=".github/assets/hero-dark.png">
-  <img src=".github/assets/hero-light.png" alt="SayQL: the Ask box in Quick mode with the question 'Top 10 customers by total spend', the SQL it wrote, and the 10 result rows" width="100%">
+  <img src=".github/assets/hero-light.png" alt="SayQL's Settings, AI apps, Activity: Claude Code got a count but was refused a never-send column, and Cursor was refused a DELETE because it could change data" width="100%">
 </picture>
 
 </div>
@@ -70,6 +70,34 @@ safely; and an AI agent with a database password can do anything. SayQL keeps th
 
 <table>
 <tr>
+<td colspan="2" valign="top">
+
+### Govern your agents
+
+Claude Code, Cursor and other agents query through SayQL, read-only. By default they get counts and summaries,
+not your rows, and columns you mark never send never reach them. See everything they ran and what was refused,
+and block any app in one click. Free on your computer; for your whole company,
+[SayQL for teams](https://sayql.dev/#teams) gives each agent its own key and puts every query in one audit log.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/feature-access-dark.png">
+  <img src=".github/assets/feature-access-light.png" alt="Settings, AI apps, Access: Claude Code and Cursor with Block buttons, and the demo store set to counts and summaries with customers.email never sent" width="100%">
+</picture>
+
+### A shared memory that stays true
+
+Approve a note once and every app and session knows it: Claude Code, Cursor, the Ask box, Investigate. Run an
+audit and an AI app reads your code, files and web pages and suggests notes for you to approve. Rename a column
+and SayQL flags the notes about it, with the fix ready.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/feature-notes-dark.png">
+  <img src=".github/assets/feature-notes-light.png" alt="A note marked may be out of date because products.price was renamed to price_cents, with SayQL's suggested fix" width="100%">
+</picture>
+
+</td>
+</tr>
+<tr>
 <td width="50%" valign="top">
 
 ### It knows your schema
@@ -101,7 +129,7 @@ shows you the exact statement first, so nothing changes by accident.
 <tr>
 <td colspan="2" valign="top">
 
-### Investigate with Investigate
+### Investigate the harder questions
 
 Switch the Ask box to Investigate (or type `/investigate`) and ask a question that needs looking around first ("why did signups drop last week?", "who owns this
 tenant?"). The agent shows its plan, works through it in read-only steps, checks its joins, asks you when a
