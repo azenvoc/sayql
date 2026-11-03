@@ -33,6 +33,7 @@ import { VoiceSection } from "../voice";
 import { ClaudeIntegration, type AiAppsTab } from "./ClaudeIntegration";
 import { ClaudePlanCheck } from "./ClaudePlanCheck";
 import { CreditsBalance } from "./CreditsBalance";
+import { ProviderChooser } from "./ProviderChooser";
 import { MyActivityLog } from "./MyActivity";
 import { version } from "../../../package.json";
 import { docsUrl } from "../help";
@@ -269,15 +270,11 @@ export function SettingsPage({
             <>
               <h2 className={styles.title}>AI provider</h2>
               <Field label="Provider" hint={provider.note}>
-                {(id) => (
-                  <Select
-                    id={id}
+                {() => (
+                  <ProviderChooser
+                    providers={settings.providers}
                     value={provider.id}
                     onChange={chooseProvider}
-                    options={settings.providers.map((p) => ({
-                      value: p.id,
-                      label: p.local ? `${p.label} (on this computer)` : p.label,
-                    }))}
                   />
                 )}
               </Field>

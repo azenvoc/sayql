@@ -78,6 +78,11 @@
   color: var(--color-text-subtle);
 }
 
+.check {
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+
 .chevron {
   flex-shrink: 0;
   color: var(--color-text-subtle);

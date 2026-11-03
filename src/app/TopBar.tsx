@@ -1,6 +1,6 @@
-import { Database, Plus, Settings as SettingsIcon } from "lucide-react";
+import { Plus, Settings as SettingsIcon } from "lucide-react";
 import type { ConnectionConfig, Schema } from "../api";
-import { Badge, Wordmark, Button, IconButton, ToolbarDivider } from "../components/ui";
+import { Badge, Wordmark, Button, IconButton, Logo, ToolbarDivider } from "../components/ui";
 import { DATABASE_KINDS, ProdBadge } from "../features/connections";
 import { ThemeToggle } from "../features/theme";
 import styles from "./Workbench.module.css";
@@ -37,7 +37,7 @@ export function TopBar({
           className={styles.activeConnection}
           title={active.kind === "sqlite" ? active.file : `${active.host}:${active.port}`}
         >
-          <Database size={14} color={DATABASE_KINDS[active.kind].color} />
+          <Logo id={DATABASE_KINDS[active.kind].logo} size={14} />
           <span className={styles.activeName}>{active.name}</span>
           {databaseName && active.kind !== "sqlite" && (
             <span className={styles.activeDatabase}>{databaseName}</span>
