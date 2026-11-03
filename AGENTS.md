@@ -89,15 +89,15 @@ module is a design change: it takes a pull request that updates this file, the m
 
 Where new code goes:
 
-| Code | Module |
-|---|---|
-| Tauri commands | `commands/<area>.rs`, thin: check input, call a module, map the result |
-| Database access, decoding, introspection | `db/` (no Tauri types) |
+| Code                                                                                                              | Module                                                                                       |
+| ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Tauri commands                                                                                                    | `commands/<area>.rs`, thin: check input, call a module, map the result                       |
+| Database access, decoding, introspection                                                                          | `db/` (no Tauri types)                                                                       |
 | SQL lexing, read-only and never-send checks, personal-data detection, masking, error redaction, the AI query gate | `safety/` (`sql_lex`, `classify`, `never_send`, `pii`, `mask`, `redact`, `readonly`, `gate`) |
-| AI providers, prompts, agent mode | `ai/` |
-| The audit, its runners and child processes, knowledge and code sources | `audit/` (`runner`, `opencode`, `process`, `coding_agents`, `knowledge`, `repos`) |
-| Saved files and secrets | `store/` (secrets only through `store::secrets`) |
-| Team server client | `team/` |
+| AI providers, prompts, agent mode                                                                                 | `ai/`                                                                                        |
+| The audit, its runners and child processes, knowledge and code sources                                            | `audit/` (`runner`, `opencode`, `process`, `coding_agents`, `knowledge`, `repos`)            |
+| Saved files and secrets                                                                                           | `store/` (secrets only through `store::secrets`)                                             |
+| Team server client                                                                                                | `team/`                                                                                      |
 
 ## Backend layers
 
@@ -157,6 +157,30 @@ These rules are the product's promise ("Let agents into your database. Not your 
   say in a comment in `Cargo.toml` why they are needed when it isn't obvious.
 - `pnpm audit` and Dependabot alerts are triaged: either upgrade, or note why the advisory can't
   be reached.
+
+## Wiring a feature in
+
+A feature isn't done when it works on its own screen. It reaches every part of SayQL it touches,
+or the pull request says why it doesn't. The pull request template's **Wiring** section lists
+these; each is ticked or marked `n/a:` with a reason, and the `wiring` check in CI enforces it.
+
+- **Team connections.** It works on `team:` connections (the server sends and enforces it), or the
+  UI says it's for connections on this computer only.
+- **The AI surfaces.** The Ask box, Investigate and the MCP server (`sayql-mcp`: `list_connections`,
+  `describe_schema`, the audit) see it wherever an AI should know about it.
+- **Safety.** SQL that runs for an AI goes through the AI query gate. Never-send columns, what AI
+  apps may see, masking and read-only still hold, with tests for the old refusals.
+- **Saved data.** It's saved through the store's update helpers, since `sayql-mcp` reads and writes
+  the same files. New fields have serde defaults, so older files and older versions still load.
+- **Knowledge.** Notes, their checks, audits and knowledge sources pick it up if it changes what a
+  database, table or connection is.
+- **The team server.** `azenvoc/sayql-server` and its admin page get the matching change in their
+  own pull request, or this one says why not. Shared, governed versions of a feature belong there.
+- **The UI preview.** `src/dev/mockBackend.ts` has data that shows it, in `?video` and `?firstrun`
+  too where it appears in them.
+- **Docs.** `docs-site/pages` (then `scripts/build_docs.py`), `CHANGELOG.md` and
+  `docs/ARCHITECTURE.md`. The README and landing page claim only what the code does.
+- **Tests.** Tests cover where it meets existing features, not only the feature alone.
 
 ## Pull requests
 
