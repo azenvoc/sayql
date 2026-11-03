@@ -10,7 +10,7 @@ repo has a placeholder, this guide says what replaces it.
 | What | Where it lives | Status |
 | --- | --- | --- |
 | Updater public key | `src-tauri/tauri.conf.json` → `plugins.updater.pubkey` | set |
-| Update feed URL | `src-tauri/tauri.conf.json` → `plugins.updater.endpoints` | `dithzz/sayql-releases` |
+| Update feed URL | `src-tauri/tauri.conf.json` → `plugins.updater.endpoints` | `azenvoc/sayql-releases` |
 | Updater private key | `~/.tauri/sayql-updater.key` → GitHub secret `TAURI_SIGNING_PRIVATE_KEY` | key created; secret to add |
 | Updater key password | macOS Keychain "Sayql updater signing key password" → GitHub secret `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | created; secret to add |
 | Releases repo token | GitHub secret `RELEASES_TOKEN` | to add |
@@ -21,9 +21,9 @@ repo has a placeholder, this guide says what replaces it.
 ## 0. Early access: unsigned releases, no app stores
 
 SayQL ships as a direct download from the public
-[`dithzz/sayql-releases`](https://github.com/dithzz/sayql-releases) repository,
+[`azenvoc/sayql-releases`](https://github.com/azenvoc/sayql-releases) repository,
 not through any app store. The source code is public at
-[`dithzz/sayql`](https://github.com/dithzz/sayql); releases live in their own repository.
+[`azenvoc/sayql`](https://github.com/azenvoc/sayql); releases live in their own repository.
 
 Early-access builds are **not code-signed**. macOS builds are ad-hoc signed
 (`signingIdentity: "-"`), which is what lets macOS offer "Open Anyway" instead
@@ -39,7 +39,7 @@ updater key, and the app refuses any update whose signature doesn't match.
 
 One-time setup:
 
-1. Create the public repository `dithzz/sayql-releases` with a README (a
+1. Create the public repository `azenvoc/sayql-releases` with a README (a
    release needs at least one commit to tag).
 2. Create a fine-grained GitHub token limited to that repository with
    **Contents: Read and write**. Add it to the private source repo as the

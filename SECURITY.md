@@ -5,7 +5,7 @@ SayQL connects to databases and stores passwords and API keys, so security repor
 ## Reporting a vulnerability
 
 **Please don't open a public issue.** Report it privately through GitHub:
-[Security → Report a vulnerability](https://github.com/dithzz/sayql/security/advisories/new).
+[Security → Report a vulnerability](https://github.com/azenvoc/sayql/security/advisories/new).
 
 Include what you found, how to reproduce it, and what an attacker could do with it. You'll get a reply
 within a few days. Once a fix is released, you'll be credited in the advisory unless you'd rather not be.

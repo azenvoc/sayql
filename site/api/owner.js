@@ -19,7 +19,7 @@ const LOCKOUT_FAILURES = 10;
 const LOCKOUT_MINUTES = 15;
 // The public half of the licence signing key, as in the server repo's keys/licence-public.key.
 const LICENCE_PUBLIC_KEY = "t6qg1aROiCORksK7tsCHbY4sDpFk/AwQn8tO0wYxSx4=";
-const RELEASES = "https://api.github.com/repos/dithzz/sayql-releases/releases?per_page=50";
+const RELEASES = "https://api.github.com/repos/azenvoc/sayql-releases/releases?per_page=50";
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");

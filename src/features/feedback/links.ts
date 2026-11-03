@@ -1,6 +1,6 @@
 import type { AppInfo } from "../../api";
 
-const REPO = "https://github.com/dithzz/sayql";
+const REPO = "https://github.com/azenvoc/sayql";
 
 /**
  * The private feedback form (Tally, Google Forms, …). Empty hides "Send privately".

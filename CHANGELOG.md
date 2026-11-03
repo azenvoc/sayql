@@ -1,7 +1,7 @@
 # Changelog
 
 All notable changes to SayQL are listed here. Downloads are on the
-[releases page](https://github.com/dithzz/sayql-releases/releases).
+[releases page](https://github.com/azenvoc/sayql-releases/releases).
 
 ## 0.6.0 (2026-11-03)
 
