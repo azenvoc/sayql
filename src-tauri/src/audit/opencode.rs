@@ -82,7 +82,8 @@ pub enum Archive {
     TarGz,
 }
 
-/// A release file SayQL downloads, pinned by size and SHA-256.
+/// A release file SayQL downloads, pinned by size and SHA-256, and the SHA-256 of the
+/// executable unpacked from it, which every run checks again.
 #[derive(Debug)]
 pub struct Asset {
     pub url: &'static str,
@@ -91,6 +92,8 @@ pub struct Asset {
     pub archive: Archive,
     /// The executable inside the archive, by file name.
     pub entry: &'static str,
+    /// The SHA-256 of that executable as unpacked.
+    pub exe_sha256: &'static str,
 }
 
 /// What a platform downloads: OpenCode and ripgrep.
@@ -104,7 +107,8 @@ pub struct Platform {
 }
 
 // Sizes and digests as GitHub lists them for each release (2026-11-02); x64 uses the
-// `-baseline` builds, which run on CPUs without AVX2.
+// `-baseline` builds, which run on CPUs without AVX2. `exe_sha256`: each executable as
+// unpacked from those archives (checked against the archive digests first, 2026-11-02).
 pub const PLATFORMS: [Platform; 4] = [
     Platform {
         os: "macos",
@@ -115,6 +119,7 @@ pub const PLATFORMS: [Platform; 4] = [
             sha256: "c1c9e62521192192ef4c3ed1355ada2144055bddb61682217e997b03c55203c1",
             archive: Archive::Zip,
             entry: "opencode",
+            exe_sha256: "feaafead8cd563af0c2dcb386b0757e4355e327ebb6bd1aaad5440fe2f83596c",
         },
         ripgrep: Asset {
             url: "https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-aarch64-apple-darwin.tar.gz",
@@ -122,6 +127,7 @@ pub const PLATFORMS: [Platform; 4] = [
             sha256: "378e973289176ca0c6054054ee7f631a065874a352bf43f0fa60ef079b6ba715",
             archive: Archive::TarGz,
             entry: "rg",
+            exe_sha256: "4fdf1d8365af224bc70e3c1490d8461d859c37cc70e739a11e987af0215f3e94",
         },
     },
     Platform {
@@ -133,6 +139,7 @@ pub const PLATFORMS: [Platform; 4] = [
             sha256: "e1235374cb7e712cdc15e21ba915a029a5d22312b460606d0783754739706775",
             archive: Archive::Zip,
             entry: "opencode",
+            exe_sha256: "27d2aa00d9868aa81374e0a00ce0ade50a57fe35b8d13c50ff8e4b56b0c275a1",
         },
         ripgrep: Asset {
             url: "https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-x86_64-apple-darwin.tar.gz",
@@ -140,6 +147,7 @@ pub const PLATFORMS: [Platform; 4] = [
             sha256: "64811cb24e77cac3057d6c40b63ac9becf9082eedd54ca411b475b755d334882",
             archive: Archive::TarGz,
             entry: "rg",
+            exe_sha256: "3bafa7e6ee51ba3ac4ed065883484a309be09b26ea6dad561ae4049bfe049c50",
         },
     },
     Platform {
@@ -151,6 +159,7 @@ pub const PLATFORMS: [Platform; 4] = [
             sha256: "e4dac5cd38a182a24e7b3e18853f01d08cdb137e50b3bd1397c1a89e54d28c63",
             archive: Archive::Zip,
             entry: "opencode.exe",
+            exe_sha256: "6f15c8f241f3df22375f174753193a71c488f6c0a6bbbae3f9fa34d112673b7b",
         },
         ripgrep: Asset {
             url: "https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-x86_64-pc-windows-msvc.zip",
@@ -158,6 +167,7 @@ pub const PLATFORMS: [Platform; 4] = [
             sha256: "124510b94b6baa3380d051fdf4650eaa80a302c876d611e9dba0b2e18d87493a",
             archive: Archive::Zip,
             entry: "rg.exe",
+            exe_sha256: "decdd4992f3f1b9a5ef9898f1b40ab16886d579d6516b4efd3d5eaa19364e408",
         },
     },
     Platform {
@@ -169,6 +179,7 @@ pub const PLATFORMS: [Platform; 4] = [
             sha256: "17c200fd4b2289954cc01552559f9b6d03ec157b2ddfb5eb54144f491656333d",
             archive: Archive::TarGz,
             entry: "opencode",
+            exe_sha256: "7df4e4136301f16589b0f30bf91a61380fca5f8ef22dd36570f5ebe1d4ec802c",
         },
         ripgrep: Asset {
             url: "https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz",
@@ -176,6 +187,7 @@ pub const PLATFORMS: [Platform; 4] = [
             sha256: "1c9297be4a084eea7ecaedf93eb03d058d6faae29bbc57ecdaf5063921491599",
             archive: Archive::TarGz,
             entry: "rg",
+            exe_sha256: "ebeaf56f8a25e102e9419933423738b3a2a613a444fd749d695e15eba53f71f2",
         },
     },
 ];
@@ -210,7 +222,8 @@ pub fn install_dir(runners: &Path) -> PathBuf {
     runners.join("opencode").join(VERSION)
 }
 
-/// The SHA-256 of each executable, written once both were checked and unpacked.
+/// Written once both executables were checked and unpacked: marks an install as finished. Its
+/// contents (the hashes) aren't trusted; [`installed`] checks against [`Asset::exe_sha256`].
 const HASHES: &str = "sha256.json";
 
 /// An installed OpenCode: the executable, and the folder with it and ripgrep (first on PATH).
@@ -230,14 +243,20 @@ pub fn exe(name: &str) -> String {
 }
 
 /// The installed OpenCode in `dir`, if both executables are there and still match the hashes
-/// taken when they were unpacked. Checked before every run.
+/// pinned for this computer. Checked before every run.
 pub fn installed(dir: &Path) -> Option<Installed> {
+    installed_for(dir, this_platform().ok()?)
+}
+
+/// [`installed`], against `platform`'s pinned hashes. Not against a file in the install folder:
+/// anything that can change the executables there could change that file too.
+pub fn installed_for(dir: &Path, platform: &Platform) -> Option<Installed> {
     let bin_dir = dir.join("bin");
-    let hashes: Value =
-        serde_json::from_str(&std::fs::read_to_string(dir.join(HASHES)).ok()?).ok()?;
-    for name in ["opencode", "rg"] {
-        let want = hashes.get(name).and_then(Value::as_str)?;
-        if sha256_file(&bin_dir.join(exe(name))).ok()? != want {
+    if !dir.join(HASHES).is_file() {
+        return None;
+    }
+    for (name, asset) in [("opencode", &platform.opencode), ("rg", &platform.ripgrep)] {
+        if sha256_file(&bin_dir.join(exe(name))).ok()? != asset.exe_sha256 {
             return None;
         }
     }
@@ -259,7 +278,8 @@ pub fn present(dir: &Path) -> Option<PathBuf> {
 const MAX_EXECUTABLE: u64 = 512 * 1024 * 1024;
 
 /// Checks a downloaded `archive` against `asset` (size, then SHA-256) and only then unpacks its
-/// executable to `dest`, executable bit set. Returns the executable's SHA-256.
+/// executable to `dest`, executable bit set, keeping it only if it matches
+/// [`Asset::exe_sha256`]. Returns the executable's SHA-256.
 pub fn install_from_archive(archive: &Path, asset: &Asset, dest: &Path) -> Result<String, String> {
     let len = std::fs::metadata(archive)
         .map_err(|e| format!("Couldn't read the download: {e}"))?
@@ -318,7 +338,14 @@ pub fn install_from_archive(archive: &Path, asset: &Asset, dest: &Path) -> Resul
         std::fs::set_permissions(dest, std::fs::Permissions::from_mode(0o755))
             .map_err(|e| e.to_string())?;
     }
-    sha256_file(dest).map_err(|e| e.to_string())
+    let exe_sha = sha256_file(dest).map_err(|e| e.to_string())?;
+    if exe_sha != asset.exe_sha256 {
+        let _ = std::fs::remove_file(dest);
+        return Err(
+            "The download's program didn't match its checksum, so SayQL didn't use it.".into(),
+        );
+    }
+    Ok(exe_sha)
 }
 
 fn copy_limited(from: &mut impl Read, to: &mut std::fs::File) -> Result<(), String> {
@@ -1079,7 +1106,7 @@ pub fn run_args(model: &Model, folder: &Path) -> Vec<String> {
 pub fn link_out(sources: &[PathBuf]) -> Option<(PathBuf, PathBuf)> {
     let roots: Vec<PathBuf> = sources
         .iter()
-        .map(|s| s.canonicalize().unwrap_or_else(|_| s.clone()))
+        .map(|s| dunce::canonicalize(s).unwrap_or_else(|_| s.clone()))
         .collect();
     let inside = |p: &Path| roots.iter().any(|r| p.starts_with(r));
     let mut stack: Vec<PathBuf> = sources.to_vec();
@@ -1091,7 +1118,7 @@ pub fn link_out(sources: &[PathBuf]) -> Option<(PathBuf, PathBuf)> {
             let Ok(kind) = e.file_type() else { continue };
             let path = e.path();
             if kind.is_symlink() {
-                if let Ok(target) = path.canonicalize()
+                if let Ok(target) = dunce::canonicalize(&path)
                     && !inside(&target)
                 {
                     return Some((path, target));
