@@ -90,9 +90,10 @@ pub async fn team_sign_in(
 
 fn keep_sign_in(state: &AppState, token: &str, account: &TeamAccount) -> AppResult<()> {
     secrets::set_team_token(token)?;
-    let mut settings = state.store.settings()?;
-    settings.team = Some(account.clone());
-    state.store.save_settings(&settings)?;
+    state.store.update_settings(|s| {
+        s.team = Some(account.clone());
+        Ok(())
+    })?;
     state.forget_team();
     Ok(())
 }
@@ -160,20 +161,21 @@ pub async fn team_status(state: State<'_, AppState>) -> AppResult<Option<TeamSta
     };
     let (user, server) = client.status().await?;
     state.knowledge.set_server(&server);
-    let mut settings = state.store.settings()?;
-    let Some(saved) = settings.team.clone() else {
+    let account = state.store.update_settings(|s| {
+        let Some(saved) = &mut s.team else {
+            return Ok(None);
+        };
+        *saved = TeamAccount {
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            ..saved.clone()
+        };
+        Ok(Some(saved.clone()))
+    })?;
+    let Some(account) = account else {
         return Ok(None);
     };
-    let account = TeamAccount {
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        ..saved.clone()
-    };
-    if account != saved {
-        settings.team = Some(account.clone());
-        state.store.save_settings(&settings)?;
-    }
     // With /me: team AI, so Settings shows it and AI requests on team connections use it.
     let ai = state.refresh_team_ai().await.ok().flatten();
     Ok(Some(TeamStatus {

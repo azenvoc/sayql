@@ -148,27 +148,27 @@ pub fn save_provider(
     if let Some(key) = api_key.filter(|_| p.key != KeyNeed::None) {
         secrets::set_api_key(p.id, &key)?;
     }
-    let mut s = store.settings()?;
-    s.provider = p.id.to_string();
-    s.workspace_id = workspace_id;
     // Claude's address is fixed; a base URL equal to the default is stored as "use the default".
     let base_url = if p.api != Api::OpenAi || base_url == p.base_url {
         String::new()
     } else {
         base_url
     };
-    let agent_model = s.provider_settings(p.id).agent_model;
-    s.set_provider_settings(
-        p.id,
-        ProviderSettings {
-            base_url,
-            typing_model,
-            expert_model,
-            agent_model,
-        },
-    );
-    store.save_settings(&s)?;
-    Ok(s)
+    store.update_settings(|s| {
+        s.provider = p.id.to_string();
+        s.workspace_id = workspace_id;
+        let agent_model = s.provider_settings(p.id).agent_model;
+        s.set_provider_settings(
+            p.id,
+            ProviderSettings {
+                base_url,
+                typing_model,
+                expert_model,
+                agent_model,
+            },
+        );
+        Ok(s.clone())
+    })
 }
 
 /// Which model slot the Ask box's model picker sets.
@@ -189,17 +189,19 @@ pub fn choose_model(
     model: &str,
     purpose: ModelUse,
 ) -> AppResult<Settings> {
-    let mut s = store.settings()?;
-    s.provider = choose(&s, provider, model.trim(), purpose)?;
-    let p = super::endpoint::provider(&s.provider)?;
-    let mut chosen = s.provider_settings(p.id);
-    match purpose {
-        ModelUse::Typing => chosen.typing_model = model.trim().to_string(),
-        ModelUse::Agent => chosen.agent_model = model.trim().to_string(),
-    }
-    s.set_provider_settings(p.id, chosen);
-    store.save_settings(&s)?;
-    Ok(s)
+    // Checked before the settings file is locked: the check may read the keychain.
+    let provider = choose(&store.settings()?, provider, model.trim(), purpose)?;
+    let p = super::endpoint::provider(&provider)?;
+    store.update_settings(|s| {
+        s.provider = provider;
+        let mut chosen = s.provider_settings(p.id);
+        match purpose {
+            ModelUse::Typing => chosen.typing_model = model.trim().to_string(),
+            ModelUse::Agent => chosen.agent_model = model.trim().to_string(),
+        }
+        s.set_provider_settings(p.id, chosen);
+        Ok(s.clone())
+    })
 }
 
 /// The provider id to switch to, after checking it's ready and the model makes sense for it.
@@ -223,18 +225,19 @@ fn choose(s: &Settings, provider: &str, model: &str, purpose: ModelUse) -> AppRe
 /// Saves the agent model of the current provider (empty: its expert model) and the run
 /// limits: the saved settings.
 pub fn save_agent(store: &Store, agent_model: &str, agent: AgentSettings) -> AppResult<Settings> {
-    let mut s = store.settings()?;
-    let p = super::endpoint::provider(&s.provider)?;
+    let agent = agent.validated()?;
     let agent_model = agent_model.trim().to_string();
-    if p.api != Api::OpenAi && !agent_model.is_empty() && !super::is_known(&agent_model) {
-        return Err(format!("Unknown model {agent_model}").into());
-    }
-    let mut chosen = s.provider_settings(p.id);
-    chosen.agent_model = agent_model;
-    s.set_provider_settings(p.id, chosen);
-    s.agent = agent.validated()?;
-    store.save_settings(&s)?;
-    Ok(s)
+    store.update_settings(|s| {
+        let p = super::endpoint::provider(&s.provider)?;
+        if p.api != Api::OpenAi && !agent_model.is_empty() && !super::is_known(&agent_model) {
+            return Err(format!("Unknown model {agent_model}").into());
+        }
+        let mut chosen = s.provider_settings(p.id);
+        chosen.agent_model = agent_model;
+        s.set_provider_settings(p.id, chosen);
+        s.agent = agent;
+        Ok(s.clone())
+    })
 }
 
 /// The models a provider offers, using the key and base URL in the form (falling back to

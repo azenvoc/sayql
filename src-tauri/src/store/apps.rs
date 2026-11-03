@@ -162,42 +162,51 @@ impl Store {
 
     /// Blocks or allows an app. Allowing one also approves it: the person chose to let it in.
     pub fn set_app_blocked(&self, app: &str, blocked: bool) -> AppResult<()> {
-        let mut apps: Apps = self.read(APPS_FILE)?;
-        apps.blocked.retain(|b| !b.eq_ignore_ascii_case(app));
-        if blocked {
-            apps.blocked.push(app.to_string());
-        } else if !has(&apps.approved, app) {
-            apps.approved.push(app.to_string());
-        }
-        self.write(APPS_FILE, &apps)
+        self.update(APPS_FILE, |apps: &mut Apps| {
+            apps.blocked.retain(|b| !b.eq_ignore_ascii_case(app));
+            if blocked {
+                apps.blocked.push(app.to_string());
+            } else if !has(&apps.approved, app) {
+                apps.approved.push(app.to_string());
+            }
+            Ok(())
+        })
     }
 
     /// Adds an app to the approved list. A blocked app stays blocked.
     pub fn approve_app(&self, app: &str) -> AppResult<()> {
-        let mut apps: Apps = self.read(APPS_FILE)?;
-        if !has(&apps.approved, app) {
-            apps.approved.push(app.to_string());
-        }
-        self.write(APPS_FILE, &apps)
+        self.update(APPS_FILE, |apps: &mut Apps| {
+            if !has(&apps.approved, app) {
+                apps.approved.push(app.to_string());
+            }
+            Ok(())
+        })
     }
 
     /// Turns "only allow apps I've approved" on or off. Turning it on approves every app in the
     /// log that isn't blocked, so the apps in use now keep working. An app that was only ever
     /// refused for not being approved (while the mode was on before) stays waiting.
     pub fn set_only_approved_apps(&self, on: bool) -> AppResult<()> {
-        let mut apps: Apps = self.read(APPS_FILE)?;
-        if on && !apps.only_approved {
-            for a in self.app_activity(usize::MAX)? {
-                if a.detail.as_deref() != Some(NOT_APPROVED)
-                    && !has(&apps.blocked, &a.app)
-                    && !has(&apps.approved, &a.app)
-                {
-                    apps.approved.push(a.app);
+        // Read before taking the apps file's lock: the log has its own.
+        let activity = if on {
+            self.app_activity(usize::MAX)?
+        } else {
+            Vec::new()
+        };
+        self.update(APPS_FILE, |apps: &mut Apps| {
+            if on && !apps.only_approved {
+                for a in activity {
+                    if a.detail.as_deref() != Some(NOT_APPROVED)
+                        && !has(&apps.blocked, &a.app)
+                        && !has(&apps.approved, &a.app)
+                    {
+                        apps.approved.push(a.app);
+                    }
                 }
             }
-        }
-        apps.only_approved = on;
-        self.write(APPS_FILE, &apps)
+            apps.only_approved = on;
+            Ok(())
+        })
     }
 
     /// Every app in the log, blocked or approved, most recently seen first, and the mode.
