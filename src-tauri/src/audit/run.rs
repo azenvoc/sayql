@@ -582,6 +582,8 @@ fn mcp_env() -> Vec<(String, String)> {
         "SAYQL_CONFIG_DIR",
         std::env::var_os("SAYQL_CONFIG_DIR").map(PathBuf::from),
     );
+    let (key, id) = crate::mcp::launch_env();
+    out.push((key.to_string(), id.to_string()));
     out
 }
 
