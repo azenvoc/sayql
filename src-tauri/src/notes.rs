@@ -179,11 +179,14 @@ const CHECK_TIME: Duration = Duration::from_secs(5);
 /// used to read data.
 pub async fn run_check(pool: &DbPool, sql: &str, never_send: &[String]) -> CheckRun {
     let at = now_ms();
-    let fail = |e: String| CheckRun {
+    // The person sees the database's message; an AI only its safe form (it can quote values).
+    let fail_with = |full: &str, safe: &str| CheckRun {
         ok: None,
         at,
-        error: Some(e),
+        error: Some(first_line(full)),
+        ai_error: Some(first_line(safe)),
     };
+    let fail = |e: String| fail_with(&e, &e);
     // The AI query gate with a note check's options (see safety/gate.rs): a team server
     // refuses writes itself and audits them.
     match gate::prepare(pool, sql, never_send, gate::NOTE_CHECK).await {
@@ -192,9 +195,8 @@ pub async fn run_check(pool: &DbPool, sql: &str, never_send: &[String]) -> Check
         Err(Refusal::Write | Refusal::Statements) => return fail("A check can only read.".into()),
         Err(Refusal::NeverSend(f)) => return fail(first_line(&f.safe)),
     }
-    // The database's own message, as before: the check's error is shown to the person.
     match gate::run(pool, sql, 2, CHECK_TIME, &CancellationToken::new()).await {
-        Err(e) => fail(first_line(&e.full)),
+        Err(e) => fail_with(&e.full, &e.safe),
         Ok(r) if r.rows.len() != 1 || r.columns.len() != 1 => {
             fail("A check must return one row with one column: true or false.".into())
         }
@@ -203,6 +205,7 @@ pub async fn run_check(pool: &DbPool, sql: &str, never_send: &[String]) -> Check
                 ok: Some(ok),
                 at,
                 error: None,
+                ai_error: None,
             },
             None => fail("A check must return true or false (1 or 0).".into()),
         },
@@ -518,6 +521,27 @@ mod tests {
         assert!(
             says_missing("ERROR: column \"x\" does not exist") && !says_missing("syntax error")
         );
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[tokio::test]
+    async fn a_failed_check_gives_the_ai_only_the_safe_error() {
+        let dir = std::env::temp_dir().join(format!("sayql-checks-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let pool = tenant_fixture::sqlite(&dir.join("tenant.sqlite")).await;
+        let r = run_check(&pool, "SELECT count(nope) > 0 FROM users", &[]).await;
+        // The person sees SQLite's own message; the AI the fixed description of its kind.
+        assert!(
+            r.error.as_deref().unwrap().contains("no such column"),
+            "{r:?}"
+        );
+        assert_eq!(
+            r.ai_error.as_deref(),
+            Some("A column in the query does not exist: \"nope\".")
+        );
+        // Not saved: a check read back from disk has no AI form.
+        let back: CheckRun = serde_json::from_str(&serde_json::to_string(&r).unwrap()).unwrap();
+        assert_eq!(back.ai_error, None);
         let _ = std::fs::remove_dir_all(dir);
     }
 }

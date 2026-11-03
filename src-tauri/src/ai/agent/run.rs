@@ -864,7 +864,12 @@ impl Run<'_> {
         {
             self.input.notes[at] = updated;
         }
-        match (run.ok, run.error) {
+        // The model gets the error's safe form: the database's own message can quote values.
+        let ai_error = run
+            .ai_error
+            .map(|e| self.masker.remask_text(&e))
+            .unwrap_or_else(|| "the database refused it.".into());
+        match (run.ok, ai_error) {
             (Some(true), _) => self.end_step(i, Ok("The check passed: the note holds.".into()), "sent the result"),
             (Some(false), _) => self.end_step(
                 i,
@@ -873,7 +878,7 @@ impl Run<'_> {
             ),
             (None, e) => self.end_step(
                 i,
-                Err(format!("The check couldn't run: {}", e.unwrap_or_default())),
+                Err(format!("The check couldn't run: {e}")),
                 "sent the error",
             ),
         }

@@ -114,6 +114,7 @@ impl ServerNote {
                     ok: c.ok,
                     at: ms(c.at.as_deref()),
                     error: c.error,
+                    ai_error: None,
                 }),
             });
         Some(Note {
