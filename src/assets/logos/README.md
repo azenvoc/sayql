@@ -3,7 +3,10 @@
 Logos of the databases and AI providers SayQL works with, shown only to identify them. Using a
 logo doesn't mean its owner endorses SayQL. Each logo is a trademark of its owner.
 
-- Every `<id>.svg` here is a single-path, 24×24 icon from [Simple Icons](https://simpleicons.org)
+- `color/<id>.svg` (and `color/<id>-dark.svg`) is a brand's own full-colour logo, used only where its published
+  terms allow naming the product this way; `logos.json` marks those `"artwork": "official"`. It wins over
+  the single-colour icon.
+- Every other `<id>.svg` here is a single-path, 24×24 icon from [Simple Icons](https://simpleicons.org)
   16.36.0 (CC0 1.0), copied unchanged. `logos.json` lists each one's name, brand color, original
   source and the brand's usage guidelines; `dark: true` marks a color too dark to read on the dark
   theme, where the logo is drawn in the text color instead.

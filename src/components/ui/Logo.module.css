@@ -7,3 +7,17 @@
 :global(:root[data-theme="dark"]) .dark path {
   fill: var(--color-text);
 }
+
+/* A full-colour logo with a version for dark backgrounds shows the one that suits the theme. */
+.logo img {
+  object-fit: contain;
+}
+.darkOnly {
+  display: none;
+}
+:global(:root[data-theme="dark"]) .darkOnly {
+  display: block;
+}
+:global(:root[data-theme="dark"]) .lightOnly {
+  display: none;
+}

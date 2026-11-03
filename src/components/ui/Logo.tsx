@@ -3,12 +3,25 @@ import { cx } from "../../lib/cx";
 import LOGOS from "../../assets/logos/logos.json";
 import styles from "./Logo.module.css";
 
-/** The logo files, as text: each is one `<path>` on a 24×24 grid (see src/assets/logos/README.md). */
+/** The single-colour logo files, as text: each is one `<path>` on a 24×24 grid (see src/assets/logos/README.md). */
 const FILES = import.meta.glob<string>("../../assets/logos/*.svg", {
   query: "?raw",
   import: "default",
   eager: true,
 });
+
+/**
+ * The brands' own full-colour logos, where their terms allow it, as bundled URLs: `<id>.svg`,
+ * and `<id>-dark.svg` when the brand has a version for dark backgrounds.
+ */
+const COLOR = import.meta.glob<string>("../../assets/logos/color/*.svg", {
+  query: "?url",
+  import: "default",
+  eager: true,
+});
+const COLOR_URLS = new Map(
+  Object.entries(COLOR).map(([file, url]) => [file.replace(/^.*\/|\.svg$/g, ""), url]),
+);
 
 interface LogoInfo {
   title: string;
@@ -60,6 +73,22 @@ export function Logo({
   className?: string;
 }) {
   const a11y = label ? { role: "img", "aria-label": label } : { "aria-hidden": true as const };
+  const color = COLOR_URLS.get(id);
+  if (color) {
+    const dark = COLOR_URLS.get(`${id}-dark`);
+    return (
+      <span className={cx(styles.logo, className)} {...a11y}>
+        <img
+          src={color}
+          width={size}
+          height={size}
+          alt=""
+          className={dark ? styles.lightOnly : undefined}
+        />
+        {dark && <img src={dark} width={size} height={size} alt="" className={styles.darkOnly} />}
+      </span>
+    );
+  }
   if (id in NEUTRAL) {
     const n = NEUTRAL[id as keyof typeof NEUTRAL];
     const Icon = n.icon;
