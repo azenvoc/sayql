@@ -53,9 +53,13 @@ pub fn receive(app: &AppHandle, links: impl IntoIterator<Item = String>) {
     }
 }
 
-/// Brings the main window to the front.
+/// Brings the main window to the front. While the splash is up, the window stays hidden: it is
+/// shown and focused as soon as its first screen is ready (`super::app::finish_startup`).
 pub fn focus_main(app: &AppHandle) {
-    if let Some(w) = app.get_webview_window("main") {
+    if !super::app::started() {
+        return;
+    }
+    if let Some(w) = app.get_webview_window(super::app::MAIN_WINDOW) {
         let _ = w.unminimize();
         let _ = w.show();
         let _ = w.set_focus();

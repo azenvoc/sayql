@@ -8,6 +8,7 @@ macro_rules! with_commands {
     ($($handler:tt)*) => {
         $($handler)*![
             crate::commands::app::app_info,
+            crate::commands::app::app_ready,
             crate::commands::connections::init,
             crate::commands::connections::save_connection,
             crate::commands::connections::delete_connection,
@@ -164,6 +165,9 @@ pub fn run() {
             app.manage(teams::PendingSso::default());
             app.manage(audits::AuditRuns::default());
             audits::clean_leftover_runs(app.handle());
+            // The main window starts hidden behind the splash; this shows it if the page never
+            // says it's ready.
+            commands::app::start_splash_timeout(app.handle());
             // Installers register sayql:// on Windows and Linux; this covers AppImages and dev builds.
             #[cfg(any(windows, target_os = "linux"))]
             let _ = app.deep_link().register_all();

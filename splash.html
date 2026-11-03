@@ -1,0 +1,132 @@
+<!doctype html>
+<!--
+  The splash card shown while the main window loads (the "splash" window in
+  src-tauri/tauri.conf.json). It has no scripts, so it needs no permissions and draws at once;
+  src-tauri/src/commands/app.rs closes it when the main window is ready. The logo is the same
+  artwork as src/components/ui/BrandMark.tsx, and its hex colors are fixed on purpose, like there.
+  %SAYQL_VERSION% is replaced with the app's version by vite.config.ts.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SayQL</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #15171a;
+        color: #e8eaed;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Ubuntu, Cantarell, sans-serif;
+        -webkit-user-select: none;
+        user-select: none;
+        cursor: default;
+      }
+      .card {
+        position: relative;
+        box-sizing: border-box;
+        height: 100%;
+        padding: 40px 40px 0;
+        display: flex;
+        flex-direction: column;
+        background: radial-gradient(120% 90% at 0% 0%, #23282d 0%, #15171a 60%);
+        border: 1px solid #2a2f35;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+      .edition {
+        margin: 14px 0 0 90px;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #a78bfa;
+      }
+      .footer {
+        margin-top: auto;
+        padding-bottom: 26px;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font-size: 12px;
+        color: #8b939c;
+      }
+      .bar {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 3px;
+        overflow: hidden;
+        background: #22272c;
+      }
+      .bar::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 30%;
+        background: linear-gradient(90deg, transparent, #a78bfa, #4a8dff, transparent);
+        animation: slide 1.4s ease-in-out infinite;
+      }
+      @keyframes slide {
+        from {
+          left: -30%;
+        }
+        to {
+          left: 100%;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .bar::after {
+          animation: none;
+          left: 0;
+          width: 100%;
+          opacity: 0.5;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <div class="brand">
+        <svg width="72" height="72" viewBox="0 0 100 100" aria-hidden="true">
+          <rect x="0.5" y="0.5" width="99" height="99" rx="23.5" fill="#1d2125" stroke="#2f353c" />
+          <ellipse cx="50" cy="29" rx="27" ry="9.5" fill="#a78bfa" />
+          <g fill="#4a8dff">
+            <circle cx="23.00" cy="36.75" r="2.5" /><circle cx="77.00" cy="36.75" r="2.5" />
+            <circle cx="23.00" cy="44.50" r="2.5" /><circle cx="77.00" cy="44.50" r="2.5" />
+            <circle cx="23.00" cy="51.00" r="2.5" /><circle cx="77.00" cy="51.00" r="2.5" />
+            <circle cx="23.00" cy="57.50" r="2.5" /><circle cx="77.00" cy="57.50" r="2.5" />
+            <circle cx="23.00" cy="64.00" r="2.5" /><circle cx="77.00" cy="64.00" r="2.5" />
+            <circle cx="23.00" cy="70.50" r="2.5" /><circle cx="77.00" cy="70.50" r="2.5" />
+            <circle cx="35.00" cy="52.40" r="2.5" /><circle cx="42.47" cy="53.62" r="2.5" />
+            <circle cx="50.21" cy="54.00" r="2.5" /><circle cx="57.74" cy="53.60" r="2.5" />
+            <circle cx="65.18" cy="52.36" r="2.5" /><circle cx="35.00" cy="65.40" r="2.5" />
+            <circle cx="42.47" cy="66.62" r="2.5" /><circle cx="50.21" cy="67.00" r="2.5" />
+            <circle cx="57.74" cy="66.60" r="2.5" /><circle cx="65.18" cy="65.36" r="2.5" />
+            <circle cx="27.91" cy="75.96" r="2.5" /><circle cx="35.00" cy="78.40" r="2.5" />
+            <circle cx="42.47" cy="79.62" r="2.5" /><circle cx="50.21" cy="80.00" r="2.5" />
+            <circle cx="57.74" cy="79.60" r="2.5" /><circle cx="65.18" cy="78.36" r="2.5" />
+            <circle cx="72.21" cy="75.90" r="2.5" />
+          </g>
+        </svg>
+        <!-- The SayQL name in JetBrains Mono, as outlines (the Wordmark in BrandMark.tsx). -->
+        <svg height="56" viewBox="0 30 288 104" role="img" aria-label="SayQL" fill="#e8eaed">
+          <path d="M30.400000000000002 111.5Q19.8 111.5 13.5 105.9Q7.2 100.3 7.2 90.5H16.2Q16.2 96.6 20.1 100.05Q24.0 103.5 30.400000000000002 103.5Q36.6 103.5 40.3 99.9Q44.0 96.3 44.0 90.5Q44.0 86.1 41.650000000000006 82.85Q39.300000000000004 79.6 34.9 78.4L23.8 75.3Q16.900000000000002 73.3 12.950000000000001 68.15Q9.0 63.0 9.0 56.0Q9.0 50.199999999999996 11.600000000000001 45.8Q14.200000000000001 41.39999999999999 18.900000000000002 38.949999999999996Q23.6 36.5 29.700000000000003 36.5Q35.9 36.5 40.650000000000006 38.949999999999996Q45.400000000000006 41.39999999999999 48.10000000000001 45.74999999999999Q50.800000000000004 50.099999999999994 50.800000000000004 55.8H41.800000000000004Q41.800000000000004 50.8 38.400000000000006 47.65Q35.0 44.5 29.700000000000003 44.5Q24.400000000000002 44.5 21.1 47.65Q17.8 50.8 17.8 55.8Q17.8 59.8 19.950000000000003 62.65Q22.1 65.5 26.0 66.6L37.4 69.8Q44.7 71.8 48.75 77.35Q52.800000000000004 82.9 52.800000000000004 90.5Q52.800000000000004 100.1 46.7 105.8Q40.6 111.5 30.400000000000002 111.5ZM82.2 111.5Q73.7 111.5 68.7 106.75Q63.7 102.0 63.7 94.3Q63.7 89.2 66.0 85.4Q68.3 81.6 72.4 79.44999999999999Q76.5 77.3 81.8 77.3H98.80000000000001V73.0Q98.80000000000001 62.3 87.1 62.3Q81.9 62.3 78.7 64.19999999999999Q75.5 66.1 75.3 69.5H66.3Q66.8 63.0 72.35 58.75Q77.9 54.5 87.1 54.5Q97.1 54.5 102.45 59.3Q107.80000000000001 64.1 107.80000000000001 72.69999999999999V110.5H98.9V100.5H98.7Q97.9 105.6 93.60000000000001 108.55Q89.30000000000001 111.5 82.2 111.5ZM84.4 103.9Q91.0 103.9 94.9 100.7Q98.80000000000001 97.5 98.80000000000001 92.0V84.3H82.8Q78.4 84.3 75.65 86.94999999999999Q72.9 89.6 72.9 94.0Q72.9 98.6 75.95 101.25Q79.0 103.9 84.4 103.9ZM131.8 128.5 139.9 107.1 119.4 55.5H129.1L142.1 89.5Q142.9 91.5 143.60000000000002 93.7Q144.3 95.9 144.6 97.5Q144.9 95.9 145.60000000000002 93.7Q146.3 91.5 147.0 89.5L159.1 55.5H168.6L141.2 128.5Z" />
+          <path transform="translate(-24 0)" d="M240.9 128.5 230.6 111.5Q230.3 111.5 230.0 111.5Q223.0 111.5 217.8 108.8Q212.6 106.1 209.7 101.19999999999999Q206.8 96.3 206.8 89.7V58.3Q206.8 51.699999999999996 209.65 46.8Q212.5 41.89999999999999 217.75 39.199999999999996Q223.0 36.5 230.0 36.5Q237.0 36.5 242.2 39.199999999999996Q247.4 41.89999999999999 250.3 46.8Q253.2 51.699999999999996 253.2 58.3V89.7Q253.2 96.3 250.35 101.25Q247.5 106.2 242.3 108.8L254.4 128.5ZM230.0 100.5Q235.2 100.5 237.95 97.65Q240.7 94.8 240.7 89.7V58.3Q240.7 53.199999999999996 237.85 50.3Q235.0 47.4 230.0 47.4Q225.0 47.4 222.15 50.3Q219.3 53.199999999999996 219.3 58.3V89.7Q219.3 94.8 222.05 97.65Q224.8 100.5 230.0 100.5ZM269.1 110.5V37.5H281.6V99.2H312.6V110.5Z" />
+        </svg>
+      </div>
+      <p class="edition">Community Edition</p>
+      <div class="footer">
+        <span>Let agents into your database. Not your data.</span>
+        <span>Version %SAYQL_VERSION%</span>
+      </div>
+      <div class="bar"></div>
+    </main>
+  </body>
+</html>

@@ -1695,6 +1695,10 @@ const handlers: MockHandlers = {
   app_info: async () => {
     return { version, os: "macos", arch: "aarch64" };
   },
+  // There is no splash in the browser preview.
+  app_ready: async () => {
+    return null;
+  },
   install_update: async () => {
     return Promise.reject("Updates aren't available in the browser preview.");
   },
