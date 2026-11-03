@@ -1,7 +1,8 @@
 // Development only: lets the UI run in a plain browser (`pnpm dev`) with fake data,
 // for design work without the Rust backend. Never loaded inside the Tauri app.
 import { emit } from "@tauri-apps/api/event";
-import { MAX_SOURCES_FREE, SOURCE_CAP_MESSAGE } from "../api/types";
+import { MAX_SOURCES_FREE, SOURCE_CAP_MESSAGE, UPDATE_PROGRESS_EVENT } from "../api/types";
+import CHANGELOG from "../../CHANGELOG.md?raw";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import type {
   CommandArgs,
@@ -39,6 +40,8 @@ const VIDEO = new URLSearchParams(window.location.search).has("video");
  * apart from the normal preview's and emptied on every load (see `setStorageNamespace`).
  */
 const FIRSTRUN = new URLSearchParams(window.location.search).has("firstrun");
+/** `?update`: the update check finds a newer version, with this version's changelog as its notes. */
+const UPDATE = new URLSearchParams(window.location.search).has("update");
 /** ?noplan: the Claude plan check says Claude Code isn't signed in. */
 const NOPLAN = new URLSearchParams(window.location.search).has("noplan");
 
@@ -1696,11 +1699,25 @@ const handlers: MockHandlers = {
   app_info: async () => {
     return { version, os: "macos", arch: "aarch64" };
   },
+  // There is no splash in the browser preview.
+  app_ready: async () => {
+    return null;
+  },
   install_update: async () => {
-    return Promise.reject("Updates aren't available in the browser preview.");
+    if (!UPDATE) return Promise.reject("Updates aren't available in the browser preview.");
+    const total = 48_200_000;
+    for (let received = 0; received < total; received += 2_400_000) {
+      await emit(UPDATE_PROGRESS_EVENT, { received, total, installing: false });
+      await new Promise((r) => setTimeout(r, 150));
+    }
+    await emit(UPDATE_PROGRESS_EVENT, { received: total, total, installing: true });
+    await new Promise((r) => setTimeout(r, 1200));
+    return Promise.reject("The browser preview can't install updates.");
   },
   check_update: async () => {
-    return null;
+    if (!UPDATE) return null;
+    const notes = CHANGELOG.split(/^## /m)[1]?.split("\n").slice(1).join("\n").trim() ?? null;
+    return { version: "0.6.0", currentVersion: version, date: "2026-11-10", notes };
   },
   take_handoffs: async () => {
     return [];

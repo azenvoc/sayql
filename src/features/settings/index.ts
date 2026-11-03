@@ -7,3 +7,4 @@ export type { AiAppsTab } from "./ClaudeIntegration";
 export { ModelPicker } from "./ModelPicker";
 export { modelLabel, useSettings } from "./useSettings";
 export type { ModelNames } from "./useSettings";
+export { modelLogo, providerLogo } from "./aiLogos";

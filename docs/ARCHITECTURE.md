@@ -4,11 +4,14 @@ SayQL is a Tauri 2 desktop app: a React + TypeScript UI (`src/`) on top of a Rus
 
 ## Frontend layout (`src/`)
 
+`index.html` is the app's page. `splash.html` is the card shown while it loads: a second page with no
+scripts, in a window of its own that has no capability (see `src-tauri/tauri.conf.json`).
+
 ```
 src/
   main.tsx              entry: global styles, dev-only mock backend, <App/>
   app/                  the window shell; composes features, owns no business logic
-    App.tsx             ThemeProvider + bootstrap gate
+    App.tsx             ThemeProvider + bootstrap gate (useBootstrap calls app_ready once it has drawn)
     Workbench.tsx       layout: TopBar, Navigator | tabs, StatusBar, dialogs; the navigator follows the active tab
     QueryTab.tsx        one editor tab: Ask bar + SQL editor over results, bound to one database
     TopBar.tsx, StatusBar.tsx, SqlWorkspace.tsx, useBootstrap.ts
@@ -106,7 +109,8 @@ src-tauri/src/
   error.rs              AppError / AppResult: the single error type; serializes to a message for the UI
   state.rs              AppState: store, open connections, the running AI generation
   commands/             Tauri commands, one file per UI area (thin: validate, call modules, map results)
-    app.rs              app_info: version, OS and architecture, for pre-filling feedback
+    app.rs              app_info: version, OS and architecture, for pre-filling feedback; app_ready:
+                        shows the main window and closes the splash (with a 10 s fallback)
     connections.rs      init, save/delete/test/open connection, refresh schema
     query.rs            run_query (write confirmation gate)
     agent.rs            start/stop/reply_agent (agent://event), per-connection agent access, database notes

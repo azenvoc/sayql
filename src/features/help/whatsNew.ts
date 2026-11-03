@@ -11,6 +11,23 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.6.0",
+    items: [
+      {
+        title: "Updates show what's new",
+        text: "A new version opens a dialog with its release notes; Upgrade installs it with a progress bar.",
+      },
+      {
+        title: "New connection, by logo",
+        text: "Pick your database from a card with its logo, or paste a connection string as before.",
+      },
+      {
+        title: "Logos for AI providers and models",
+        text: "In the setup, Settings → AI provider and the Ask box's model menu.",
+      },
+    ],
+  },
+  {
     version: "0.4.10",
     items: [
       {

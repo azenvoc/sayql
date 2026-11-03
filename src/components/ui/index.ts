@@ -24,3 +24,5 @@ export { ContextMenu, useContextMenu } from "./ContextMenu";
 export type { MenuEntry, MenuPosition } from "./ContextMenu";
 export { BrandMark, Wordmark } from "./BrandMark";
 export { Markdown } from "./Markdown";
+export { Logo, logoTitle } from "./Logo";
+export type { LogoId } from "./Logo";

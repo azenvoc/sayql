@@ -1,7 +1,8 @@
-import { Check, ChevronDown, Settings as SettingsIcon } from "lucide-react";
+import { ChevronDown, Settings as SettingsIcon } from "lucide-react";
 import { commands, type AiProvider, type Settings, type TeamAiStatus } from "../../api";
-import { ContextMenu, useContextMenu, type MenuEntry } from "../../components/ui";
+import { ContextMenu, Logo, useContextMenu, type MenuEntry } from "../../components/ui";
 import { errorText } from "../../lib/errors";
+import { modelLogo, providerLogo } from "./aiLogos";
 import { modelLabel } from "./useSettings";
 import styles from "./ModelPicker.module.css";
 
@@ -61,7 +62,8 @@ function TeamModels({ team, purpose }: { team: TeamAiStatus; purpose: "typing" |
     "separator",
     ...(team.models.length ? team.models : [current]).map((id): MenuEntry => ({
       label: id,
-      icon: id === current ? Check : undefined,
+      logo: modelLogo(id, "custom"),
+      checked: id === current,
       disabled: true,
       onSelect: () => {},
     })),
@@ -74,6 +76,7 @@ function TeamModels({ team, purpose }: { team: TeamAiStatus; purpose: "typing" |
         title="Your team's AI, set by your team admin. AI requests on this connection go through your team's SayQL server."
         onClick={(e) => menu.open(e, items)}
       >
+        <Logo id={modelLogo(current, "custom")} size={12} />
         {current} · Team
         <ChevronDown size={12} />
       </button>
@@ -99,7 +102,8 @@ function OwnModels({
   const entries = (p: AiProvider): MenuEntry[] =>
     modelsOf(settings, p).map((id) => ({
       label: modelLabel(settings, id, p.id),
-      icon: p.id === settings.provider && id === current ? Check : undefined,
+      logo: modelLogo(id, p.id),
+      checked: p.id === settings.provider && id === current,
       onSelect: () => void choose(p.id, id),
     }));
 
@@ -108,6 +112,7 @@ function OwnModels({
       ? entries(ready[0])
       : ready.map((p): MenuEntry => ({
           label: p.id === settings.provider ? `${p.label} (in use)` : p.label,
+          logo: providerLogo(p.id),
           submenu: entries(p),
         }))),
     "separator",
@@ -127,6 +132,7 @@ function OwnModels({
         }
         onClick={(e) => menu.open(e, items)}
       >
+        <Logo id={modelLogo(current, settings.provider)} size={12} />
         {modelLabel(settings, current)}
         <ChevronDown size={12} />
       </button>

@@ -1,10 +1,14 @@
 import { useState } from "react";
 import type { Settings } from "../../api";
+import type { LogoId } from "../../components/ui";
+import { modelLogo } from "./aiLogos";
 
 /** Short display names of the two models, e.g. "Haiku 5.5". */
 export interface ModelNames {
   typing: string;
   expert: string;
+  /** The logo of the model that writes SQL as you type. */
+  logo: LogoId;
 }
 
 /** A model's short display name, e.g. "Haiku 5.5" or "gpt-5-mini", for `provider` (default: the current one). */
@@ -27,6 +31,7 @@ export function useSettings(initial: Settings) {
   const modelNames: ModelNames = {
     typing: shortName(settings, settings.typingModel),
     expert: shortName(settings, settings.expertModel),
+    logo: modelLogo(settings.typingModel, settings.provider),
   };
   return { settings, setSettings, modelNames };
 }

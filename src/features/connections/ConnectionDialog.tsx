@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PlugZap, Trash2 } from "lucide-react";
+import { ArrowLeft, PlugZap, Trash2 } from "lucide-react";
 import { commands, type ConnectionConfig, type DatabaseKind } from "../../api";
 import {
   Alert,
@@ -8,12 +8,15 @@ import {
   Dialog,
   Field,
   FieldRow,
+  Logo,
   SegmentedControl,
   TextInput,
 } from "../../components/ui";
 import { errorText } from "../../lib/errors";
 import { parseConnectionString } from "./connectionString";
-import { DATABASE_KINDS, KIND_OPTIONS } from "./kinds";
+import { DatabasePicker } from "./DatabasePicker";
+import { DATABASE_KINDS, KIND_OPTIONS, type DatabaseChoice } from "./kinds";
+import styles from "./ConnectionDialog.module.css";
 
 export function newConnection(): ConnectionConfig {
   return {
@@ -61,6 +64,10 @@ export function ConnectionDialog({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pasted, setPasted] = useState("");
   const [pasteStatus, setPasteStatus] = useState<{ ok: boolean; text: string } | null>(null);
+  // A new connection starts on the page of database logos; one prefilled by an AI app doesn't.
+  const [picking, setPicking] = useState(isNew && !note);
+  const [filter, setFilter] = useState("");
+  const [choice, setChoice] = useState<DatabaseChoice | null>(null);
   const set = (patch: Partial<ConnectionConfig>) => setC((prev) => ({ ...prev, ...patch }));
 
   // Fills the form from a pasted connection string, then clears it so the password isn't left on screen.
@@ -76,6 +83,8 @@ export function ConnectionDialog({
     }
     set(parsed.fields);
     if (parsed.password !== null) setPassword(parsed.password);
+    setPicking(false);
+    setChoice(null);
     setPasted("");
     setStatus(null);
     setPasteStatus({
@@ -85,6 +94,13 @@ export function ConnectionDialog({
           ? "Filled in, including the password. Check the details, then Test or Save."
           : "Filled in. Enter the password, then Test or Save.",
     });
+  };
+
+  const pick = (picked: DatabaseChoice) => {
+    const kind = DATABASE_KINDS[picked.kind];
+    set({ kind: picked.kind, port: kind.defaultPort, ssl: kind.defaultSsl, ...picked.preset });
+    setChoice(picked);
+    setPicking(false);
   };
 
   const test = async () => {
@@ -120,39 +136,12 @@ export function ConnectionDialog({
     onDeleted(c.id);
   };
 
-  return (
-    <Dialog
-      title={isNew ? "New connection" : "Edit connection"}
-      onClose={onClose}
-      secondaryActions={
-        !isNew && (
-          <Button
-            variant="dangerGhost"
-            icon={Trash2}
-            onClick={remove}
-            title="Removes the saved connection; the database is not touched"
-          >
-            {confirmDelete ? "Click again to delete" : "Delete"}
-          </Button>
-        )
-      }
-      actions={
-        <>
-          <Button icon={PlugZap} onClick={test} loading={testing}>
-            Test
-          </Button>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={save}>
-            Save
-          </Button>
-        </>
-      }
-    >
-      {note && <Alert tone="info">{note}. Check the details, then enter the password.</Alert>}
+  const connectionString = (
+    <>
       <Field
         label="Connection string"
         optional
-        hint="Paste one to fill in the fields below. The password is saved to your keychain only when you click Save."
+        hint={`Paste one to fill in ${picking ? "the connection's details" : "the fields below"}. The password is saved to your keychain only when you click Save.`}
       >
         {(id) => (
           <TextInput
@@ -185,6 +174,68 @@ export function ConnectionDialog({
       {pasteStatus && (
         <Alert tone={pasteStatus.ok ? "success" : "warning"}>{pasteStatus.text}</Alert>
       )}
+    </>
+  );
+
+  if (picking) {
+    return (
+      <Dialog
+        title="New connection"
+        size="lg"
+        onClose={onClose}
+        actions={<Button onClick={onClose}>Cancel</Button>}
+      >
+        <DatabasePicker filter={filter} onFilter={setFilter} onPick={pick} />
+        <div className={styles.or} role="separator">
+          or
+        </div>
+        {connectionString}
+      </Dialog>
+    );
+  }
+
+  // The card picked, while the type still matches it; otherwise the type's own logo and name.
+  const shown = choice?.kind === c.kind ? choice : null;
+  return (
+    <Dialog
+      title={isNew ? "New connection" : "Edit connection"}
+      onClose={onClose}
+      secondaryActions={
+        isNew && !note ? (
+          <Button variant="ghost" icon={ArrowLeft} onClick={() => setPicking(true)}>
+            All databases
+          </Button>
+        ) : (
+          !isNew && (
+            <Button
+              variant="dangerGhost"
+              icon={Trash2}
+              onClick={remove}
+              title="Removes the saved connection; the database is not touched"
+            >
+              {confirmDelete ? "Click again to delete" : "Delete"}
+            </Button>
+          )
+        )
+      }
+      actions={
+        <>
+          <Button icon={PlugZap} onClick={test} loading={testing}>
+            Test
+          </Button>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={save}>
+            Save
+          </Button>
+        </>
+      }
+    >
+      {note && <Alert tone="info">{note}. Check the details, then enter the password.</Alert>}
+      <div className={styles.heading}>
+        <Logo id={shown?.logo ?? DATABASE_KINDS[c.kind].logo} size={28} />
+        <span>{shown?.name ?? DATABASE_KINDS[c.kind].label}</span>
+      </div>
+      {connectionString}
       <Field label="Database type">
         {() => (
           <SegmentedControl<DatabaseKind>
@@ -211,7 +262,6 @@ export function ConnectionDialog({
           />
         )}
       </Field>
-
       {c.kind === "sqlite" ? (
         <Field label="Database file">
           {(id) => (
@@ -304,7 +354,6 @@ export function ConnectionDialog({
           )}
         </>
       )}
-
       <Field
         label="Production"
         hint="Shows a PROD badge on this connection in the navigator, its tabs and the status bar, so it's never mistaken for a test database. It doesn't change how queries run."
@@ -317,7 +366,6 @@ export function ConnectionDialog({
           />
         )}
       </Field>
-
       {status && <Alert tone={status.ok ? "success" : "danger"}>{status.text}</Alert>}
     </Dialog>
   );

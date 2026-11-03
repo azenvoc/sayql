@@ -7,7 +7,8 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import { createPortal } from "react-dom";
-import { ChevronRight, type LucideIcon } from "lucide-react";
+import { Check, ChevronRight, type LucideIcon } from "lucide-react";
+import { Logo, type LogoId } from "./Logo";
 import { cx } from "../../lib/cx";
 import styles from "./ContextMenu.module.css";
 
@@ -15,6 +16,10 @@ export type MenuEntry =
   | {
       label: string;
       icon?: LucideIcon;
+      /** A database's or AI provider's logo, in place of the icon. */
+      logo?: LogoId;
+      /** The one in use: a check mark on the right. */
+      checked?: boolean;
       /** Shown on the right, e.g. "⌘T". */
       shortcut?: string;
       disabled?: boolean;
@@ -209,8 +214,11 @@ function MenuList({ items, at, flipFrom, onClose, onBack, autoFocus }: MenuListP
               }}
               onClick={() => activate(i)}
             >
-              <span className={styles.icon}>{Icon && <Icon size={14} />}</span>
+              <span className={styles.icon}>
+                {it.logo ? <Logo id={it.logo} size={14} /> : Icon && <Icon size={14} />}
+              </span>
               <span className={styles.label}>{it.label}</span>
+              {it.checked && <Check size={13} className={styles.check} aria-label="In use" />}
               {it.shortcut && <span className={styles.shortcut}>{it.shortcut}</span>}
               {it.submenu && <ChevronRight size={13} className={styles.chevron} />}
             </button>

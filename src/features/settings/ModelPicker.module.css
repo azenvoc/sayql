@@ -2,7 +2,7 @@
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-1);
   height: 20px;
   padding: 0 var(--space-1);
   border: 1px solid transparent;

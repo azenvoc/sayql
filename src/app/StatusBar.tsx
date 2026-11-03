@@ -2,7 +2,7 @@ import { ArrowDownToLine, Circle, MessageSquare, Plug, ShieldCheck, Sparkles } f
 import type { ConnectionConfig, Schema } from "../api";
 import type { ModelNames } from "../features/settings";
 import type { UpdateState } from "../features/updates";
-import { Button } from "../components/ui";
+import { Button, Logo } from "../components/ui";
 import { ProdBadge } from "../features/connections";
 import { privacySummary, useAgentAccess } from "../features/agent";
 import { cx } from "../lib/cx";
@@ -126,14 +126,16 @@ export function StatusBar({
           variant="primary"
           icon={ArrowDownToLine}
           loading={updates.installing}
-          title={updates.error ?? updates.update.notes ?? undefined}
-          onClick={updates.install}
+          title={
+            updates.error ?? `SayQL ${updates.update.version} is available. Click for details.`
+          }
+          onClick={updates.show}
         >
           {updates.error ? "Update failed — retry" : `Update to ${updates.update.version}`}
         </Button>
       )}
       <span className={styles.statusItem}>
-        <Sparkles size={11} />
+        {aiReady ? <Logo id={modelNames.logo} size={11} /> : <Sparkles size={11} />}
         {aiReady
           ? `${modelNames.typing} while typing · ${modelNames.expert} for fixes`
           : "AI off — set up an AI provider in Settings"}

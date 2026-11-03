@@ -68,6 +68,7 @@ describe("the production tag", () => {
         onDeleted={() => {}}
       />,
     );
+    fireEvent.click(screen.getByRole("button", { name: /PostgreSQL/ }));
     fireEvent.click(screen.getByLabelText("This is a production database"));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalled());

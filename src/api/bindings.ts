@@ -7,6 +7,11 @@ import { invoke as __TAURI_INVOKE } from "@tauri-apps/api/core";
 /** Commands */
 export const commands = {
 	appInfo: () => __TAURI_INVOKE<AppInfo>("app_info"),
+	/**
+	 *  The main window's first screen (the workbench, or the reason SayQL couldn't start) is on
+	 *  the page: shows the window and closes the splash. Calls from any other window are ignored.
+	 */
+	appReady: () => __TAURI_INVOKE<void>("app_ready"),
 	/**  Startup: saved connections and settings. Adds the demo database on first launch. */
 	init: () => __TAURI_INVOKE<InitView_Serialize>("init"),
 	/**  Creates (empty id) or updates a connection. `password: None` keeps the saved password. */
@@ -232,7 +237,8 @@ export const commands = {
 	checkUpdate: () => __TAURI_INVOKE<UpdateInfo_Serialize | null>("check_update"),
 	/**
 	 *  Downloads the newer release, installs it once its signature checks out against the
-	 *  updater key in tauri.conf.json, and restarts into it.
+	 *  updater key in tauri.conf.json, and restarts into it. Progress arrives as `update://progress`
+	 *  events.
 	 */
 	installUpdate: () => __TAURI_INVOKE<null>("install_update"),
 	/**  Redeems an invite code, keeps the token in the keychain and the server in settings. */
@@ -288,7 +294,7 @@ export const AI_RESET_EVENT = "ai://reset" as const;
 
 export const AUDIT_EVENT = "audit://event" as const;
 
-export const COMMAND_ARGS = {"accept_note_suggestion":["id"],"add_knowledge_files":["id"],"add_knowledge_folder":["id"],"add_knowledge_repo":["id","url","branch","subdir","token","tokenUser"],"add_knowledge_url":["id","url","crawl"],"agent_access":["id"],"app_info":[],"approve_mcp_app":["name"],"audit_agents":[],"audit_model":[],"audit_payment":[],"audit_prompt":["id","database"],"cancel_audit":["runId"],"cancel_generation":["slot"],"cancel_query":["runId"],"check_claude_plan":[],"check_note":["id"],"check_notes":["id","database"],"check_update":[],"choose_model":["provider","model","purpose"],"clear_mcp_activity":[],"clear_my_activity":[],"confirm_note":["id"],"credits_balance":[],"delete_connection":["id"],"delete_note":["id"],"delete_script":["id"],"delete_skill":["slug"],"dismiss_note_suggestion":["id"],"finish_onboarding":[],"generate_sql":["id","database","question","reqId","slot","task","focusTables","skill"],"init":[],"install_update":[],"installed_coding_agents":[],"knowledge_sources":["id"],"list_databases":["id"],"list_models":["provider","baseUrl","apiKey"],"list_note_suggestions":[],"list_notes":["id","database"],"list_scripts":[],"list_shared_notes":["id"],"list_skills":[],"mcp_activity":["limit"],"mcp_apps":[],"mcp_audits":[],"mcp_setup":[],"my_activity":["connectionId","limit"],"open_audit_in_terminal":["agent","id","database"],"open_database":["id","database"],"open_install_link":["url"],"refresh_knowledge_source":["id","sourceId"],"refresh_schema":["id","database"],"remove_knowledge_source":["id","sourceId"],"reply_agent":["runId","reply"],"run_query":["id","database","sql","allowWrite","runId","source","question"],"save_agent_access":["id","access"],"save_agent_settings":["agentModel","agent"],"save_connection":["config","password"],"save_note":["note"],"save_script":["script"],"save_settings":["provider","typingModel","expertModel","baseUrl","apiKey","workspaceId"],"save_skill":["skill","original"],"set_audit_model":["model"],"set_audit_payment":["payment"],"set_mcp_app_blocked":["name","blocked"],"set_mcp_only_approved":["on"],"start_agent":["id","database","question","runId","slot","focusTables","skill","followUp","auto"],"start_audit":["runId","agent","id","database"],"stop_agent":["runId"],"suggest_note":["id","text","check"],"take_handoffs":[],"team_ai":[],"team_connections":[],"team_sign_in":["server","code"],"team_sign_out":[],"team_sso_finish":["code"],"team_sso_start":["server"],"team_status":[],"test_connection":["config","password"],"voice_cancel":[],"voice_cancel_download":[],"voice_delete_model":[],"voice_download":[],"voice_start":[],"voice_status":[],"voice_stop":["prompt"]} as const;
+export const COMMAND_ARGS = {"accept_note_suggestion":["id"],"add_knowledge_files":["id"],"add_knowledge_folder":["id"],"add_knowledge_repo":["id","url","branch","subdir","token","tokenUser"],"add_knowledge_url":["id","url","crawl"],"agent_access":["id"],"app_info":[],"app_ready":[],"approve_mcp_app":["name"],"audit_agents":[],"audit_model":[],"audit_payment":[],"audit_prompt":["id","database"],"cancel_audit":["runId"],"cancel_generation":["slot"],"cancel_query":["runId"],"check_claude_plan":[],"check_note":["id"],"check_notes":["id","database"],"check_update":[],"choose_model":["provider","model","purpose"],"clear_mcp_activity":[],"clear_my_activity":[],"confirm_note":["id"],"credits_balance":[],"delete_connection":["id"],"delete_note":["id"],"delete_script":["id"],"delete_skill":["slug"],"dismiss_note_suggestion":["id"],"finish_onboarding":[],"generate_sql":["id","database","question","reqId","slot","task","focusTables","skill"],"init":[],"install_update":[],"installed_coding_agents":[],"knowledge_sources":["id"],"list_databases":["id"],"list_models":["provider","baseUrl","apiKey"],"list_note_suggestions":[],"list_notes":["id","database"],"list_scripts":[],"list_shared_notes":["id"],"list_skills":[],"mcp_activity":["limit"],"mcp_apps":[],"mcp_audits":[],"mcp_setup":[],"my_activity":["connectionId","limit"],"open_audit_in_terminal":["agent","id","database"],"open_database":["id","database"],"open_install_link":["url"],"refresh_knowledge_source":["id","sourceId"],"refresh_schema":["id","database"],"remove_knowledge_source":["id","sourceId"],"reply_agent":["runId","reply"],"run_query":["id","database","sql","allowWrite","runId","source","question"],"save_agent_access":["id","access"],"save_agent_settings":["agentModel","agent"],"save_connection":["config","password"],"save_note":["note"],"save_script":["script"],"save_settings":["provider","typingModel","expertModel","baseUrl","apiKey","workspaceId"],"save_skill":["skill","original"],"set_audit_model":["model"],"set_audit_payment":["payment"],"set_mcp_app_blocked":["name","blocked"],"set_mcp_only_approved":["on"],"start_agent":["id","database","question","runId","slot","focusTables","skill","followUp","auto"],"start_audit":["runId","agent","id","database"],"stop_agent":["runId"],"suggest_note":["id","text","check"],"take_handoffs":[],"team_ai":[],"team_connections":[],"team_sign_in":["server","code"],"team_sign_out":[],"team_sso_finish":["code"],"team_sso_start":["server"],"team_status":[],"test_connection":["config","password"],"voice_cancel":[],"voice_cancel_download":[],"voice_delete_model":[],"voice_download":[],"voice_start":[],"voice_status":[],"voice_stop":["prompt"]} as const;
 
 export const MAX_SOURCES_FREE = 3 as const;
 
@@ -297,6 +303,8 @@ export const QUERY_CANCELLED = "Query cancelled." as const;
 export const SOURCE_CAP_MESSAGE = "SayQL for teams keeps unlimited sources in sync for everyone." as const;
 
 export const TEAM_SIGNED_OUT = "Signed out of your team, sign in again." as const;
+
+export const UPDATE_PROGRESS_EVENT = "update://progress" as const;
 
 export const WRITE_CONFIRM = "WRITE_CONFIRM" as const;
 
@@ -1775,12 +1783,41 @@ export type UpdateInfo = UpdateInfo_Serialize | UpdateInfo_Deserialize;
 
 export type UpdateInfo_Deserialize = {
 	version: string,
+	/**  The version running now, to show next to the new one. */
+	currentVersion: string,
+	/**  The release date as `YYYY-MM-DD`, when the feed has one. */
+	date?: string | null,
+	/**  The release's changes, in Markdown (the version's CHANGELOG.md section). */
 	notes?: string | null,
 };
 
 export type UpdateInfo_Serialize = {
 	version: string,
+	/**  The version running now, to show next to the new one. */
+	currentVersion: string,
+	/**  The release date as `YYYY-MM-DD`, when the feed has one. */
+	date: string | null,
+	/**  The release's changes, in Markdown (the version's CHANGELOG.md section). */
 	notes: string | null,
+};
+
+/**  How much of the update has downloaded. `total` is missing when the server doesn't say. */
+export type UpdateProgress = UpdateProgress_Serialize | UpdateProgress_Deserialize;
+
+/**  How much of the update has downloaded. `total` is missing when the server doesn't say. */
+export type UpdateProgress_Deserialize = {
+	received: number,
+	total?: number | null,
+	/**  The download is done and the update is being installed. */
+	installing: boolean,
+};
+
+/**  How much of the update has downloaded. `total` is missing when the server doesn't say. */
+export type UpdateProgress_Serialize = {
+	received: number,
+	total: number | null,
+	/**  The download is done and the update is being installed. */
+	installing: boolean,
 };
 
 export type Usage = {

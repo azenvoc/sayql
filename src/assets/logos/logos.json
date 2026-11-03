@@ -1,0 +1,92 @@
+{
+  "postgresql": {
+    "title": "PostgreSQL",
+    "color": "#4169E1",
+    "source": "https://wiki.postgresql.org/wiki/Logo",
+    "guidelines": "https://www.postgresql.org/about/policies/trademarks/"
+  },
+  "mysql": {
+    "title": "MySQL",
+    "color": "#4479A1",
+    "source": "https://www.mysql.com/about/legal/logos.html",
+    "guidelines": "https://www.mysql.com/about/legal/logos.html"
+  },
+  "mariadb": {
+    "title": "MariaDB",
+    "color": "#003545",
+    "dark": true,
+    "source": "https://mariadb.com/about-us/logos/",
+    "guidelines": "https://mariadb.com/about-us/logos/"
+  },
+  "sqlite": {
+    "title": "SQLite",
+    "color": "#003B57",
+    "dark": true,
+    "source": "https://github.com/sqlite/sqlite/blob/43e862723ec680542ca6f608f9963c0993dd7324/art/sqlite370.eps",
+    "guidelines": "https://sqlite.org/copyright.html"
+  },
+  "anthropic": {
+    "title": "Anthropic",
+    "color": "#191919",
+    "dark": true,
+    "source": "https://www.anthropic.com"
+  },
+  "claude": {
+    "title": "Claude",
+    "color": "#D97757",
+    "source": "https://claude.ai"
+  },
+  "googlegemini": {
+    "title": "Google Gemini",
+    "color": "#8E75B2",
+    "source": "https://gemini.google.com",
+    "guidelines": "https://about.google/brand-resource-center/"
+  },
+  "openrouter": {
+    "title": "OpenRouter",
+    "color": "#94A3B8",
+    "source": "https://openrouter.ai"
+  },
+  "mistralai": {
+    "title": "Mistral AI",
+    "color": "#FA520F",
+    "source": "https://chat.mistral.ai"
+  },
+  "deepseek": {
+    "title": "DeepSeek",
+    "color": "#5786FE",
+    "source": "https://www.deepseek.com"
+  },
+  "ollama": {
+    "title": "Ollama",
+    "color": "#000000",
+    "dark": true,
+    "source": "https://github.com/ollama/ollama/issues/2152#issuecomment-1905286922"
+  },
+  "lmstudio": {
+    "title": "LM Studio",
+    "color": "#000000",
+    "dark": true,
+    "artwork": "official",
+    "source": "https://lmstudio.ai/assets/marketing/brand/download/logos/lm-studio-icon-color.svg",
+    "guidelines": "https://lmstudio.ai/brand"
+  },
+  "meta": {
+    "title": "Meta",
+    "color": "#0467DF",
+    "source": "https://www.meta.com",
+    "guidelines": "https://www.facebook.com/brand/resources/meta/company-brand"
+  },
+  "qwen": {
+    "title": "QWen",
+    "color": "#6950EF",
+    "source": "https://qwen.ai"
+  },
+  "openai": {
+    "title": "OpenAI",
+    "color": "#000000",
+    "artwork": "official",
+    "source": "https://openai.com/brand/ (Blossom, black and white versions, unchanged apart from cropping the clear space)",
+    "guidelines": "https://openai.com/brand/"
+  }
+}

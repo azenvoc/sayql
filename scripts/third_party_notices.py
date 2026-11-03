@@ -64,6 +64,36 @@ def npm_packages() -> list[dict]:
     return out
 
 
+def logo_notices() -> list[str]:
+    """The database and AI provider logos in src/assets/logos: Simple Icons (CC0 1.0), and a few
+    brands' own logos used under their published brand terms."""
+    logos = json.loads((ROOT / "src" / "assets" / "logos" / "logos.json").read_text())
+    official = [l for l in logos.values() if l.get("artwork") == "official"]
+    simple = [l for l in logos.values() if l.get("artwork") != "official"]
+    lines = [
+        "=" * 78,
+        "Logos (src/assets/logos)",
+        "Each logo is a trademark of its owner, shown only to identify that product; its use",
+        "doesn't mean the owner endorses SayQL.",
+        "-" * 78,
+        "The brands' own logos, used as their brand guidelines allow:",
+    ]
+    for logo in official:
+        lines += [f"{logo['title']}: {logo['source']}", f"  guidelines: {logo['guidelines']}"]
+    lines += ["", "From Simple Icons 16.36.0 (CC0-1.0) https://simpleicons.org; original source and", "usage guidelines:"]
+    for logo in simple:
+        lines.append(f"{logo['title']}: {logo['source']}")
+        if logo.get("guidelines"):
+            lines.append(f"  guidelines: {logo['guidelines']}")
+    lines += [
+        "",
+        "Simple Icons is released under CC0 1.0 Universal:",
+        "https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md",
+        "",
+    ]
+    return lines
+
+
 def main() -> None:
     packages = sorted(rust_packages() + npm_packages(), key=lambda p: (p["name"].lower(), p["version"]))
     by_text: dict[str, list[dict]] = {}
@@ -101,6 +131,8 @@ def main() -> None:
         whisper = p["dir"] / "whisper.cpp" / "LICENSE"
         if p["name"] == "whisper-rs-sys" and whisper.exists():
             lines += ["=" * 78, f"whisper.cpp, bundled with whisper-rs-sys {p['version']} (MIT) https://github.com/ggml-org/whisper.cpp", "-" * 78, whisper.read_text(errors="replace").strip(), ""]
+
+    lines += logo_notices()
 
     OUT.write_text("\n".join(lines))
     print(f"Wrote {OUT.relative_to(ROOT)}: {len(packages)} packages, {len(missing)} without a license file.", file=sys.stderr)

@@ -76,6 +76,7 @@ export type {
   TeamRules,
   TeamStatus_Serialize as TeamStatus,
   UpdateInfo_Serialize as UpdateInfo,
+  UpdateProgress_Serialize as UpdateProgress,
   Usage as AgentUsage,
   Value as Cell,
   VoiceStatus,
@@ -87,6 +88,7 @@ export {
   QUERY_CANCELLED,
   SOURCE_CAP_MESSAGE,
   TEAM_SIGNED_OUT,
+  UPDATE_PROGRESS_EVENT,
   WRITE_CONFIRM,
 } from "./bindings";
 

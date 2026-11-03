@@ -5,9 +5,17 @@ import {
   AI_DONE_EVENT,
   AI_RESET_EVENT,
   AUDIT_EVENT,
+  UPDATE_PROGRESS_EVENT,
   type Reset,
 } from "./bindings";
-import type { AgentEvent, AiDelta, AiDone, AuditEvent, VoiceProgress } from "./types";
+import type {
+  AgentEvent,
+  AiDelta,
+  AiDone,
+  AuditEvent,
+  UpdateProgress,
+  VoiceProgress,
+} from "./types";
 
 export { AGENT_EVENT, AUDIT_EVENT };
 
@@ -39,6 +47,13 @@ export type MenuAction = "close-tab" | "settings" | "shortcuts" | "whats-new" | 
 /** Subscribes to the macOS menu bar's items (src-tauri/src/app_menu.rs `EVENT`). */
 export function subscribeToMenu(handler: (action: MenuAction) => void): Promise<UnlistenFn> {
   return listen<MenuAction>("menu://action", (e) => handler(e.payload));
+}
+
+/** Subscribes to the update download's progress (src-tauri/src/commands/updates.rs `EVENT`). */
+export function subscribeToUpdateProgress(
+  handler: (e: UpdateProgress) => void,
+): Promise<UnlistenFn> {
+  return listen<UpdateProgress>(UPDATE_PROGRESS_EVENT, (e) => handler(e.payload));
 }
 
 /** Calls `onNew` when an AI app hands work to SayQL; fetch it with `commands.takeHandoffs`. */
