@@ -3,6 +3,28 @@
 All notable changes to SayQL are listed here. Downloads are on the
 [releases page](https://github.com/dithzz/sayql-releases/releases).
 
+## 0.6.0 (2026-11-03)
+
+### A more familiar desktop database tool
+
+- **Update dialog.** When there's a newer version, SayQL shows its version, date and release notes, the changes
+  from this changelog. **Upgrade…** downloads and installs it with a progress bar, then restarts; **Details…**
+  opens the release page. **Don't show for version X** keeps it away until the next version, and the status
+  bar's update button still opens it.
+- **A splash screen while SayQL starts.** A small card with the logo, "Community Edition" and the version shows
+  while the main window loads, and closes as soon as the window's first screen is ready. The window loads behind
+  it as before, so starting takes no longer, and it's shown after 10 seconds whatever happens.
+- **New connection starts with your database.** A card with its logo for PostgreSQL, MySQL, MariaDB, SQL Server,
+  Azure SQL and SQLite, with a filter (Enter picks the only match). Pasting a connection string still works,
+  right there or on the form, and **All databases** goes back. The navigator and the top bar show each
+  connection's logo.
+- **AI providers and models have logos too:** in the "How do you want to use AI?" setup, Settings → AI provider
+  (now a tile per provider), the Ask box's model menu (each provider, and each model by its maker, such as Claude,
+  Gemini, Mistral, Llama or Qwen through OpenRouter or Ollama) and the status bar.
+- Logos are bundled with the app, so nothing is downloaded. OpenAI and LM Studio use their own logos, as their
+  brand guidelines allow; the others are Simple Icons (CC0). SQL Server, Azure SQL, Groq and OpenAI-compatible
+  servers use a neutral icon. Sources are in THIRD-PARTY-NOTICES.txt.
+
 ## 0.5.5 (2026-11-03)
 
 ### Security fixes from a code audit
