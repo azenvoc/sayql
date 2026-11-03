@@ -284,96 +284,46 @@ p { text-wrap: pretty; }
 }
 .app .i { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .app b { font-weight: 600; }
-.mono { font-family: var(--font-mono); }
-.kbd { font: 500 10.5px/1 var(--font-mono); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 2px 4px; color: var(--color-text-muted); }
 
 .window { margin-top: 56px; box-shadow: var(--shadow-window); }
-.titlebar { height: 34px; display: flex; align-items: center; justify-content: center; position: relative; background: var(--color-surface-muted); border-bottom: 1px solid var(--color-border); font-weight: 600; font-size: 13px; color: var(--color-text-muted); }
 .lights { position: absolute; left: 12px; display: flex; gap: 7px; }
 .lights i { width: 11px; height: 11px; border-radius: 50%; display: block; }
 .lights i:nth-child(1) { background: #ff5f57; } .lights i:nth-child(2) { background: #febc2e; } .lights i:nth-child(3) { background: #28c840; }
-.topbar { height: 40px; display: flex; align-items: center; gap: 12px; padding: 0 10px; border-bottom: 1px solid var(--color-border); white-space: nowrap; }
-.topbar .logo { display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: 14px; padding-right: 12px; border-right: 1px solid var(--color-border-subtle); }
-.topbar .ghost { display: flex; align-items: center; gap: 5px; color: var(--color-text-muted); }
-.chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
-.chip .k { font-size: 11px; color: var(--color-text-muted); padding-left: 6px; border-left: 1px solid var(--color-border-subtle); }
-.topbar .end { margin-left: auto; display: flex; gap: 12px; color: var(--color-text-muted); }
 
 .body { display: grid; grid-template-columns: minmax(0, 1fr); height: 520px; }
-.pane-h { height: 30px; flex: none; display: flex; align-items: center; gap: 6px; padding: 0 10px; font-weight: 600; font-size: 12.5px; border-bottom: 1px solid var(--color-border-subtle); white-space: nowrap; }
-.pane-h .end { margin-left: auto; display: flex; gap: 8px; color: var(--color-text-muted); font-weight: 400; align-items: center; }
-.app .k-sl { color: var(--color-kind-sqlite); } .app .k-pg { color: var(--color-kind-postgres); }
+.app .k-pg { color: var(--color-kind-postgres); }
 
 .main { display: grid; grid-template-rows: 32px 34px auto auto minmax(0, 1fr) minmax(0, 1fr); min-width: 0; min-height: 0; overflow: hidden; }
 .main > * { min-width: 0; min-height: 0; }
 .tabs { display: flex; align-items: stretch; border-bottom: 1px solid var(--color-border); background: var(--color-surface-muted); }
 .tab { display: flex; align-items: center; gap: 7px; padding: 0 12px; font-size: 12.5px; background: var(--color-surface); border-right: 1px solid var(--color-border-subtle); box-shadow: inset 0 2px 0 var(--color-app-accent); white-space: nowrap; }
-.tab .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-app-accent); }
 .tabs .plus { display: flex; align-items: center; padding: 0 10px; color: var(--color-text-muted); }
-.ed-h { display: flex; align-items: center; gap: 6px; padding: 0 8px 0 10px; border-bottom: 1px solid var(--color-border-subtle); font-size: 12.5px; white-space: nowrap; }
-.ed-h .sub { color: var(--color-text-muted); }
-.ed-h .end { margin-left: auto; display: flex; align-items: center; gap: 12px; color: var(--color-text-muted); }
-.ed-h .tool { display: inline-flex; gap: 5px; align-items: center; }
-.run-btn { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: var(--radius-md); background: var(--color-app-accent); color: #fff; font-weight: 500; font-size: 12.5px; }
-.run-btn .kbd { border-color: rgba(255, 255, 255, 0.35); color: rgba(255, 255, 255, 0.85); }
-.run-btn.press { animation: press 500ms ease-out; }
 @keyframes press { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-app-accent) 50%, transparent); transform: scale(0.96); } 100% { box-shadow: 0 0 0 8px transparent; transform: none; } }
 
-.askbox { margin: 8px 8px 0; border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 6px 8px; transition: border-color 200ms, box-shadow 200ms; }
-.askbox.live { border-color: var(--color-ai); box-shadow: 0 0 0 3px var(--color-ai-soft); }
-.pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 7px; border: 1px solid var(--color-border); border-radius: var(--radius-md); font: 400 11.5px/1 var(--font-mono); color: var(--color-text-muted); }
-.q-line { display: flex; align-items: center; gap: 7px; margin-top: 5px; min-height: 20px; }
-.q-line .spark { color: var(--color-ai); }
-.q-line .mic.end { margin-left: auto; flex-shrink: 0; color: var(--color-text-subtle); }
-.q-line .pill { flex-shrink: 0; }
 .voice-strip { display: flex; align-items: center; gap: 8px; margin: 8px 10px 0; font-size: 12.5px; color: var(--color-text-muted); }
 .voice-strip[hidden], .voice-strip [hidden], .origin-badge[hidden] { display: none; }
-.voice-strip .rec { width: 8px; height: 8px; border-radius: 50%; background: var(--color-danger); animation: breathe 900ms ease-in-out infinite; }
 .voice-strip .meter { display: inline-flex; align-items: center; gap: 2px; height: 14px; }
 .voice-strip .meter i { width: 3px; height: 4px; border-radius: 2px; background: var(--color-text-subtle); transition: height 120ms; }
 .voice-strip .esc { margin-left: auto; color: var(--color-text-subtle); }
-.askbox .mic.on { color: var(--color-danger); }
 .origin-badge { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--color-ai-soft); color: var(--color-ai); margin-left: 8px; }
-.q-line .q { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.q { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13.5px; }
-.q .ph { color: var(--color-text-subtle); }
 .caret { display: inline-block; width: 1.5px; height: 15px; background: var(--color-text); vertical-align: -3px; margin-left: 1px; animation: blink 1s steps(1) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
-.hintbar { display: flex; align-items: center; gap: 12px; height: 30px; padding: 0 10px; margin-top: 6px; border-bottom: 1px solid var(--color-border-subtle); font-size: 12px; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; }
-.building { display: inline-flex; align-items: center; gap: 5px; color: var(--color-ai); padding-left: 8px; border-left: 2px solid var(--color-ai); }
-.building[hidden], .newq[hidden], .bar[hidden] { display: none; }
-.hintbar .state { display: inline-flex; align-items: center; gap: 5px; }
-.hintbar .state.ai { color: var(--color-ai); }
-.hintbar .state.ai i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: breathe 900ms ease-in-out infinite; }
 @keyframes breathe { 50% { opacity: 0.25; } }
-.hintbar .keys { margin-left: auto; display: flex; align-items: center; gap: 5px; color: var(--color-text-subtle); }
 
 .editor { display: grid; grid-template-columns: 38px minmax(0, 1fr); overflow: hidden; border-bottom: 1px solid var(--color-border); }
-.gutter { background: var(--color-surface-muted); color: var(--color-border-strong); font: 400 12px/20px var(--font-mono); text-align: right; padding: 8px 8px 0 0; white-space: pre; }
 .code { font: 400 12.5px/20px var(--font-mono); padding: 8px 12px 0; white-space: pre; overflow: hidden; }
-.tk-k { color: var(--syn-keyword); font-weight: 700; } .tk-f { color: var(--syn-function); } .tk-s { color: var(--syn-string); } .tk-n { color: var(--syn-number); } .tk-o { color: var(--syn-operator); }
 
 .results { display: grid; grid-template-rows: 30px minmax(0, 1fr); min-height: 0; }
-.results .pane-h .sub { color: var(--color-text-subtle); font-weight: 400; }
 .grid { overflow: hidden; }
 .grid table { border-collapse: collapse; font-size: 12.5px; }
 .grid th, .grid td { height: 26px; padding: 0 10px; border-right: 1px solid var(--color-border-subtle); border-bottom: 1px solid var(--color-border-subtle); white-space: nowrap; text-align: left; }
 .grid th { background: var(--color-grid-header); font-weight: 600; }
 .grid td { font-family: var(--font-mono); font-size: 12px; }
-.grid td.num { color: var(--color-grid-number); text-align: right; }
-.grid td.idx { color: var(--color-text-subtle); text-align: right; width: 40px; }
 .grid tbody tr { opacity: 0; transition: opacity 220ms; }
 .grid tbody tr.in { opacity: 1; }
-.empty { height: 100%; display: grid; place-items: center; color: var(--color-text-subtle); font-size: 12.5px; }
-.statusbar { height: 24px; display: flex; align-items: center; gap: 16px; padding: 0 10px; border-top: 1px solid var(--color-border); font-size: 11.5px; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; }
-.statusbar .ok { display: inline-flex; align-items: center; gap: 6px; }
-.statusbar .ok i { width: 7px; height: 7px; border-radius: 50%; background: var(--color-success); }
-.statusbar .end { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; }
-.statusbar .fb { display: inline-flex; align-items: center; gap: 5px; margin-right: 12px; }
 
 @media (max-width: 860px) {
   .body { height: 480px; }
-  .topbar .ghost, .topbar .end, .hintbar .keys, .ed-h .sub, .ed-h .tool, .statusbar .end, .statusbar .cols { display: none; }
 }
 
 /* hero: an agent session (left) beside SayQL's Agent activity (right). The terminal is dark in both themes. */
@@ -458,33 +408,10 @@ p { text-wrap: pretty; }
 @media (prefers-reduced-motion: reduce) { .ad-screen { height: auto; } }
 
 /* small feature demos */
-.mini { height: 264px; margin: 20px 20px 0; border-bottom: 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; position: relative; display: flex; flex-direction: column; }
-.mini .askbox { margin: 10px 10px 0; }
-.mini .hintbar { margin-top: 4px; }
-.mini .code { padding-top: 10px; }
-.mini .ed-h { height: 34px; flex: none; }
 .line { height: 20px; overflow: hidden; transition: height 320ms ease, background 200ms, opacity 320ms; }
 .line.del { background: var(--color-danger-soft); text-decoration: line-through; text-decoration-color: var(--color-danger); }
 .line.gone { height: 0; opacity: 0; }
 .line.add { background: var(--color-success-soft); }
-.bar { margin: 4px 10px 0; padding: 8px 10px; border-radius: var(--radius-md); font-size: 12.5px; display: flex; gap: 8px; align-items: center; }
-.bar.err { background: var(--color-danger-soft); color: var(--color-danger); }
-.bar.fix { background: var(--color-ai-soft); color: var(--color-ai); }
-.bar.ok { background: var(--color-success-soft); color: var(--color-success); }
-.bar.warn { background: var(--color-warning-soft); color: var(--color-warning); }
-/* Knowledge that stays true: a few notes, one flagged and fixed. */
-.kn-notes { list-style: none; margin: 0; padding: 6px 10px 4px; display: grid; gap: 2px; }
-.kn-notes li { display: flex; gap: 8px; align-items: flex-start; padding: 6px 4px; border-radius: var(--radius-md); font-size: 12.5px; transition: background .3s; }
-.kn-notes li small { display: block; color: var(--color-text-subtle); font-size: 11.5px; margin-top: 1px; }
-.kn-notes li.doubt { background: var(--color-warning-soft); }
-.kn-notes li.doubt small { color: var(--color-warning); }
-.kn-st { flex: none; width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; margin-top: 1px; }
-.kn-st .i { width: 14px; height: 14px; }
-.kn-st.ok { color: var(--color-success); }
-.kn-st.doubt { color: var(--color-warning); }
-.kn-use { margin-left: auto; padding: 2px 8px; border-radius: var(--radius-sm); background: var(--color-ai); color: #fff; font-size: 12px; font-weight: 500; transition: transform .15s; }
-.kn-use.press { transform: scale(.94); }
-
 .backdrop { position: absolute; inset: 0; background: var(--color-backdrop); display: grid; place-items: center; padding: 14px; opacity: 0; transition: opacity 200ms; }
 .backdrop.show { opacity: 1; }
 .dialog { width: 100%; max-width: 380px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-popover); transform: translateY(6px) scale(0.98); transition: transform 200ms; }
@@ -498,28 +425,16 @@ p { text-wrap: pretty; }
 .dbtn.danger { background: var(--color-danger); border-color: var(--color-danger); color: #fff; }
 
 .providers { padding: 10px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.prov { border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 6px 9px; transition: border-color 200ms, background 200ms, box-shadow 200ms; min-width: 0; }
-.prov b { font-size: 12.5px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.prov span { display: block; font-size: 11.5px; color: var(--color-text-muted); margin-top: 2px; }
-.prov.on { border-color: var(--color-app-accent); background: var(--color-app-accent-soft); box-shadow: 0 0 0 1px var(--color-app-accent); }
-.prov .badge { display: inline; margin: 0; font-size: 10.5px; font-weight: 500; padding: 1px 6px; border-radius: 999px; }
-.badge.rec { color: var(--color-ai); background: var(--color-ai-soft); }
-.badge.local { color: var(--color-success); background: var(--color-success-soft); }
-.fieldset { padding: 0 12px; font-size: 12px; color: var(--color-text-muted); }
-.field { margin-top: 4px; height: 28px; display: flex; align-items: center; padding: 0 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); font: 400 12px/1 var(--font-mono); color: var(--color-text-subtle); white-space: nowrap; overflow: hidden; }
-.fieldset small { display: block; margin-top: 4px; font-size: 11.5px; color: var(--color-text-subtle); }
 
 /* "/" menu, command chips and the /explain answer: same look as the app's SlashMenu and AskBar */
 .slash-menu { position: absolute; left: 10px; right: 10px; top: 52px; z-index: 2; padding: 4px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-popover); }
-.slash-menu[hidden], .explain[hidden], .cmd-chip[hidden] { display: none; }
+.slash-menu[hidden], .explain[hidden] { display: none; }
 .slash-item { display: flex; align-items: center; gap: 8px; height: 24px; padding: 0 8px; border-radius: var(--radius-sm); white-space: nowrap; overflow: hidden; }
 .slash-item.on { background: var(--color-surface-selected); }
 .slash-item .i { color: var(--color-text-muted); }
 .slash-item .slug { flex: none; min-width: 10ch; font: 400 12px/1 var(--font-mono); }
 .slash-item .desc { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--color-text-muted); }
 .slash-sep { height: 1px; margin: 4px; background: var(--color-border-subtle); }
-.cmd-chip { display: inline-flex; flex: none; align-items: center; height: 20px; padding: 0 6px; border-radius: var(--radius-sm); background: var(--color-ai-soft); color: var(--color-ai); font: 400 12px/1 var(--font-mono); }
-.cmd-chip.skill { background: var(--color-surface-selected); color: var(--color-app-accent); }
 .explain { margin: 8px 10px 0; display: flex; align-items: flex-start; gap: 8px; padding: 8px; border-radius: var(--radius-md); background: var(--color-ai-soft); font-size: 12.5px; line-height: 1.5; }
 .explain .i { margin-top: 2px; color: var(--color-ai); }
 .card-text h3 .tag { margin-left: 6px; vertical-align: 2px; }
@@ -534,24 +449,8 @@ p { text-wrap: pretty; }
 
 /* Investigate: the plan, live steps and the cited answer, like the app's Agent view */
 .agent { overflow: hidden; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; }
-.pill[hidden] { display: none; }
 .agent .ag-q { font-weight: 600; margin-bottom: 2px; }
-.ag-step { display: flex; align-items: center; gap: 7px; height: 22px; opacity: 0; transform: translateY(3px); transition: opacity 220ms, transform 220ms; white-space: nowrap; overflow: hidden; }
-.ag-step.in { opacity: 1; transform: none; }
-.ag-step .no { flex: none; display: inline-grid; place-items: center; min-width: 16px; height: 16px; border-radius: 999px; background: var(--color-surface-muted); color: var(--color-text-muted); font-size: 10.5px; }
-.ag-step .st { flex: none; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--color-ai); border-right-color: transparent; animation: spin 700ms linear infinite; }
-.ag-step.done .st { animation: none; border: 0; border-radius: 0; background: var(--color-success); clip-path: polygon(14% 52%, 0 66%, 38% 100%, 100% 22%, 86% 8%, 38% 72%); }
 @keyframes spin { to { transform: rotate(360deg); } }
-.ag-step .tx { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.ag-step .rows { color: var(--color-text-subtle); font-size: 11.5px; }
-.ag-step .sent { flex: none; font-size: 10.5px; padding: 1px 6px; border-radius: 999px; background: var(--color-ai-soft); color: var(--color-ai); }
-.ag-answer { margin-top: 4px; padding: 8px 10px; border: 1px solid var(--color-app-accent); border-radius: var(--radius-md); background: var(--color-surface); opacity: 0; transition: opacity 260ms; }
-.ag-answer.in { opacity: 1; }
-.ag-answer b { display: flex; align-items: center; gap: 6px; font-size: 12px; }
-.ag-answer .conf { font-weight: 500; font-size: 10.5px; padding: 1px 6px; border-radius: 999px; background: var(--color-success-soft); color: var(--color-success); }
-.ag-answer p { margin: 4px 0 0; line-height: 1.5; }
-.cite { display: inline-grid; place-items: center; min-width: 15px; height: 15px; margin-left: 2px; padding: 0 3px; border-radius: 999px; background: var(--color-app-accent-soft); color: var(--color-app-accent); font-size: 10px; vertical-align: super; }
-.cmd-chip.agent-chip { background: var(--color-ai-soft); color: var(--color-ai); }
 .card-text .fine { margin-top: 10px; font-size: 13.5px; color: var(--color-text-subtle); }
 
 /* supported */
@@ -579,9 +478,7 @@ section.block { padding: 80px 0 0; }
   border: 1px solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--shadow-window);
 }
 
-.cards { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 /* Bento: six columns of mixed widths; every card keeps the same demo height. */
-.cards.bento { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .bento .b-2 { grid-column: span 2; }
 .bento .b-3 { grid-column: span 3; }
 .bento .b-4 { grid-column: span 4; }
@@ -589,57 +486,26 @@ section.block { padding: 80px 0 0; }
 /* The full-width card puts its text beside the demo. */
 .bento .b-wide { flex-direction: row; align-items: stretch; }
 .bento .b-wide .card-text { flex: 0 0 34%; align-self: center; padding: 28px; }
-.bento .b-wide .mini { flex: 1; margin: 20px 20px 0 0; }
 /* Narrow cards: drop the editor subtitle so the Run button fits. */
-.bento .b-2 .ed-h .sub { display: none; }
 @media (max-width: 1000px) {
-  .cards.bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bento .b-2, .bento .b-3 { grid-column: span 1; }
   .bento .b-4, .bento .b-6 { grid-column: span 2; }
 }
 @media (max-width: 760px) {
   .bento .b-wide { flex-direction: column; }
   .bento .b-wide .card-text { flex: none; align-self: auto; padding: 24px 24px 20px; }
-  .bento .b-wide .mini { margin: 20px 12px 0; }
 }
 
 .card { background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-card); overflow: hidden; display: flex; flex-direction: column; }
 .card-text { padding: 24px 24px 20px; }
 .card-text h3 { font-size: 17px; }
 .card-text p { margin-top: 6px; color: var(--color-text-muted); font-size: 15px; }
-.card .mini { margin-top: auto; }
 @media (max-width: 760px) {
-  .cards, .cards.bento { grid-template-columns: 1fr; }
   .bento .b-2, .bento .b-3, .bento .b-4, .bento .b-6 { grid-column: auto; }
   .card-text { padding: 20px 18px 18px; }
-  .mini { margin-left: 12px; margin-right: 12px; }
 }
 
-/* features: alternating rows, with only the app window boxed */
-.gov-apps { display: grid; gap: 1px; background: var(--color-border-subtle); border-bottom: 1px solid var(--color-border); }
-.gov-app { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--color-surface); font-size: 12.5px; }
-.gov-app span { color: var(--color-text-muted); font-size: 12px; }
-.gov-app .gov-blocked { color: var(--color-danger); font-weight: 500; }
-.gov-btn { margin-left: auto; padding: 3px 9px; border-radius: 4px; color: var(--color-danger) !important; border: 1px solid transparent; }
-.gov-btn.allow { color: var(--color-text) !important; border-color: var(--color-border); background: var(--color-surface); }
-.feature-row .gov-mock { height: auto; }
-.gov-see { padding: 12px 14px 14px; display: grid; gap: 10px; }
-.gov-see h4 { font-size: 12.5px; font-weight: 600; }
-.gov-conn { display: flex; align-items: flex-start; gap: 12px; }
-.gov-name { flex: 1; min-width: 0; display: grid; gap: 2px; font-size: 12.5px; }
-.gov-name span { color: var(--color-text-muted); font-size: 11.5px; }
-.gov-select { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: 12px; white-space: nowrap; }
-.gov-select .i { color: var(--color-text-subtle); }
-.gov-levels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; padding: 2px; border-radius: var(--radius-md); background: var(--color-surface-muted); border: 1px solid var(--color-border-subtle); font-size: 11.5px; color: var(--color-text-muted); }
-.gov-levels span { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 26px; padding: 2px 6px; border-radius: var(--radius-sm); text-align: center; line-height: 1.2; }
-.gov-levels .on { background: var(--color-surface); color: var(--color-app-accent); font-weight: 500; box-shadow: var(--shadow-raised); }
-.gov-levels .on .i { width: 12px; height: 12px; }
-.gov-never { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 11.5px; color: var(--color-text-muted); }
-.gov-never .mono { font-size: 11px; color: var(--color-text); }
-@media (max-width: 560px) { .gov-conn { flex-direction: column; } .gov-levels { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-/* Ask in plain English: the workbench, in a feature row */
-.feature-row .ask-demo { box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -12px rgba(15, 23, 42, 0.14); }
-.ask-demo .statusbar .end { display: none; }
+/* features: alternating rows of text and an illustration */
 .feature-rows { margin-top: 56px; display: grid; gap: 88px; }
 .feature-row { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: center; }
 .feature-row:nth-child(even) { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
@@ -648,7 +514,61 @@ section.block { padding: 80px 0 0; }
 .feature-text h3 .tag { margin-left: 6px; vertical-align: 3px; }
 .feature-text p { margin-top: 10px; color: var(--color-text-muted); font-size: 16px; }
 .feature-text .fine { margin-top: 12px; font-size: 14px; color: var(--color-text-subtle); }
-.feature-row .mini { height: 300px; margin: 0; border-bottom: 1px solid var(--color-border); border-radius: var(--radius-card); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -12px rgba(15, 23, 42, 0.14); }
+/* Feature illustrations: tongue-in-cheek drawings in the page's own tokens, on the hero's grid and glow. */
+.illus { position: relative; isolation: isolate; overflow: hidden; margin: 0; padding: 20px 20px 18px; border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -12px rgba(15, 23, 42, 0.14); }
+.illus::before, .illus::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.illus::before {
+  background-image: var(--grid-lines); background-size: 28px 28px; background-position: center;
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 45%, #000 15%, transparent 80%);
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 45%, #000 15%, transparent 80%);
+}
+.illus::after { background: radial-gradient(ellipse 60% 55% at 50% 45%, color-mix(in srgb, var(--color-accent) var(--hero-glow-ai), transparent), color-mix(in srgb, var(--color-ai) var(--hero-glow-ai), transparent) 55%, transparent); }
+.illus svg { display: block; width: 100%; height: auto; overflow: visible; }
+.illus figcaption { margin-top: 8px; text-align: center; font-size: 14px; font-style: italic; color: var(--color-text-muted); }
+.illus figcaption code { font-style: normal; }
+.illus [class^="il-"], .illus [class*=" il-"] { stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.il-o { fill: none; stroke: var(--color-text); }
+.il-s { fill: var(--color-surface); stroke: var(--color-text); }
+.il-db { fill: var(--color-app-accent-soft); stroke: var(--color-accent); }
+.il-as { fill: var(--color-app-accent-soft); stroke: var(--color-accent); }
+.il-ps { fill: var(--color-ai-soft); stroke: var(--color-ai); }
+.il-a { fill: var(--color-accent); stroke: none; }
+.il-ink { fill: var(--color-text); stroke: none; }
+.il-m { fill: var(--color-border-strong); stroke: none; }
+.il-ground { fill: none; stroke: var(--color-border-strong); stroke-dasharray: 2 8; }
+.il-leash { fill: none; stroke: var(--color-accent); stroke-width: 3.5 !important; }
+.il-leg { fill: none; stroke: var(--color-text); stroke-width: 7 !important; }
+.il-tongue { fill: var(--color-danger-soft); stroke: var(--color-danger); }
+.il-mute-o { fill: none; stroke: var(--color-text-subtle); }
+.il-ok-s { fill: var(--color-success-soft); stroke: var(--color-success); }
+.il-ok-f { fill: var(--color-success); stroke: none; }
+.il-no-o { fill: none; stroke: var(--color-danger); }
+.il-no-f { fill: var(--color-danger); stroke: none; }
+.il-water { fill: var(--color-app-accent-soft); stroke: none; }
+.il-fish { fill: var(--syn-number); stroke: var(--color-text); }
+.il-bub { fill: var(--color-surface); stroke: var(--color-accent); }
+.il-note { fill: var(--color-warning-soft); stroke: var(--color-warning); }
+.il-arrow { fill: none; stroke: var(--color-ai); stroke-dasharray: 2 7; }
+.il-glass { fill: var(--color-surface); stroke: var(--color-text); }
+.il-board { fill: var(--color-card); stroke: var(--color-border-strong); }
+.il-string { fill: none; stroke: var(--color-danger); stroke-width: 1.75 !important; }
+.il-pin { fill: var(--color-danger); stroke: var(--color-surface); }
+.il-handle { fill: none; stroke: var(--color-text); stroke-width: 8 !important; }
+.il-lens { fill: color-mix(in srgb, var(--color-accent) 12%, transparent); stroke: var(--color-text); stroke-width: 5 !important; }
+.il-cable { fill: none; stroke: var(--color-text-muted); stroke-width: 3 !important; }
+.illus text { stroke: none !important; fill: var(--color-text); font-family: var(--font-sans); font-size: 14px; }
+.illus .il-sm { font-size: 12px; }
+.illus .il-b { font-weight: 600; }
+.illus .il-mono, .illus .il-mono tspan { font-family: var(--font-mono); }
+.illus .il-mute { fill: var(--color-text-subtle); }
+.illus .il-acc { fill: var(--color-accent); }
+.illus .il-ai { fill: var(--color-ai); }
+.illus .il-ok { fill: var(--color-success); }
+.illus .il-no { fill: var(--color-danger); }
+.illus .il-strike { fill: var(--color-text-subtle); }
+.illus .il-kw { fill: var(--syn-keyword); font-weight: 700; }
+.illus .il-fn { fill: var(--syn-function); }
+.illus .il-str { fill: var(--syn-string); }
 @media (max-width: 860px) {
   .feature-rows { gap: 64px; }
   .feature-row, .feature-row:nth-child(even) { grid-template-columns: 1fr; gap: 20px; }
@@ -697,74 +617,70 @@ section.block { padding: 80px 0 0; }
 .waitlist-status { min-height: 1.4em; font-size: 14px; color: var(--color-text-muted); }
 .waitlist-status.ok { color: var(--color-text); }
 
-/* teams: the admin page, drawn like the app demos */
-.admin-mock .grid { overflow-x: auto; }
 /* Teams: the same row as the features, then one panel to get started */
-/* Teams: five points as tabs, each showing its screen of the admin page */
+/* Teams: five points as pill tabs; the picked one's heading, text and comic strip span the full width */
 .teams-head p { font-size: 17px; }
-.teams-tour { margin-top: 36px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 40px; align-items: start; }
-.tour-list { display: grid; gap: 4px; }
-.tour-item { position: relative; display: grid; grid-template-columns: 20px 1fr; gap: 12px; padding: 12px 14px; border: 1px solid transparent; border-radius: var(--radius-lg); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; overflow: hidden; }
-.tour-item:hover { background: var(--color-surface-hover); }
-.tour-item:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
-.tour-item .icon { margin-top: 3px; color: var(--color-text-subtle); }
-.tour-item strong { display: block; font-weight: 500; }
-.tour-item em { display: none; margin-top: 4px; font-style: normal; color: var(--color-text-muted); }
-.tour-item.on { border-color: var(--color-border); background: var(--color-surface); box-shadow: var(--shadow-raised); }
+.teams-tour { margin-top: 36px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+.tour-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.tour-item { position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-surface); color: var(--color-text-muted); font: 500 15px var(--font-sans); cursor: pointer; }
+.tour-item:hover { color: var(--color-text); background: var(--color-surface-hover); }
+.tour-item:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.tour-item .icon { color: var(--color-text-subtle); }
+.tour-item.on { border-color: var(--color-accent); background: var(--color-app-accent-soft); color: var(--color-text); }
 .tour-item.on .icon { color: var(--color-accent); }
-.tour-item.on em { display: block; }
 .tour-item::after { content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: var(--color-accent); }
 .tour-item.on.timing::after { animation: tour-time var(--tour-ms, 6000ms) linear forwards; }
 @keyframes tour-time { to { width: 100%; } }
-.teams-tour .tour-mock { height: auto; margin: 0; }
-.tour-mock .admin-tabs span { transition: background 150ms, color 150ms; }
 .tour-panels { min-width: 0; min-height: 232px; }
 .tour-panel { padding: 0 0 12px; }
 .tour-panel[hidden] { display: none; }
 .tour-panel.on { animation: tour-in 220ms ease-out; }
 @keyframes tour-in { from { opacity: 0; transform: translateY(4px); } }
-.panel-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; font-size: 13px; }
-.panel-head .sub { color: var(--color-text-subtle); }
-.panel-head .btn-mock { margin-left: auto; }
-.btn-mock { display: inline-block; padding: 3px 9px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); font: 500 11.5px/1.4 var(--font-sans); color: var(--color-text); background: var(--color-surface); }
-.btn-mock.sm { padding: 1px 7px; font-size: 11px; }
-.btn-mock.primary { border-color: var(--color-accent); background: var(--color-accent); color: #fff; }
-.tour-mock .grid { overflow-x: auto; border-top: 1px solid var(--color-border-subtle); }
-.tour-mock .grid table { width: 100%; }
-.tour-mock .grid tbody tr { opacity: 1; }
-.tour-mock .grid td.sql { font-size: 11.5px; color: var(--color-text-muted); max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
-.tour-mock .grid tr.refused td { background: var(--color-danger-soft); }
-.tour-mock .grid tr.dim td { color: var(--color-text-subtle); }
-.st.muted { color: var(--color-text-muted); background: var(--color-card); }
 .st.warn { color: var(--color-warning); background: var(--color-warning-soft); }
-.st.ai { color: var(--color-ai); background: var(--color-ai-soft); }
-.kn-list, .col-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--color-border-subtle); font-size: 13px; }
-.kn-list li { display: grid; grid-template-columns: 118px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 10px 12px; border-bottom: 1px solid var(--color-border-subtle); }
-.kn-list li .st { justify-self: start; margin-top: 2px; }
-.kn-list small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--color-text-subtle); }
-.kn-list li.pending { background: var(--color-ai-soft); }
-.kn-list code, .col-list code, .panel-note code { font: 400 12px var(--font-mono); }
-.col-list li { display: grid; grid-template-columns: minmax(0, 1fr) 72px 96px; gap: 10px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--color-border-subtle); }
-.col-list li span { color: var(--color-text-subtle); font-size: 12px; }
-.sso-list li { grid-template-columns: minmax(0, 1fr) 96px 80px; }
-.col-list li b { justify-self: end; display: inline-flex; align-items: center; gap: 5px; font: 600 11px/1 var(--font-sans); color: var(--color-text-muted); }
-.col-list li b .icon { width: 12px; height: 12px; }
-.col-list li.never { background: var(--color-danger-soft); }
-.col-list li.never b { color: var(--color-danger); }
-.sso-list code { font: 400 13px var(--font-sans); }
-.sso-list li b.on { color: var(--color-success); }
-.panel-note { margin: 10px 12px 0; font-size: 12.5px; color: var(--color-text-muted); }
 @media (max-width: 860px) {
-  .teams-tour { grid-template-columns: minmax(0, 1fr); gap: 20px; }
-}
-@media (max-width: 560px) {
-  .kn-list li { grid-template-columns: minmax(0, 1fr); gap: 6px; }
-  .kn-list li .btn-mock { justify-self: start; }
 }
 @media (prefers-reduced-motion: reduce) {
   .tour-panel.on { animation: none; }
   .tour-item.on.timing::after { animation: none; }
 }
+/* Teams comics: three inked panels per tab on a halftone card, unlike the features' single drawings.
+ * Same cast throughout: the agent bot, SayQL as a bouncer in sunglasses, and the team's people. */
+.comics { position: relative; isolation: isolate; overflow: hidden; padding: 16px 16px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-card); background-color: var(--color-surface); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -12px rgba(15, 23, 42, 0.14); }
+.comics::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: radial-gradient(color-mix(in srgb, var(--color-accent) 22%, transparent) 1.2px, transparent 1.6px); background-size: 9px 9px; -webkit-mask-image: linear-gradient(135deg, #000, transparent 70%); mask-image: linear-gradient(135deg, #000, transparent 70%); }
+.comics .tour-panel { margin: 0; padding: 0; }
+.tour-copy { margin: 4px 4px 18px; }
+.tour-copy h3 { font-size: 24px; line-height: 1.25; letter-spacing: -0.02em; }
+.tour-copy p { margin-top: 8px; max-width: 46em; font-size: 17px; color: var(--color-text-muted); }
+.tour-copy code { font-size: 15px; }
+.comics svg { display: block; width: 100%; height: auto; }
+.comics [class^="cm-"], .comics [class*=" cm-"] { stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.cm-panel { fill: var(--color-surface); stroke: var(--color-text); stroke-width: 3 !important; }
+.cm-o { fill: none; stroke: var(--color-text); }
+.cm-ink { fill: var(--color-text); stroke: none; }
+.cm-acc { fill: var(--color-accent); stroke: none; }
+.cm-bot { fill: var(--color-app-accent-soft); stroke: var(--color-text); }
+.cm-db { fill: var(--color-accent); stroke: var(--color-text); }
+.cm-shades { fill: var(--color-text); stroke: none; }
+.cm-skin { fill: var(--color-warning-soft); stroke: var(--color-text); }
+.cm-shirt { fill: var(--color-ai-soft); stroke: var(--color-text); }
+.cm-shirt2 { fill: var(--color-success-soft); stroke: var(--color-text); }
+.cm-bubble { fill: var(--color-surface); stroke: var(--color-text); stroke-width: 2 !important; }
+.cm-cover { fill: none; stroke: var(--color-surface); stroke-width: 3 !important; }
+.cm-cap { fill: var(--color-warning-soft); stroke: var(--color-text); stroke-width: 2 !important; }
+.cm-key { fill: var(--color-warning-soft); stroke: var(--color-warning); }
+.cm-dead { opacity: 0.6; }
+.cm-no { fill: none; stroke: var(--color-danger); stroke-width: 4 !important; }
+.cm-scroll { fill: var(--color-surface-muted); stroke: var(--color-text); }
+.cm-note { fill: var(--color-warning-soft); stroke: var(--color-warning); }
+.cm-s { fill: var(--color-surface); stroke: var(--color-text); }
+.cm-meter { fill: var(--color-danger); stroke: none; }
+.cm-count { fill: var(--color-success-soft); stroke: var(--color-success); }
+.comics text { stroke: none !important; fill: var(--color-text); font: 500 14px var(--font-sans); }
+.comics .cm-xs { font-size: 11.5px; }
+.comics .cm-b { font-weight: 700; letter-spacing: 0.02em; }
+.comics .cm-mono { font-family: var(--font-mono); font-weight: 400; }
+.comics .cm-red { fill: var(--color-danger); }
+.comics .cm-on-db { fill: #fff; }
 .team-next { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--color-border-subtle); font-size: 14px; color: var(--color-text-subtle); }
 .team-next b { font-weight: 500; color: var(--color-text-muted); }
 .team-start { margin-top: 56px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); }
@@ -783,23 +699,9 @@ section.block { padding: 80px 0 0; }
 .waitlist-row > * { min-width: 0; }
 .waitlist-row .btn { height: 40px; flex: none; }
 @media (max-width: 560px) { .waitlist-row { flex-wrap: wrap; } .waitlist-row .btn { width: 100%; } }
-.admin-mock .titlebar .tag { position: absolute; right: 12px; }
-.admin-body { display: grid; grid-template-columns: 118px minmax(0, 1fr); }
-.admin-tabs { display: flex; flex-direction: column; gap: 1px; padding: 8px 6px; border-right: 1px solid var(--color-border); background: var(--color-surface-muted); font-size: 12.5px; }
-.admin-tabs span { white-space: nowrap; padding: 5px 8px; border-radius: 4px; color: var(--color-text-muted); }
-.admin-tabs span.on { color: var(--color-text); background: var(--color-app-accent-soft); font-weight: 500; }
-@media (max-width: 560px) {
-  .admin-mock .titlebar .tag { display: none; }
-  .admin-body { grid-template-columns: minmax(0, 1fr); }
-  .admin-tabs { flex-direction: row; overflow: hidden; border-right: 0; border-bottom: 1px solid var(--color-border); }
-}
-.admin-mock .grid table { width: 100%; }
-.admin-mock .grid tbody tr { opacity: 1; }
-.admin-mock .grid td.sql { font-size: 11.5px; color: var(--color-text-muted); max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
 .st { display: inline-block; font: 600 10.5px/1 var(--font-sans); padding: 3px 6px; border-radius: 3px; letter-spacing: 0.2px; }
 .st.ok { color: var(--color-success); background: var(--color-success-soft); }
 .st.no { color: var(--color-danger); background: var(--color-danger-soft); }
-.admin-mock .grid tr.refused td { background: var(--color-danger-soft); }
 
 /* pricing */
 .plans { margin-top: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -1049,24 +951,37 @@ section.block { padding: 80px 0 0; }
           <p>Claude Code, Cursor and other agents query through SayQL, read-only. By default they get counts and summaries, not your rows, and columns you mark private never reach them. See everything they ran, and block any app in one click.</p>
           <p class="fine">Free on your computer. For your whole company, <a href="#teams">SayQL for teams</a> gives each agent its own key and puts every query in one audit log.</p>
         </div>
-        <div class="app mini admin-mock gov-mock" role="img" aria-label="SayQL's AI apps settings: Claude Code is allowed and Cursor is blocked; per connection you choose what AI apps may see, from nothing to all rows, here counts and summaries on Store">
-          <div class="titlebar"><div class="lights"><i></i><i></i><i></i></div>Settings · AI apps</div>
-          <div class="gov-apps">
-            <div class="gov-app"><b>Claude Code</b><span>24 queries</span><span class="gov-btn">Block</span></div>
-            <div class="gov-app"><b>Cursor</b><span class="gov-blocked">Blocked</span><span class="gov-btn allow">Allow</span></div>
-          </div>
-          <div class="gov-see">
-            <h4>What AI apps may see</h4>
-            <div class="gov-conn">
-              <span class="gov-name"><b>Store (PostgreSQL)</b><span>Row counts and, per column, its type, nulls, distinct values, and min and max of plain number and date columns. No row values.</span></span>
-              <span class="gov-select">Counts and summaries<svg class="i"><use href="#i-down"/></svg></span>
-            </div>
-            <div class="gov-levels" aria-hidden="true">
-              <span>Nothing</span><span class="on"><svg class="i"><use href="#i-check"/></svg>Counts and summaries</span><span>Rows, masked</span><span>All rows</span>
-            </div>
-            <p class="gov-never"><svg class="i"><use href="#i-lock"/></svg>Always kept out, marked never send:<span class="mono">customers.email</span>, <span class="mono">customers.phone</span></p>
-          </div>
-        </div>
+        <figure class="illus"><svg viewBox="0 0 560 300" role="img" aria-label="An eager robot dog, an AI agent, strains on a leash tied to a SayQL post, reaching for a database while saying SELECT star please. Its bowl holds a count.">
+  <path class="il-ground" d="M24 262H536"/>
+  <rect class="il-s" x="62" y="150" width="16" height="112" rx="3"/>
+  <rect class="il-as" x="34" y="118" width="72" height="26" rx="7"/>
+  <text class="il-t il-acc il-b" x="70" y="136" text-anchor="middle">SayQL</text>
+  <path class="il-leash" d="M78 170Q210 132 338 172"/>
+  <path class="il-s" d="M118 242h76l-8 20h-60z"/>
+  <rect class="il-ok-s" x="132" y="228" width="48" height="16" rx="8"/>
+  <text class="il-t il-mono il-sm" x="156" y="240" text-anchor="middle">3,000</text>
+  <text class="il-t il-mute il-sm" x="156" y="282" text-anchor="middle">count(*), untouched</text>
+  <path class="il-o" d="M236 196q-18-4-24-28"/>
+  <path class="il-leg" d="M256 232l-22 28M280 232l-16 28M318 232l22 28M338 232l24 26"/>
+  <rect class="il-s" x="234" y="178" width="118" height="58" rx="22"/>
+  <rect class="il-a" x="330" y="166" width="12" height="40" rx="4"/>
+  <rect class="il-s" x="336" y="128" width="66" height="54" rx="16"/>
+  <path class="il-s" d="M346 130l8-24 14 22"/>
+  <path class="il-o" d="M388 128l6-20"/><circle class="il-a" cx="395" cy="105" r="5"/>
+  <circle class="il-ink" cx="384" cy="148" r="4.5"/>
+  <path class="il-o" d="M386 168h14"/>
+  <path class="il-tongue" d="M390 168v10a5 5 0 0 0 10 0v-10"/>
+  <path class="il-mute-o" d="M214 214h-18M210 230h-24M418 150h10M418 138l8-4M418 162l8 4"/>
+  <rect class="il-s" x="300" y="34" width="132" height="40" rx="12"/>
+  <path class="il-s" d="M356 73l6 16 10-16"/>
+  <text class="il-t il-mono" x="366" y="59" text-anchor="middle">SELECT * pls</text>
+  <path class="il-db" d="M446 156v96a40 12 0 0 0 80 0v-96"/><ellipse class="il-db" cx="486" cy="156" rx="40" ry="12"/><path class="il-o" d="M446 188a40 12 0 0 0 80 0"/><path class="il-o" d="M446 220a40 12 0 0 0 80 0"/>
+  <rect class="il-s" x="474" y="196" width="24" height="20" rx="4"/>
+  <path class="il-o" d="M479 196v-6a7 7 0 0 1 14 0v6"/>
+  <text class="il-t il-mute il-sm" x="486" y="282" text-anchor="middle">your rows</text>
+</svg>
+          <figcaption>Good bot. You get a count, not the rows.</figcaption>
+        </figure>
       </article>
       <article class="feature-row">
         <div class="feature-text">
@@ -1074,17 +989,37 @@ section.block { padding: 80px 0 0; }
           <p>Approve a note once and every app and session knows it: Claude Code, Cursor, the Ask box, Investigate. Rename a column and SayQL flags the notes about it, with the fix ready.</p>
           <p class="fine">For teams, it lives on your server: owners approve, and your people and agents share it.</p>
         </div>
-        <div class="app mini" id="demo-notes" role="img" aria-label="Demo: a column is renamed, the note about it is flagged as out of date, and SayQL's suggested fix is applied">
-          <div class="ed-h"><svg class="i"><use href="#i-book"/></svg><b>Notes</b><span class="sub">Demo store (SQLite)</span></div>
-          <ul class="kn-notes">
-            <li data-n1><span class="kn-st ok"><svg class="i"><use href="#i-check"/></svg></span><span><span class="mono">orders.status</span> 'pending' means awaiting payment<small>Checked 2 days ago</small></span></li>
-            <li data-n2><span class="kn-st" data-st></span><span><span class="mono" data-col>users.last_login_at</span> is set on every sign-in<small data-why>From your code: auth/session.ts</small></span></li>
-            <li><span class="kn-st ok"><svg class="i"><use href="#i-check"/></svg></span><span>Revenue is <span class="mono">quantity × unit_price</span>, not the list price<small>Checked today</small></span></li>
-          </ul>
-          <div class="bar warn" data-changed hidden><svg class="i"><use href="#i-alert"/></svg><span>Schema changed: <b class="mono">last_login_at</b> is now <b class="mono">last_seen_at</b></span></div>
-          <div class="bar fix" data-suggest hidden><svg class="i"><use href="#i-sparkles"/></svg><span>Suggested fix ready</span><span class="kn-use" data-use>Use this text</span></div>
-          <div class="bar ok" data-fixed hidden><svg class="i"><use href="#i-check"/></svg><span>Note updated; its old text is kept in history</span></div>
-        </div>
+        <figure class="illus"><svg viewBox="0 0 560 300" role="img" aria-label="A goldfish in a bowl, an AI, asks what status pending means again, while sticky notes on the bowl already answer it, one of them updated after a column was renamed.">
+  <path class="il-water" d="M190 132h180a98 98 0 1 1-180 0z"/>
+  <path class="il-o" d="M206 84q-10 34-34 64a110 110 0 1 0 216 0q-24-30-34-64"/>
+  <path class="il-o" d="M196 84h168"/>
+  <path class="il-fish" d="M232 190c18-26 64-26 82 0c-18 26-64 26-82 0z"/>
+  <path class="il-fish" d="M314 190l26-18v36z"/>
+  <circle class="il-ink" cx="250" cy="184" r="4"/>
+  <circle class="il-bub" cx="230" cy="160" r="5"/><circle class="il-bub" cx="222" cy="140" r="7"/>
+  <rect class="il-ps" x="100" y="22" width="212" height="46" rx="14"/>
+  <text class="il-t" x="206" y="42" text-anchor="middle">wait, what does</text>
+  <text class="il-t" x="206" y="59" text-anchor="middle"><tspan class="il-mono">'pending'</tspan> mean again?</text>
+  <g transform="rotate(-6 82 128)">
+    <rect class="il-note" x="28" y="100" width="116" height="60" rx="3"/>
+    <text class="il-t il-mono il-sm" x="38" y="124">'pending' =</text>
+    <text class="il-t il-sm" x="38" y="142">awaiting payment</text>
+  </g>
+  <g transform="rotate(4 92 220)">
+    <rect class="il-note" x="30" y="190" width="140" height="60" rx="3"/>
+    <text class="il-t il-sm" x="40" y="214">revenue =</text>
+    <text class="il-t il-mono il-sm" x="40" y="232">qty × unit_price</text>
+  </g>
+  <g transform="rotate(5 470 170)">
+    <rect class="il-note" x="400" y="128" width="136" height="82" rx="3"/>
+    <text class="il-t il-mono il-sm il-strike" x="416" y="152">last_login_at</text>
+    <path class="il-no-o" d="M414 148h96"/>
+    <text class="il-t il-mono il-sm il-acc" x="416" y="172">last_seen_at</text>
+    <text class="il-t il-ok il-sm" x="416" y="194">✓ updated for you</text>
+  </g>
+</svg>
+          <figcaption>Your agents have the memory of a goldfish. The notes don’t.</figcaption>
+        </figure>
       </article>
       <article class="feature-row">
         <div class="feature-text">
@@ -1092,37 +1027,31 @@ section.block { padding: 80px 0 0; }
           <p>Type a question and the SQL writes itself in the editor as you type, then runs read-only. Follow up with “only Europe” and it builds on the last query.</p>
           <p class="fine">The AI sees your question and table names, not your rows. Skills like <code>/pii-safe</code> keep contact details out of the SQL.</p>
         </div>
-        <div class="app ask-demo" id="demo-ask" role="img" aria-label="Demo: SayQL turns a plain-English question and the /pii-safe skill into SQL as you type, runs it read-only, then builds on it with a follow-up">
-          <div class="titlebar"><div class="lights"><i></i><i></i><i></i></div>SayQL</div>
-          <div class="topbar">
-            <span class="logo"><svg class="wordmark" width="47" height="17" aria-hidden="true"><use href="#i-wordmark"/></svg></span>
-            <span class="ghost"><svg class="i"><use href="#i-plus"/></svg>New connection</span>
-            <span class="chip"><svg class="i k-sl"><use href="#i-db"/></svg>Demo store (SQLite)<span class="k">SQLite</span></span>
-            <span class="end"><svg class="i"><use href="#i-monitor"/></svg><svg class="i"><use href="#i-settings"/></svg></span>
-          </div>
-          <div class="body">
-            <div class="main">
-              <div class="tabs"><div class="tab"><svg class="i k-sl"><use href="#i-file"/></svg>Demo store (SQLite)<span class="dot"></span></div><span class="plus"><svg class="i"><use href="#i-plus"/></svg></span></div>
-              <div class="ed-h"><svg class="i"><use href="#i-file"/></svg><b>SQL Editor</b><span class="sub">Demo store (SQLite)</span>
-                <span class="end"><svg class="i tool"><use href="#i-save"/></svg><span class="tool"><svg class="i"><use href="#i-wand"/></svg>Improve</span><span class="run-btn" data-run><svg class="i"><use href="#i-play"/></svg>Run <span class="kbd">⌘↵</span></span></span>
-              </div>
-              <div class="askbox" data-ask>
-                <div class="q-line" style="margin-top:0"><svg class="i spark"><use href="#i-sparkles"/></svg><span class="cmd-chip skill" data-chip hidden>/pii-safe</span><span class="q" data-q><span class="ph">Ask in plain English, or type / for commands</span></span><svg class="i mic end" aria-hidden="true"><use href="#i-mic"/></svg><span class="pill"><svg class="i"><use href="#i-table"/></svg><span data-pill>customers, orders</span><svg class="i"><use href="#i-eye"/></svg><svg class="i"><use href="#i-x"/></svg></span></div>
-              </div>
-              <div class="hintbar">
-                <span class="building" data-building hidden><svg class="i"><use href="#i-corner"/></svg>Building on your last query <span class="newq" data-newq>New query</span></span>
-                <span class="state" data-state>SQL appears in the editor as you type.</span>
-                <span class="keys"><span class="kbd">/</span> commands <span class="kbd">↵</span> run <span class="kbd">⇧↵</span> new line <span class="kbd">esc</span> clear</span>
-              </div>
-              <div class="editor"><div class="gutter" data-gutter>1</div><div class="code" data-code></div></div>
-              <div class="results">
-                <div class="pane-h"><svg class="i"><use href="#i-table"/></svg>Results <span class="sub" data-meta></span><span class="end"><svg class="i"><use href="#i-copy"/></svg>Copy as CSV</span></div>
-                <div class="grid" data-grid><div class="empty">Run a query to see rows here</div></div>
-              </div>
-            </div>
-          </div>
-          <div class="statusbar"><span class="ok"><i></i>Connected · Demo store (SQLite)</span><span class="cols">6 tables · 25 columns</span><span class="end"><span class="fb"><svg class="i"><use href="#i-message"/></svg>Feedback</span><svg class="i"><use href="#i-sparkles"/></svg>Haiku 5.5 while typing · Opus 5.5 for fixes</span></div>
-        </div>
+        <figure class="illus"><svg viewBox="0 0 560 300" role="img" aria-label="A plain-English question goes through an English to SQL phrasebook to a database wearing reading glasses, which answers in SQL.">
+  <rect class="il-s" x="24" y="30" width="236" height="70" rx="16"/>
+  <path class="il-s" d="M70 99l-10 22 30-22"/>
+  <text class="il-t" x="44" y="58">how many orders came</text>
+  <text class="il-t" x="44" y="80">from Europe last month?</text>
+  <path class="il-arrow" d="M150 128q20 50 74 64"/>
+  <path class="il-ps" d="M280 168q-34-14-68 0v70q34-14 68 0z"/>
+  <path class="il-ps" d="M280 168q34-14 68 0v70q-34-14-68 0z"/>
+  <text class="il-t il-ai il-b" x="246" y="210" text-anchor="middle">EN</text>
+  <text class="il-t il-ai il-b" x="314" y="210" text-anchor="middle">SQL</text>
+  <text class="il-t il-mute il-sm" x="280" y="272" text-anchor="middle">pocket phrasebook</text>
+  <path class="il-arrow" d="M356 200q20-4 38-2"/>
+  <path class="il-db" d="M414 150v108a52 14 0 0 0 104 0v-108"/><ellipse class="il-db" cx="466" cy="150" rx="52" ry="14"/><path class="il-o" d="M414 186a52 14 0 0 0 104 0"/><path class="il-o" d="M414 222a52 14 0 0 0 104 0"/>
+  <circle class="il-glass" cx="448" cy="192" r="13"/><circle class="il-glass" cx="484" cy="192" r="13"/>
+  <path class="il-o" d="M461 192h10"/>
+  <circle class="il-ink" cx="448" cy="193" r="3"/><circle class="il-ink" cx="484" cy="193" r="3"/>
+  <path class="il-o" d="M456 222q10 8 20 0"/>
+  <rect class="il-s" x="328" y="22" width="208" height="86" rx="12"/>
+  <path class="il-s" d="M450 107l8 20 10-20"/>
+  <text class="il-t il-mono il-sm" x="344" y="48"><tspan class="il-kw">SELECT</tspan> <tspan class="il-fn">count</tspan>(*)</text>
+  <text class="il-t il-mono il-sm" x="344" y="68"><tspan class="il-kw">FROM</tspan> orders</text>
+  <text class="il-t il-mono il-sm" x="344" y="88"><tspan class="il-kw">WHERE</tspan> region = <tspan class="il-str">'EU'</tspan></text>
+</svg>
+          <figcaption>Fluent in English. Still won’t <code>DROP TABLE</code>.</figcaption>
+        </figure>
       </article>
       <article class="feature-row">
         <div class="feature-text">
@@ -1130,30 +1059,69 @@ section.block { padding: 80px 0 0; }
           <p>Type <code>/investigate</code> and a question that needs looking around: “why did paid orders drop last week?”. SayQL shows its plan, works through it in read-only steps, checks its own work and answers with every sentence linked to the query behind it.</p>
           <p class="fine">Off until you turn it on for a connection. You choose what the AI sees of results: nothing, counts only, or 20 rows with personal data masked.</p>
         </div>
-        <div class="app mini" id="demo-agent" role="img" aria-label="Demo: Investigate works through a question in read-only steps and answers with citations">
-          <div class="askbox"><div class="q-line" style="margin-top:0"><svg class="i spark"><use href="#i-sparkles"/></svg><span class="cmd-chip agent-chip">/investigate</span><span class="q" data-q></span></div></div>
-          <div class="hintbar"><span class="state">Results to AI: counts and summaries only · Ask before send</span></div>
-          <div class="agent" data-agent></div>
-        </div>
+        <figure class="illus"><svg viewBox="0 0 560 300" role="img" aria-label="A database in a deerstalker hat holds a magnifying glass beside a cork board of clues joined by red string: paid orders down 18 percent, checkout errors up, and EU card payments failing.">
+  <rect class="il-board" x="24" y="24" width="336" height="250" rx="10"/>
+  <path class="il-string" d="M114 52L278 62L190 182Z"/>
+  <g transform="rotate(-3 112 92)">
+    <rect class="il-s" x="46" y="50" width="136" height="88" rx="6"/>
+    <text class="il-t il-sm il-b" x="58" y="72">paid orders</text>
+    <path class="il-no-o" d="M58 84l24 4 22-2 22 12 24 10"/>
+    <text class="il-t il-no il-sm" x="58" y="128">−18% last week</text>
+  </g>
+  <g transform="rotate(2 280 96)">
+    <rect class="il-s" x="214" y="58" width="128" height="74" rx="6"/>
+    <text class="il-t il-sm il-b" x="226" y="80">checkout errors</text>
+    <rect class="il-m" x="226" y="104" width="10" height="16"/><rect class="il-m" x="242" y="98" width="10" height="22"/>
+    <rect class="il-no-f" x="258" y="88" width="10" height="32"/><rect class="il-no-f" x="274" y="84" width="10" height="36"/>
+  </g>
+  <g transform="rotate(-1 190 214)">
+    <rect class="il-s" x="104" y="180" width="172" height="66" rx="6"/>
+    <text class="il-t il-sm il-b" x="116" y="202">EU card payments</text>
+    <text class="il-t il-mono il-sm" x="116" y="224">provider_code IS NULL</text>
+  </g>
+  <circle class="il-pin" cx="114" cy="52" r="6"/><circle class="il-pin" cx="278" cy="62" r="6"/><circle class="il-pin" cx="190" cy="182" r="6"/>
+  <path class="il-db" d="M420 150v112a50 14 0 0 0 100 0v-112"/><ellipse class="il-db" cx="470" cy="150" rx="50" ry="14"/><path class="il-o" d="M420 187a50 14 0 0 0 100 0"/><path class="il-o" d="M420 225a50 14 0 0 0 100 0"/>
+  <path class="il-ps" d="M424 148q2-42 46-44q44 2 46 44z"/>
+  <path class="il-ps" d="M410 148h120l-12 10h-96z"/>
+  <path class="il-o" d="M470 104v-10"/>
+  <circle class="il-ink" cx="452" cy="192" r="3.5"/><path class="il-o" d="M480 192h12"/>
+  <path class="il-o" d="M458 222h22"/>
+  <path class="il-handle" d="M396 232l26-24"/>
+  <circle class="il-lens" cx="386" cy="210" r="30"/>
+</svg>
+          <figcaption>It was the payments table, in checkout, with a NULL.</figcaption>
+        </figure>
       </article>
       <article class="feature-row">
         <div class="feature-text">
           <h3>Any AI, or a local one</h3>
           <p>Bring your own key for Claude or OpenAI, use the Claude Pro or Max plan you already have, run a model on your computer with Ollama or LM Studio, or use SayQL AI credits.</p>
         </div>
-        <div class="app mini" id="demo-ai" role="img" aria-label="Demo: choosing an AI provider in SayQL">
-          <div class="providers">
-            <div class="prov" data-p><b>Anthropic Claude <span class="badge rec">Recommended</span></b><span>Tuned for SayQL.</span></div>
-            <div class="prov" data-p><b>Your Claude plan <span class="badge rec">No API key</span></b><span>Your Pro or Max plan, through Claude Code.</span></div>
-            <div class="prov" data-p><b>SayQL AI credits</b><span>Prepaid Claude, no account.</span></div>
-            <div class="prov" data-p><b>Ollama <span class="badge local">On this computer</span></b><span>Nothing leaves your machine.</span></div>
-          </div>
-          <div class="fieldset">
-            <span data-label></span>
-            <div class="field" data-field></div>
-            <small data-help></small>
-          </div>
-        </div>
+        <figure class="illus"><svg viewBox="0 0 560 300" role="img" aria-label="A SayQL power strip with four AI plugs in it: Claude, OpenAI, a local model on your laptop, and SayQL AI credits.">
+  <path class="il-cable" d="M112 138q-2 34 18 58M224 138q0 30 6 58M336 138q0 30-6 58M448 138q2 34-18 58"/>
+  <path class="il-as" d="M88 92a18 18 0 0 1 4-35a24 24 0 0 1 44 6a14 14 0 0 1 0 29z"/>
+  <text class="il-t il-sm il-b" x="112" y="128" text-anchor="middle">Claude</text>
+  <path class="il-ps" d="M200 70a24 24 0 1 1 48 0a24 24 0 1 1-48 0"/>
+  <path class="il-o" d="M214 70h20M224 60v20"/>
+  <text class="il-t il-sm il-b" x="224" y="128" text-anchor="middle">OpenAI</text>
+  <rect class="il-s" x="312" y="52" width="48" height="32" rx="4"/><path class="il-s" d="M304 84h64l-6 10h-52z"/>
+  <text class="il-t il-mono il-sm il-ok" x="336" y="73" text-anchor="middle">local</text>
+  <text class="il-t il-sm il-b" x="336" y="128" text-anchor="middle">Your laptop</text>
+  <circle class="il-note" cx="436" cy="70" r="14"/><path class="il-o" d="M448 74h22v10M462 74v8"/>
+  <text class="il-t il-sm il-b" x="448" y="128" text-anchor="middle">Credits</text>
+  <g class="il-plugs">
+    <rect class="il-s" x="114" y="196" width="32" height="26" rx="5"/>
+    <rect class="il-s" x="214" y="196" width="32" height="26" rx="5"/>
+    <rect class="il-s" x="314" y="196" width="32" height="26" rx="5"/>
+    <rect class="il-s" x="414" y="196" width="32" height="26" rx="5"/>
+  </g>
+  <rect class="il-s" x="72" y="222" width="416" height="44" rx="12"/>
+  <text class="il-t il-acc il-b" x="452" y="250" text-anchor="middle">SayQL</text>
+  <circle class="il-ok-f" cx="96" cy="244" r="6"/>
+  <path class="il-cable" d="M488 244q40 0 48 30"/>
+</svg>
+          <figcaption>Can’t pick one AI? Neither could we.</figcaption>
+        </figure>
       </article>
     </div>
 
@@ -1239,74 +1207,45 @@ section.block { padding: 80px 0 0; }
       <p>Govern every AI agent that touches your databases. It runs on your servers, so your data never reaches us.</p>
     </div>
     <div class="teams-tour">
-      <div class="tour-list" role="tablist" aria-label="What the team server does" aria-orientation="vertical">
-        <button class="tour-item on" type="button" role="tab" id="tt-agents" aria-controls="tp-agents" aria-selected="true" data-tab="agents"><svg class="icon"><use href="#i-key"/></svg><span><strong>Every agent on a leash</strong><em>Its own key, only the databases you choose, counts not rows by default. Revoke in one click.</em></span></button>
-        <button class="tour-item" type="button" role="tab" id="tt-audit" aria-controls="tp-audit" aria-selected="false" tabindex="-1" data-tab="audit"><svg class="icon"><use href="#i-scroll"/></svg><span><strong>Every query on record</strong><em>Which person or agent asked what, allowed or refused.</em></span></button>
-        <button class="tour-item" type="button" role="tab" id="tt-knowledge" aria-controls="tp-knowledge" aria-selected="false" tabindex="-1" data-tab="knowledge"><svg class="icon"><use href="#i-book"/></svg><span><strong>Knowledge your team can trust</strong><em>Notes and a glossary that owners approve, kept true as your schema changes. Used by everyone in SayQL and every agent behind the gateway.</em></span></button>
-        <button class="tour-item" type="button" role="tab" id="tt-private" aria-controls="tp-private" aria-selected="false" tabindex="-1" data-tab="private"><svg class="icon"><use href="#i-lock"/></svg><span><strong>Private columns stay put</strong><em>Mark <code>customers.email</code> private: it never leaves your server, not to an agent, not to a laptop.</em></span></button>
-        <button class="tour-item" type="button" role="tab" id="tt-signin" aria-controls="tp-signin" aria-selected="false" tabindex="-1" data-tab="signin"><svg class="icon"><use href="#i-users"/></svg><span><strong>Sign in with your company</strong><em>Google Workspace, Microsoft Entra ID or Okta. Admins come from your groups; no invite codes.</em></span></button>
+      <div class="tour-list" role="tablist" aria-label="What the team server does" aria-orientation="horizontal">
+        <button class="tour-item on" type="button" role="tab" id="tt-agents" aria-controls="tp-agents" aria-selected="true" data-tab="agents"><svg class="icon"><use href="#i-key"/></svg><span>Agents</span></button>
+        <button class="tour-item" type="button" role="tab" id="tt-audit" aria-controls="tp-audit" aria-selected="false" tabindex="-1" data-tab="audit"><svg class="icon"><use href="#i-scroll"/></svg><span>Audit log</span></button>
+        <button class="tour-item" type="button" role="tab" id="tt-knowledge" aria-controls="tp-knowledge" aria-selected="false" tabindex="-1" data-tab="knowledge"><svg class="icon"><use href="#i-book"/></svg><span>Knowledge</span></button>
+        <button class="tour-item" type="button" role="tab" id="tt-private" aria-controls="tp-private" aria-selected="false" tabindex="-1" data-tab="private"><svg class="icon"><use href="#i-lock"/></svg><span>Private columns</span></button>
+        <button class="tour-item" type="button" role="tab" id="tt-connections" aria-controls="tp-connections" aria-selected="false" tabindex="-1" data-tab="connections"><svg class="icon"><use href="#i-db"/></svg><span>Shared connections</span></button>
+        <button class="tour-item" type="button" role="tab" id="tt-ai" aria-controls="tp-ai" aria-selected="false" tabindex="-1" data-tab="ai"><svg class="icon"><use href="#i-sparkles"/></svg><span>Team AI</span></button>
+        <button class="tour-item" type="button" role="tab" id="tt-signin" aria-controls="tp-signin" aria-selected="false" tabindex="-1" data-tab="signin"><svg class="icon"><use href="#i-users"/></svg><span>Sign-in</span></button>
       </div>
-      <div class="app mini admin-mock tour-mock">
-        <div class="titlebar"><div class="lights"><i></i><i></i><i></i></div>sayql.acme.com/admin<span class="tag">Your server</span></div>
-        <div class="admin-body">
-          <div class="admin-tabs" aria-hidden="true"><span>Overview</span><span data-for="private">Connections</span><span>People</span><span data-for="signin">Sign-in</span><span data-for="agents" class="on">Agents</span><span data-for="knowledge">Knowledge</span><span data-for="audit">Audit log</span></div>
-          <div class="tour-panels">
-            <div class="tour-panel on" role="tabpanel" id="tp-agents" aria-labelledby="tt-agents">
-              <div class="panel-head"><b>Agents</b><span class="btn-mock">Add agent</span></div>
-              <div class="grid"><table>
-                <thead><tr><th>Agent</th><th>Databases</th><th>Sees</th><th></th></tr></thead>
-                <tbody>
-                  <tr><td>Support bot</td><td>prod-replica</td><td><span class="st muted">Counts</span></td><td><span class="btn-mock sm">Revoke</span></td></tr>
-                  <tr><td>Finance copilot</td><td>warehouse</td><td><span class="st muted">All rows</span></td><td><span class="btn-mock sm">Revoke</span></td></tr>
-                  <tr><td>Churn notebook</td><td>warehouse, crm</td><td><span class="st muted">Counts</span></td><td><span class="btn-mock sm">Revoke</span></td></tr>
-                  <tr class="dim"><td>Old CI bot</td><td>–</td><td><span class="st no">Revoked</span></td><td></td></tr>
-                </tbody>
-              </table></div>
-            </div>
-            <div class="tour-panel" role="tabpanel" id="tp-audit" aria-labelledby="tt-audit" hidden>
-              <div class="panel-head"><b>Audit log</b><span class="btn-mock">Export CSV</span></div>
-              <div class="grid"><table>
-                <thead><tr><th>When</th><th>Who</th><th>Status</th><th>Query</th></tr></thead>
-                <tbody>
-                  <tr><td>09:42</td><td>ana@acme.com</td><td><span class="st ok">OK</span></td><td class="sql">SELECT country, COUNT(*) FROM customers…</td></tr>
-                  <tr><td>09:41</td><td>Support bot</td><td><span class="st ok">OK</span></td><td class="sql">SELECT date(created_at), COUNT(*)…</td></tr>
-                  <tr class="refused"><td>09:39</td><td>Support bot</td><td><span class="st no">Refused</span></td><td class="sql">SELECT email FROM customers…</td></tr>
-                  <tr class="refused"><td>09:37</td><td>sam@acme.com</td><td><span class="st no">Refused</span></td><td class="sql">UPDATE orders SET status = 'shipped'…</td></tr>
-                  <tr><td>09:31</td><td>ana@acme.com</td><td><span class="st ok">OK</span></td><td class="sql">SELECT plan, SUM(mrr) FROM subscriptions…</td></tr>
-                </tbody>
-              </table></div>
-            </div>
-            <div class="tour-panel" role="tabpanel" id="tp-knowledge" aria-labelledby="tt-knowledge" hidden>
-              <div class="panel-head"><b>Knowledge</b><span class="sub">prod-replica</span></div>
-              <ul class="kn-list">
-                <li><span class="st ok">Checked</span><div><code>orders.status</code>: p = pending, s = shipped, r = refunded<small>Owner ana · checked today</small></div></li>
-                <li><span class="st warn">May be out of date</span><div>Active customer = paid in the last 30 days<small><code>subscriptions.paid_at</code> was renamed to <code>last_paid_at</code></small></div></li>
-                <li class="pending"><span class="st ai">Suggested</span><div>Refunds are rows in <code>payments</code> with <code>kind = 'refund'</code><small>By Support bot · evidence <code>billing/refunds.py</code></small></div><span class="btn-mock sm primary">Approve</span></li>
-              </ul>
-            </div>
-            <div class="tour-panel" role="tabpanel" id="tp-private" aria-labelledby="tt-private" hidden>
-              <div class="panel-head"><b>prod-replica</b><span class="sub">customers</span></div>
-              <ul class="col-list">
-                <li><code>id</code><span>integer</span></li>
-                <li><code>name</code><span>text</span></li>
-                <li class="never"><code>email</code><span>text</span><b><svg class="icon"><use href="#i-lock"/></svg>Never sent</b></li>
-                <li class="never"><code>phone</code><span>text</span><b><svg class="icon"><use href="#i-lock"/></svg>Never sent</b></li>
-                <li><code>country</code><span>text</span></li>
-              </ul>
-              <p class="panel-note">Withheld on the server, for every person and agent.</p>
-            </div>
-            <div class="tour-panel" role="tabpanel" id="tp-signin" aria-labelledby="tt-signin" hidden>
-              <div class="panel-head"><b>Sign-in</b></div>
-              <ul class="col-list sso-list">
-                <li><code>Google Workspace</code><span>acme.com</span><b class="on">Connected</b></li>
-                <li><code>Microsoft Entra ID</code><span>–</span><b>Set up</b></li>
-                <li><code>Okta</code><span>–</span><b>Set up</b></li>
-              </ul>
-              <p class="panel-note">Admins: members of the group <code>sayql-admins</code>.</p>
-            </div>
-          </div>
+        <div class="comics tour-panels">
+          <figure class="tour-panel on" role="tabpanel" id="tp-agents" aria-labelledby="tt-agents">
+            <div class="tour-copy"><h3>Every agent on a leash</h3><p>Its own key, only the databases and tables you choose, and row filters it can't get around (<code>orders: tenant_id = 42</code>). Counts, not rows, by default. Revoke in one click.</p></div>
+            <svg viewBox="0 0 636 228" role="img" aria-label="Comic: the Finance copilot asks SayQL for everything; SayQL hands it a key for the warehouse, counts only; the old CI bot finds its key no longer works."><g transform="translate(6 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M64 59l2 14 10-14"/><rect class="cm-bubble" x="10" y="12" width="184" height="48" rx="12"/><path class="cm-cover" d="M65 58.5h13"/><text class="cm-t" x="21" y="33">Finance copilot here.</text><text class="cm-t" x="21" y="51">Give me everything.</text><path class="cm-o" d="M60 196v14M80 196v14"/><rect class="cm-bot" x="46" y="158" width="48" height="40" rx="8"/><rect class="cm-bot" x="50" y="120" width="40" height="34" rx="9"/><path class="cm-o" d="M70 120v-10"/><circle class="cm-acc" cx="70" cy="107" r="4"/><circle class="cm-ink" cx="62" cy="134" r="3"/><circle class="cm-ink" cx="78" cy="134" r="3"/><path class="cm-o" d="M64 144q6 5 12 0"/><text class="cm-t cm-xs" x="70" y="182" text-anchor="middle">finance</text><path class="cm-db" d="M120 112v86a30 9 0 0 0 60 0v-86"/><ellipse class="cm-db" cx="150" cy="112" rx="30" ry="9"/><rect class="cm-shades" x="128" y="128" width="19" height="10" rx="4"/><rect class="cm-shades" x="153" y="128" width="19" height="10" rx="4"/><path class="cm-o" d="M147 132h6"/><path class="cm-o" d="M142 152h16"/><text class="cm-t cm-xs cm-b cm-on-db" x="150" y="182" text-anchor="middle">SayQL</text></g><g transform="translate(218 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M144 59l2 14 10-14"/><rect class="cm-bubble" x="18.0" y="12" width="176" height="48" rx="12"/><path class="cm-cover" d="M145 58.5h13"/><text class="cm-t" x="29.0" y="33">Your key: warehouse,</text><text class="cm-t" x="29.0" y="51">counts only.</text><path class="cm-o" d="M42 196v14M62 196v14"/><rect class="cm-bot" x="28" y="158" width="48" height="40" rx="8"/><rect class="cm-bot" x="32" y="120" width="40" height="34" rx="9"/><path class="cm-o" d="M52 120v-10"/><circle class="cm-acc" cx="52" cy="107" r="4"/><circle class="cm-ink" cx="44" cy="134" r="3"/><circle class="cm-ink" cx="60" cy="134" r="3"/><path class="cm-o" d="M46 144q6 5 12 0"/><text class="cm-t cm-xs" x="52" y="182" text-anchor="middle">finance</text><rect class="cm-key" x="84" y="160" width="34" height="18" rx="5"/><text class="cm-t cm-xs cm-mono" x="101" y="173" text-anchor="middle">3f…</text><path class="cm-db" d="M120 112v86a30 9 0 0 0 60 0v-86"/><ellipse class="cm-db" cx="150" cy="112" rx="30" ry="9"/><rect class="cm-shades" x="128" y="128" width="19" height="10" rx="4"/><rect class="cm-shades" x="153" y="128" width="19" height="10" rx="4"/><path class="cm-o" d="M147 132h6"/><path class="cm-o" d="M142 152h16"/><text class="cm-t cm-xs cm-b cm-on-db" x="150" y="182" text-anchor="middle">SayQL</text></g><g transform="translate(430 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><rect class="cm-cap" x="8" y="8" width="86" height="20"/><text class="cm-t cm-xs cm-b" x="16" y="22">MEANWHILE</text><path class="cm-bubble" d="M64 85l2 14 10-14"/><rect class="cm-bubble" x="14" y="38" width="138" height="48" rx="12"/><path class="cm-cover" d="M65 84.5h13"/><text class="cm-t" x="25" y="59">my key… stopped</text><text class="cm-t" x="25" y="77">working?</text><path class="cm-o" d="M60 196v14M80 196v14"/><rect class="cm-bot" x="46" y="158" width="48" height="40" rx="8"/><rect class="cm-bot" x="50" y="120" width="40" height="34" rx="9"/><path class="cm-o" d="M70 120v-10"/><circle class="cm-acc" cx="70" cy="107" r="4"/><path class="cm-o" d="M58 136q4-5 8 0M74 136q4-5 8 0"/><path class="cm-o" d="M64 146q6-5 12 0"/><text class="cm-t cm-xs" x="70" y="182" text-anchor="middle">CI bot</text><rect class="cm-key cm-dead" x="118" y="172" width="34" height="18" rx="5"/><path class="cm-no" d="M122 168l26 26m0-26l-26 26"/></g></svg>
+          </figure>
+          <figure class="tour-panel" role="tabpanel" id="tp-audit" aria-labelledby="tt-audit" hidden>
+            <div class="tour-copy"><h3>Every query on record</h3><p>Which person or agent asked what, allowed or refused. Rows can't be edited or deleted: each is chained to the one before, and one command checks the whole log.</p></div>
+            <svg viewBox="0 0 636 228" role="img" aria-label="Comic: Sam tries to update orders; SayQL refuses because it's read-only and notes it; later Ana reads the audit log and sighs: Sam, 09:37, again."><g transform="translate(6 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M58 77l2 14 10-14"/><rect class="cm-bubble" x="10" y="12" width="131" height="66" rx="12"/><path class="cm-cover" d="M59 76.5h13"/><text class="cm-t cm-mono" x="21" y="33">UPDATE orders</text><text class="cm-t cm-mono" x="21" y="51">SET status =</text><text class="cm-t cm-mono" x="21" y="69">  'shipped'</text><path class="cm-shirt" d="M38 210v-24a26 26 0 0 1 52 0v24z"/><circle class="cm-skin" cx="64" cy="124" r="17"/><circle class="cm-ink" cx="58" cy="121" r="2"/><circle class="cm-ink" cx="70" cy="121" r="2"/><path class="cm-o" d="M59 132q5 4 10 0"/><text class="cm-t cm-xs cm-b" x="64" y="200" text-anchor="middle">sam</text><path class="cm-db" d="M122 112v86a30 9 0 0 0 60 0v-86"/><ellipse class="cm-db" cx="152" cy="112" rx="30" ry="9"/><rect class="cm-shades" x="130" y="128" width="19" height="10" rx="4"/><rect class="cm-shades" x="155" y="128" width="19" height="10" rx="4"/><path class="cm-o" d="M149 132h6"/><path class="cm-o" d="M144 152h16"/><text class="cm-t cm-xs cm-b cm-on-db" x="152" y="182" text-anchor="middle">SayQL</text></g><g transform="translate(218 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M144 59l2 14 10-14"/><rect class="cm-bubble" x="25.599999999999994" y="12" width="168" height="48" rx="12"/><path class="cm-cover" d="M145 58.5h13"/><text class="cm-t" x="36.599999999999994" y="33">Read-only. Refused.</text><text class="cm-t" x="36.599999999999994" y="51">Written down.</text><path class="cm-shirt" d="M26 210v-24a26 26 0 0 1 52 0v24z"/><circle class="cm-skin" cx="52" cy="124" r="17"/><circle class="cm-ink" cx="46" cy="121" r="2"/><circle class="cm-ink" cx="58" cy="121" r="2"/><path class="cm-o" d="M47 133h10"/><text class="cm-t cm-xs cm-b" x="52" y="200" text-anchor="middle">sam</text><path class="cm-db" d="M120 112v86a30 9 0 0 0 60 0v-86"/><ellipse class="cm-db" cx="150" cy="112" rx="30" ry="9"/><rect class="cm-shades" x="128" y="128" width="19" height="10" rx="4"/><rect class="cm-shades" x="153" y="128" width="19" height="10" rx="4"/><path class="cm-o" d="M147 132h6"/><path class="cm-o" d="M142 152h16"/><text class="cm-t cm-xs cm-b cm-on-db" x="150" y="182" text-anchor="middle">SayQL</text></g><g transform="translate(430 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><rect class="cm-cap" x="8" y="8" width="125" height="20"/><text class="cm-t cm-xs cm-b" x="16" y="22">LATER, THE LOG</text><path class="cm-shirt2" d="M120 210v-24a26 26 0 0 1 52 0v24z"/><circle class="cm-skin" cx="146" cy="124" r="17"/><circle class="cm-ink" cx="140" cy="121" r="2"/><circle class="cm-ink" cx="152" cy="121" r="2"/><path class="cm-o" d="M141 133h10"/><text class="cm-t cm-xs cm-b" x="146" y="200" text-anchor="middle">ana</text><rect class="cm-scroll" x="14" y="44" width="96" height="150" rx="4"/><text class="cm-t cm-xs cm-mono" x="22" y="66">09:31 ana ok</text><text class="cm-t cm-xs cm-mono cm-red" x="22" y="84">09:37 sam ✕</text><text class="cm-t cm-xs cm-mono" x="22" y="102">09:41 bot ok</text><text class="cm-t cm-xs cm-mono cm-red" x="22" y="120">09:52 sam ✕</text><text class="cm-t cm-xs cm-mono cm-red" x="22" y="138">10:04 sam ✕</text><text class="cm-t cm-xs cm-mono cm-red" x="22" y="156">10:19 sam ✕</text><text class="cm-t cm-xs cm-mono" x="22" y="174">…</text><path class="cm-bubble" d="M140 87l2 14 10-14"/><rect class="cm-bubble" x="112" y="40" width="64" height="48" rx="12"/><path class="cm-cover" d="M141 86.5h13"/><text class="cm-t" x="123" y="61">Sam.</text><text class="cm-t" x="123" y="79">Again.</text></g></svg>
+          </figure>
+          <figure class="tour-panel" role="tabpanel" id="tp-knowledge" aria-labelledby="tt-knowledge" hidden>
+            <div class="tour-copy"><h3>Knowledge your team can trust</h3><p>Notes and a glossary that owners approve, kept true as your schema changes. Used by everyone in SayQL and every agent behind the gateway.</p></div>
+            <svg viewBox="0 0 636 228" role="img" aria-label="Comic: a bot asks what status r means; Ana says refunded and writes it down; next day, another bot reads the shared note and answers: r is refunded, obviously."><g transform="translate(6 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M64 59l2 14 10-14"/><rect class="cm-bubble" x="10" y="12" width="146" height="48" rx="12"/><path class="cm-cover" d="M65 58.5h13"/><text class="cm-t" x="21" y="33">What does</text><text class="cm-t" x="21" y="51">status 'r' mean?</text><path class="cm-o" d="M60 196v14M80 196v14"/><rect class="cm-bot" x="46" y="158" width="48" height="40" rx="8"/><rect class="cm-bot" x="50" y="120" width="40" height="34" rx="9"/><path class="cm-o" d="M70 120v-10"/><circle class="cm-acc" cx="70" cy="107" r="4"/><circle class="cm-ink" cx="62" cy="134" r="3"/><circle class="cm-ink" cx="78" cy="134" r="3"/><path class="cm-o" d="M64 144q6 5 12 0"/><path class="cm-shirt2" d="M124 210v-24a26 26 0 0 1 52 0v24z"/><circle class="cm-skin" cx="150" cy="124" r="17"/><circle class="cm-ink" cx="144" cy="121" r="2"/><circle class="cm-ink" cx="156" cy="121" r="2"/><path class="cm-o" d="M145 132q5 4 10 0"/><text class="cm-t cm-xs cm-b" x="150" y="200" text-anchor="middle">ana</text></g><g transform="translate(218 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M144 59l2 14 10-14"/><rect class="cm-bubble" x="18.0" y="12" width="176" height="48" rx="12"/><path class="cm-cover" d="M145 58.5h13"/><text class="cm-t" x="29.0" y="33">Refunded. I'll write</text><text class="cm-t" x="29.0" y="51">it down. Once.</text><path class="cm-shirt2" d="M124 210v-24a26 26 0 0 1 52 0v24z"/><circle class="cm-skin" cx="150" cy="124" r="17"/><circle class="cm-ink" cx="144" cy="121" r="2"/><circle class="cm-ink" cx="156" cy="121" r="2"/><path class="cm-o" d="M145 132q5 4 10 0"/><text class="cm-t cm-xs cm-b" x="150" y="200" text-anchor="middle">ana</text><g transform="rotate(-6 60 160)"><rect class="cm-note" x="22" y="128" width="84" height="56" rx="2"/><text class="cm-t cm-xs cm-mono" x="30" y="150">r =</text><text class="cm-t cm-xs" x="30" y="168">refunded</text></g></g><g transform="translate(430 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><rect class="cm-cap" x="8" y="8" width="149" height="20"/><text class="cm-t cm-xs cm-b" x="16" y="22">NEXT DAY, NEW BOT</text><path class="cm-bubble" d="M58 85l2 14 10-14"/><rect class="cm-bubble" x="12" y="38" width="146" height="48" rx="12"/><path class="cm-cover" d="M59 84.5h13"/><text class="cm-t" x="23" y="59">'r' is refunded.</text><text class="cm-t" x="23" y="77">Obviously.</text><path class="cm-o" d="M54 196v14M74 196v14"/><rect class="cm-bot" x="40" y="158" width="48" height="40" rx="8"/><rect class="cm-bot" x="44" y="120" width="40" height="34" rx="9"/><path class="cm-o" d="M64 120v-10"/><circle class="cm-acc" cx="64" cy="107" r="4"/><path class="cm-o" d="M52 133h8M68 133h8"/><path class="cm-o" d="M58 144q8 3 12-2"/><g transform="rotate(4 150 150)"><rect class="cm-note" x="112" y="118" width="78" height="54" rx="2"/><text class="cm-t cm-xs cm-mono" x="120" y="140">r =</text><text class="cm-t cm-xs" x="120" y="158">refunded</text></g></g></svg>
+          </figure>
+          <figure class="tour-panel" role="tabpanel" id="tp-private" aria-labelledby="tt-private" hidden>
+            <div class="tour-copy"><h3>Private columns stay put</h3><p>Mark <code>customers.email</code> private: it never leaves your server, not to an agent, not to a laptop.</p></div>
+            <svg viewBox="0 0 636 228" role="img" aria-label="Comic: a bot asks for customer emails; SayQL says email stays put; the bot, sulking, takes a count of 500 instead."><g transform="translate(6 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M64 59l2 14 10-14"/><rect class="cm-bubble" x="10" y="12" width="139" height="48" rx="12"/><path class="cm-cover" d="M65 58.5h13"/><text class="cm-t cm-mono" x="21" y="33">SELECT email</text><text class="cm-t cm-mono" x="21" y="51">FROM customers</text><path class="cm-o" d="M60 196v14M80 196v14"/><rect class="cm-bot" x="46" y="158" width="48" height="40" rx="8"/><rect class="cm-bot" x="50" y="120" width="40" height="34" rx="9"/><path class="cm-o" d="M70 120v-10"/><circle class="cm-acc" cx="70" cy="107" r="4"/><circle class="cm-ink" cx="62" cy="134" r="3"/><circle class="cm-ink" cx="78" cy="134" r="3"/><path class="cm-o" d="M64 144q6 5 12 0"/><path class="cm-db" d="M120 112v86a30 9 0 0 0 60 0v-86"/><ellipse class="cm-db" cx="150" cy="112" rx="30" ry="9"/><rect class="cm-shades" x="128" y="128" width="19" height="10" rx="4"/><rect class="cm-shades" x="153" y="128" width="19" height="10" rx="4"/><path class="cm-o" d="M147 132h6"/><path class="cm-o" d="M142 152h16"/><text class="cm-t cm-xs cm-b cm-on-db" x="150" y="182" text-anchor="middle">SayQL</text></g><g transform="translate(218 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M144 41l2 14 10-14"/><rect class="cm-bubble" x="48.400000000000006" y="12" width="146" height="30" rx="12"/><path class="cm-cover" d="M145 40.5h13"/><text class="cm-t" x="59.400000000000006" y="33">email stays put.</text><path class="cm-o" d="M42 196v14M62 196v14"/><rect class="cm-bot" x="28" y="158" width="48" height="40" rx="8"/><rect class="cm-bot" x="32" y="120" width="40" height="34" rx="9"/><path class="cm-o" d="M52 120v-10"/><circle class="cm-acc" cx="52" cy="107" r="4"/><circle class="cm-ink" cx="44" cy="134" r="3"/><circle class="cm-ink" cx="60" cy="134" r="3"/><path class="cm-o" d="M46 144q6 5 12 0"/><path class="cm-db" d="M120 112v86a30 9 0 0 0 60 0v-86"/><ellipse class="cm-db" cx="150" cy="112" rx="30" ry="9"/><rect class="cm-shades" x="128" y="128" width="19" height="10" rx="4"/><rect class="cm-shades" x="153" y="128" width="19" height="10" rx="4"/><path class="cm-o" d="M147 132h6"/><path class="cm-o" d="M142 152h16"/><text class="cm-t cm-xs cm-b cm-on-db" x="150" y="182" text-anchor="middle">SayQL</text><path class="cm-no" d="M84 120l18 18m0-18l-18 18"/></g><g transform="translate(430 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M84 59l2 14 10-14"/><rect class="cm-bubble" x="30" y="12" width="138" height="48" rx="12"/><path class="cm-cover" d="M85 58.5h13"/><text class="cm-t" x="41" y="33">…fine. I'll</text><text class="cm-t" x="41" y="51">take the count.</text><path class="cm-o" d="M80 196v14M100 196v14"/><rect class="cm-bot" x="66" y="158" width="48" height="40" rx="8"/><rect class="cm-bot" x="70" y="120" width="40" height="34" rx="9"/><path class="cm-o" d="M90 120v-10"/><circle class="cm-acc" cx="90" cy="107" r="4"/><path class="cm-o" d="M78 136q4-5 8 0M94 136q4-5 8 0"/><path class="cm-o" d="M84 146q6-5 12 0"/><rect class="cm-count" x="124" y="172" width="54" height="22" rx="11"/><text class="cm-t cm-xs cm-mono" x="151" y="187" text-anchor="middle">500</text></g></svg>
+          </figure>
+          <figure class="tour-panel" role="tabpanel" id="tp-connections" aria-labelledby="tt-connections" hidden>
+            <div class="tour-copy"><h3>No passwords on laptops</h3><p>Add a database once. Your people sign in and use it; they never see the host, user or password, which stay encrypted on your server.</p></div>
+            <svg viewBox="0 0 636 228" role="img" aria-label="Comic: a new hire asks for the production password; SayQL says they don't need one, just pick Production; and the sticky note with the password on a monitor is crossed out."><g transform="translate(6 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M64 59l2 14 10-14"/><rect class="cm-bubble" x="10" y="12" width="138" height="48" rx="12"/><path class="cm-cover" d="M65 58.5h13"/><text class="cm-t" x="21" y="33">What's the prod</text><text class="cm-t" x="21" y="51">password?</text><path class="cm-shirt" d="M44 210v-24a26 26 0 0 1 52 0v24z"/><circle class="cm-skin" cx="70" cy="124" r="17"/><circle class="cm-ink" cx="64" cy="121" r="2"/><circle class="cm-ink" cx="76" cy="121" r="2"/><path class="cm-o" d="M65 132q5 4 10 0"/><text class="cm-t cm-xs cm-b" x="70" y="200" text-anchor="middle">new hire</text><path class="cm-db" d="M122 112v86a30 9 0 0 0 60 0v-86"/><ellipse class="cm-db" cx="152" cy="112" rx="30" ry="9"/><rect class="cm-shades" x="130" y="128" width="19" height="10" rx="4"/><rect class="cm-shades" x="155" y="128" width="19" height="10" rx="4"/><path class="cm-o" d="M149 132h6"/><path class="cm-o" d="M144 152h16"/><text class="cm-t cm-xs cm-b cm-on-db" x="152" y="182" text-anchor="middle">SayQL</text></g><g transform="translate(218 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M144 59l2 14 10-14"/><rect class="cm-bubble" x="25.599999999999994" y="12" width="168" height="48" rx="12"/><path class="cm-cover" d="M145 58.5h13"/><text class="cm-t" x="36.599999999999994" y="33">You don't need one.</text><text class="cm-t" x="36.599999999999994" y="51">Pick Production.</text><path class="cm-shirt" d="M26 210v-24a26 26 0 0 1 52 0v24z"/><circle class="cm-skin" cx="52" cy="124" r="17"/><circle class="cm-ink" cx="46" cy="121" r="2"/><circle class="cm-ink" cx="58" cy="121" r="2"/><path class="cm-o" d="M47 133h10"/><text class="cm-t cm-xs cm-b" x="52" y="200" text-anchor="middle">new hire</text><path class="cm-db" d="M120 112v86a30 9 0 0 0 60 0v-86"/><ellipse class="cm-db" cx="150" cy="112" rx="30" ry="9"/><rect class="cm-shades" x="128" y="128" width="19" height="10" rx="4"/><rect class="cm-shades" x="153" y="128" width="19" height="10" rx="4"/><path class="cm-o" d="M147 132h6"/><path class="cm-o" d="M142 152h16"/><text class="cm-t cm-xs cm-b cm-on-db" x="150" y="182" text-anchor="middle">SayQL</text></g><g transform="translate(430 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><rect class="cm-cap" x="8" y="8" width="102" height="20"/><text class="cm-t cm-xs cm-b" x="16" y="22">NOT ANYMORE</text><rect class="cm-s" x="30" y="64" width="140" height="92" rx="6"/><path class="cm-o" d="M100 156v22M74 182h52"/><g transform="rotate(-8 120 100)"><rect class="cm-note" x="92" y="76" width="74" height="46" rx="2"/><text class="cm-t cm-xs cm-mono" x="99" y="96">prod pw:</text><text class="cm-t cm-xs cm-mono" x="99" y="112">hunter2</text></g><path class="cm-no" d="M90 72l76 56m0-56l-76 56"/><text class="cm-t cm-xs" x="100" y="204" text-anchor="middle">passwords stay on the server</text></g></svg>
+          </figure>
+          <figure class="tour-panel" role="tabpanel" id="tp-ai" aria-labelledby="tt-ai" hidden>
+            <div class="tour-copy"><h3>One AI key, with a budget</h3><p>Put your company's AI key on the server and set monthly limits per person and for the team. See who used what. Prompts pass through and are never stored.</p></div>
+            <svg viewBox="0 0 636 228" role="img" aria-label="Comic: Sam asks the AI to try again, and again; SayQL shows Sam's monthly token limit reached; Sam says they'll write the SQL themselves."><g transform="translate(6 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M58 59l2 14 10-14"/><rect class="cm-bubble" x="10" y="12" width="153" height="48" rx="12"/><path class="cm-cover" d="M59 58.5h13"/><text class="cm-t" x="21" y="33">Ask the AI again.</text><text class="cm-t" x="21" y="51">And again. And…</text><path class="cm-shirt" d="M38 210v-24a26 26 0 0 1 52 0v24z"/><circle class="cm-skin" cx="64" cy="124" r="17"/><circle class="cm-ink" cx="58" cy="121" r="2"/><circle class="cm-ink" cx="70" cy="121" r="2"/><path class="cm-o" d="M59 132q5 4 10 0"/><text class="cm-t cm-xs cm-b" x="64" y="200" text-anchor="middle">sam</text><path class="cm-db" d="M120 112v86a30 9 0 0 0 60 0v-86"/><ellipse class="cm-db" cx="150" cy="112" rx="30" ry="9"/><rect class="cm-shades" x="128" y="128" width="19" height="10" rx="4"/><rect class="cm-shades" x="153" y="128" width="19" height="10" rx="4"/><path class="cm-o" d="M147 132h6"/><path class="cm-o" d="M142 152h16"/><text class="cm-t cm-xs cm-b cm-on-db" x="150" y="182" text-anchor="middle">SayQL</text></g><g transform="translate(218 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M144 59l2 14 10-14"/><rect class="cm-bubble" x="40" y="12" width="130" height="48" rx="12"/><path class="cm-cover" d="M145 58.5h13"/><text class="cm-t" x="51" y="33">Monthly limit:</text><text class="cm-t" x="51" y="51">reached.</text><path class="cm-db" d="M120 112v86a30 9 0 0 0 60 0v-86"/><ellipse class="cm-db" cx="150" cy="112" rx="30" ry="9"/><rect class="cm-shades" x="128" y="128" width="19" height="10" rx="4"/><rect class="cm-shades" x="153" y="128" width="19" height="10" rx="4"/><path class="cm-o" d="M147 132h6"/><path class="cm-o" d="M142 152h16"/><text class="cm-t cm-xs cm-b cm-on-db" x="150" y="182" text-anchor="middle">SayQL</text><text class="cm-t cm-xs cm-b" x="14" y="146">SAM'S TOKENS</text><rect class="cm-s" x="14" y="152" width="86" height="22" rx="4"/><rect class="cm-meter" x="17" y="155" width="80" height="16" rx="2"/><text class="cm-t cm-xs" x="57" y="192" text-anchor="middle">100% used</text></g><g transform="translate(430 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M94 59l2 14 10-14"/><rect class="cm-bubble" x="14" y="12" width="138" height="48" rx="12"/><path class="cm-cover" d="M95 58.5h13"/><text class="cm-t" x="25" y="33">…I'll write the</text><text class="cm-t" x="25" y="51">SQL myself.</text><path class="cm-shirt" d="M74 210v-24a26 26 0 0 1 52 0v24z"/><circle class="cm-skin" cx="100" cy="124" r="17"/><circle class="cm-ink" cx="94" cy="121" r="2"/><circle class="cm-ink" cx="106" cy="121" r="2"/><path class="cm-o" d="M95 134q5-4 10 0"/><text class="cm-t cm-xs cm-b" x="100" y="200" text-anchor="middle">sam</text></g></svg>
+          </figure>
+          <figure class="tour-panel" role="tabpanel" id="tp-signin" aria-labelledby="tt-signin" hidden>
+            <div class="tour-copy"><h3>Sign in with your company</h3><p>Google Workspace, Microsoft Entra ID or Okta. Admins come from your groups; no invite codes.</p></div>
+            <svg viewBox="0 0 636 228" role="img" aria-label="Comic: a new hire dreads another password; SayQL says sign in with Google, Microsoft or Okta; the new hire is relieved."><g transform="translate(6 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M64 59l2 14 10-14"/><rect class="cm-bubble" x="10" y="12" width="146" height="48" rx="12"/><path class="cm-cover" d="M65 58.5h13"/><text class="cm-t" x="21" y="33">Another password</text><text class="cm-t" x="21" y="51">to remember?</text><path class="cm-shirt" d="M44 210v-24a26 26 0 0 1 52 0v24z"/><circle class="cm-skin" cx="70" cy="124" r="17"/><circle class="cm-ink" cx="64" cy="121" r="2"/><circle class="cm-ink" cx="76" cy="121" r="2"/><path class="cm-o" d="M65 134q5-4 10 0"/><text class="cm-t cm-xs cm-b" x="70" y="200" text-anchor="middle">new hire</text><path class="cm-db" d="M122 112v86a30 9 0 0 0 60 0v-86"/><ellipse class="cm-db" cx="152" cy="112" rx="30" ry="9"/><rect class="cm-shades" x="130" y="128" width="19" height="10" rx="4"/><rect class="cm-shades" x="155" y="128" width="19" height="10" rx="4"/><path class="cm-o" d="M149 132h6"/><path class="cm-o" d="M144 152h16"/><text class="cm-t cm-xs cm-b cm-on-db" x="152" y="182" text-anchor="middle">SayQL</text></g><g transform="translate(218 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M144 77l2 14 10-14"/><rect class="cm-bubble" x="6" y="12" width="191" height="66" rx="12"/><path class="cm-cover" d="M145 76.5h13"/><text class="cm-t" x="17" y="33">Use your work account.</text><text class="cm-t" x="17" y="51">Google, Microsoft</text><text class="cm-t" x="17" y="69">or Okta.</text><path class="cm-shirt" d="M26 210v-24a26 26 0 0 1 52 0v24z"/><circle class="cm-skin" cx="52" cy="124" r="17"/><circle class="cm-ink" cx="46" cy="121" r="2"/><circle class="cm-ink" cx="58" cy="121" r="2"/><path class="cm-o" d="M47 133h10"/><text class="cm-t cm-xs cm-b" x="52" y="200" text-anchor="middle">new hire</text><path class="cm-db" d="M120 112v86a30 9 0 0 0 60 0v-86"/><ellipse class="cm-db" cx="150" cy="112" rx="30" ry="9"/><rect class="cm-shades" x="128" y="128" width="19" height="10" rx="4"/><rect class="cm-shades" x="153" y="128" width="19" height="10" rx="4"/><path class="cm-o" d="M147 132h6"/><path class="cm-o" d="M142 152h16"/><text class="cm-t cm-xs cm-b cm-on-db" x="150" y="182" text-anchor="middle">SayQL</text></g><g transform="translate(430 6)"><rect class="cm-panel" width="200" height="216" rx="4"/><path class="cm-bubble" d="M94 59l2 14 10-14"/><rect class="cm-bubble" x="14" y="12" width="115" height="48" rx="12"/><path class="cm-cover" d="M95 58.5h13"/><text class="cm-t" x="25" y="33">Password #48</text><text class="cm-t" x="25" y="51">can wait.</text><path class="cm-shirt" d="M74 210v-24a26 26 0 0 1 52 0v24z"/><circle class="cm-skin" cx="100" cy="124" r="17"/><circle class="cm-ink" cx="94" cy="121" r="2"/><circle class="cm-ink" cx="106" cy="121" r="2"/><path class="cm-o" d="M95 132q5 4 10 0"/><text class="cm-t cm-xs cm-b" x="100" y="200" text-anchor="middle">new hire</text><path class="cm-o" d="M146 120l6-6M152 132h9M146 144l6 6"/></g></svg>
+          </figure>
         </div>
-      </div>
     </div>
     <p class="team-next">Works with Claude Code, Cursor and any MCP agent.</p>
 
@@ -1501,12 +1440,11 @@ section.block { padding: 80px 0 0; }
   var root = document.documentElement;
   var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /* teams: the five points are tabs; each shows its screen of the admin page, stepping on by itself until someone picks one */
+  /* teams: the five points are tabs; each shows its comic strip, stepping on by itself until someone picks one */
   (function () {
     var list = document.querySelector(".tour-list");
     if (!list) return;
     var items = Array.prototype.slice.call(list.querySelectorAll(".tour-item"));
-    var navs = document.querySelectorAll(".tour-mock .admin-tabs [data-for]");
     var step = 6000, timer = null, seen = false, picked = false;
     list.style.setProperty("--tour-ms", step + "ms");
     function show(i, focus) {
@@ -1520,8 +1458,6 @@ section.block { padding: 80px 0 0; }
         panel.hidden = !on;
         panel.classList.toggle("on", on);
       });
-      var tab = items[i].getAttribute("data-tab");
-      navs.forEach(function (n) { n.classList.toggle("on", n.getAttribute("data-for") === tab); });
       if (focus) items[i].focus();
       schedule();
     }
@@ -1620,28 +1556,7 @@ section.block { padding: 80px 0 0; }
   });
 
   /* ---------- demo helpers ---------- */
-  var KEYWORDS = /^(SELECT|FROM|WHERE|JOIN|LEFT|ON|AS|AND|OR|GROUP|BY|ORDER|LIMIT|DESC|ASC|DISTINCT|UPDATE|SET)$/;
-  var FUNCS = /^(COUNT|SUM|ROUND)$/;
-  var OPERATOR_WORDS = /^(NOT|IN)$/;
   function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-  // Colors follow the app's Monaco themes: keywords bold blue, functions magenta, strings red.
-  function highlight(sql) {
-    var out = "", re = /('[^']*'?)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)|(\|\||[<>=!*+\-\/]+)|([\s\S])/g, m;
-    while ((m = re.exec(sql))) {
-      if (m[1]) out += '<span class="tk-s">' + esc(m[1]) + "</span>";
-      else if (m[2]) out += '<span class="tk-n">' + m[2] + "</span>";
-      else if (m[3]) out += OPERATOR_WORDS.test(m[3]) ? '<span class="tk-o">' + m[3] + "</span>"
-        : KEYWORDS.test(m[3]) ? '<span class="tk-k">' + m[3] + "</span>"
-        : FUNCS.test(m[3]) ? '<span class="tk-f">' + m[3] + "</span>" : esc(m[3]);
-      else if (m[4]) out += '<span class="tk-o">' + esc(m[4]) + "</span>";
-      else out += esc(m[0]);
-    }
-    return out;
-  }
-  function lines(sql, mark) {
-    return sql.split("\n").map(function (l, i) { return '<div class="line' + (mark ? mark(l, i) : "") + '">' + (highlight(l) || " ") + "</div>"; }).join("");
-  }
-  function pressRun(btn) { btn.classList.remove("press"); void btn.offsetWidth; btn.classList.add("press"); }
 
   // Plays `play(later, loop)` while `el` is on screen. With reduced motion, only `still()` (the end state) shows.
   function demo(el, play, still) {
@@ -1661,51 +1576,6 @@ section.block { padding: 80px 0 0; }
       later(function () { el.innerHTML = esc(text.slice(0, k + 1)) + '<span class="caret"></span>'; if (onChar) onChar(k); }, t);
     });
     return t;
-  }
-
-  /* ---------- Investigate: the same run in the hero and in its feature card ---------- */
-  var AGENT = {
-    question: "why did paid orders drop last week?",
-    steps: [
-      { text: "Counting paid orders in the last two weeks", rows: "2 rows", sql: "SELECT strftime('%Y-%W', ordered_at) AS week,\n       COUNT(*) AS paid\nFROM orders\nWHERE status = 'paid'\nGROUP BY week\nORDER BY week DESC\nLIMIT 2;" },
-      { text: "Splitting last week's paid orders by category", rows: "8 rows", sql: "SELECT c.name, COUNT(DISTINCT o.id) AS paid\nFROM orders o\nJOIN order_items oi ON oi.order_id = o.id\nJOIN products p ON p.id = oi.product_id\nJOIN categories c ON c.id = p.category_id\nWHERE o.status = 'paid'\nGROUP BY c.name;" },
-      { text: "Checking for missing days in last week", rows: "1 row", sql: "SELECT COUNT(DISTINCT date(ordered_at)) AS days\nFROM orders\nWHERE ordered_at >= date('now', '-7 days');" },
-      { text: "Checking claims about all rows", rows: "", sql: null }
-    ],
-    answer: 'Paid orders fell from 52 to 31.<span class="cite">1</span> Electronics went from 14 to 2, most of the drop.<span class="cite">2</span> No day is missing from last week, so it isn\'t a data gap.<span class="cite">3</span>'
-  };
-  function agentStep(i, s, done) {
-    return '<div class="ag-step' + (done ? " done in" : "") + '"><span class="no">' + (i + 1) + '</span><span class="st"></span><span class="tx">' + esc(s.text) +
-      '</span><span class="rows">' + (done ? s.rows : "") + '</span>' + (done ? '<span class="sent">' + (s.sql ? "sent counts only" : "checked") + "</span>" : "") + "</div>";
-  }
-  function agentAnswer(shown) {
-    return '<div class="ag-answer' + (shown ? " in" : "") + '"><b>Answer <span class="conf">high confidence</span></b><p>' + AGENT.answer + "</p></div>";
-  }
-  // Plays the run into `box` from time `t`; `onStep(sql)` shows each step's SQL. Returns when the answer shows.
-  function playAgent(box, later, t, onStep) {
-    box.innerHTML = "";
-    AGENT.steps.forEach(function (s, i) {
-      later(function () {
-        box.insertAdjacentHTML("beforeend", agentStep(i, s, false));
-        var row = box.lastElementChild;
-        requestAnimationFrame(function () { row.classList.add("in"); });
-        if (onStep && s.sql) onStep(s.sql);
-      }, t + i * 1300);
-      later(function () {
-        var rows = box.querySelectorAll(".ag-step");
-        rows[i].outerHTML = agentStep(i, s, true);
-      }, t + i * 1300 + 900);
-    });
-    var end = t + AGENT.steps.length * 1300 + 200;
-    later(function () {
-      box.insertAdjacentHTML("beforeend", agentAnswer(false));
-      var a = box.lastElementChild;
-      requestAnimationFrame(function () { a.classList.add("in"); });
-    }, end);
-    return end;
-  }
-  function stillAgent(box) {
-    box.innerHTML = AGENT.steps.map(function (s, i) { return agentStep(i, s, true); }).join("") + agentAnswer(true);
   }
 
   /* ---------- hero: an agent works through SayQL, and SayQL's Agent activity shows what it ran ----------
@@ -1805,162 +1675,6 @@ section.block { padding: 80px 0 0; }
       later(function () { add(line("t-say t-answer", "●", ANSWER), true); }, t + 1300);
       later(loop, t + 8500);
     }, still);
-  })();
-
-  /* ---------- Ask in plain English: the workbench, with the app's built-in demo database ---------- */
-  (function () {
-    var el = document.getElementById("demo-ask");
-    var $ = function (s) { return el.querySelector(s); };
-    var ask = $("[data-ask]"), q = $("[data-q]"), code = $("[data-code]"), gutter = $("[data-gutter]"), grid = $("[data-grid]"),
-        meta = $("[data-meta]"), state = $("[data-state]"), building = $("[data-building]"),
-        pill = $("[data-pill]"), run = $("[data-run]"), chip = $("[data-chip]");
-
-    var TOP = "SELECT c.id AS customer_id,\n       c.first_name || ' ' || c.last_name AS customer,\n       c.country,\n       COUNT(DISTINCT o.id) AS orders,\n       ROUND(SUM(oi.quantity * oi.unit_price), 2) AS total_spend\nFROM customers c\nJOIN orders o ON o.customer_id = c.id\nJOIN order_items oi ON oi.order_id = o.id\nWHERE o.status NOT IN ('cancelled', 'refunded')\nGROUP BY c.id\nORDER BY total_spend DESC\nLIMIT 10;";
-    var PEOPLE = [[214, "Ava Smith", "USA", 31, 18420.5], [87, "Liam Patel", "India", 27, 16935], [342, "Noah Garcia", "Spain", 26, 15210.75], [19, "Emma Kim", "South Korea", 24, 14388.2], [156, "Olivia Nguyen", "Australia", 22, 13702.4], [401, "Arjun Müller", "Germany", 21, 12950], [63, "Priya Rossi", "Italy", 20, 12118.65], [278, "Mateo Silva", "Brazil", 19, 11640.3], [125, "Sofia Haddad", "Canada", 18, 10987.1], [330, "Kenji Watanabe", "Japan", 17, 10402.85]];
-    // /pii-safe is the app's example skill: "Never select email, phone or address columns." So contact
-    // details come back as names and country only.
-    var COLS = ["customer_id", "customer", "country", "orders", "total_spend"];
-    var SCENES = [
-      { tables: ["customers", "orders"], skill: true, question: "Top 10 customers by spend, with contact details", sql: TOP, cols: COLS, rows: PEOPLE, meta: "10 rows · 9 ms" },
-      { tables: ["customers", "orders"], followup: true, question: "only Europe",
-        sql: TOP.replace("\nGROUP BY", "\n  AND c.country IN ('Spain', 'Germany', 'Italy')\nGROUP BY"),
-        cols: COLS, rows: PEOPLE.filter(function (r) { return /Spain|Germany|Italy/.test(r[2]); }), meta: "3 rows · 6 ms" },
-      { tables: ["orders"], question: "how many orders in each status", sql: "SELECT status, COUNT(*) AS orders\nFROM orders\nGROUP BY status\nORDER BY orders DESC;",
-        cols: ["status", "orders"], rows: [["delivered", 2154], ["shipped", 389], ["processing", 201], ["cancelled", 152], ["refunded", 104]], meta: "5 rows · 4 ms" }
-    ];
-    var current = 0;
-
-    function setSql(sql) {
-      code.innerHTML = highlight(sql);
-      var n = Math.max(1, sql.split("\n").length), g = "";
-      for (var i = 1; i <= n; i++) g += i + "\n";
-      gutter.textContent = g;
-    }
-    function clearRows() { grid.innerHTML = '<div class="empty">Run a query to see rows here</div>'; meta.textContent = ""; }
-    function showRows(s, later) {
-      var h = "<table><thead><tr><th></th>";
-      s.cols.forEach(function (c) { h += "<th>" + c + "</th>"; });
-      h += "</tr></thead><tbody>";
-      s.rows.forEach(function (r, i) {
-        h += '<tr><td class="idx">' + (i + 1) + "</td>";
-        r.forEach(function (v) { h += typeof v === "number" ? '<td class="num">' + v + "</td>" : "<td>" + esc(v) + "</td>"; });
-        h += "</tr>";
-      });
-      grid.innerHTML = h + "</tbody></table>";
-      meta.textContent = s.meta;
-      grid.querySelectorAll("tbody tr").forEach(function (tr, i) { if (later) later(function () { tr.classList.add("in"); }, 35 * i); else tr.classList.add("in"); });
-    }
-    function setScene(s) {
-      pill.textContent = s.tables.join(", ");
-      pill.parentNode.hidden = !s.tables.length;
-      building.hidden = !s.followup;
-      chip.hidden = !s.skill;
-    }
-    function done(s) {
-      ask.classList.remove("live");
-      q.textContent = s.question;
-      state.className = "state";
-      state.innerHTML = '<svg class="i"><use href="#i-check"/></svg>Haiku 5.5';
-    }
-
-    demo(el, function (later, loop) {
-      var s = SCENES[current];
-      setScene(s);
-      if (!s.followup) { setSql(""); clearRows(); }
-      ask.classList.add("live");
-      q.innerHTML = '<span class="caret"></span>';
-      state.className = "state"; state.textContent = "SQL appears in the editor as you type.";
-      var first = 500;
-      if (s.skill) {
-        chip.hidden = true;
-        ["/", "/pi", "/pii-safe"].forEach(function (typed, k) {
-          later(function () { q.innerHTML = esc(typed) + '<span class="caret"></span>'; }, 500 + k * 280);
-        });
-        later(function () { chip.hidden = false; q.innerHTML = '<span class="caret"></span>'; }, 1450);
-        first = 1650;
-      }
-      var t = typeInto(q, s.question, first, later, function (k) {
-        if (k === 3) { state.className = "state ai"; state.innerHTML = "<i></i>Writing SQL with Haiku 5.5…"; if (s.followup) clearRows(); }
-      });
-      // The SQL streams in while the question is still being typed, like in the app.
-      var tokens = s.sql.match(/\s+|[^\s]+/g), shown = "", start = Math.max(800, t - 900);
-      tokens.forEach(function (tok, k) { later(function () { shown += tok; setSql(shown); }, start + k * 28); });
-      var end = Math.max(t, start + tokens.length * 28) + 250;
-      later(function () { done(s); }, end);
-      later(function () { pressRun(run); }, end + 600);
-      later(function () { showRows(s, later); }, end + 850);
-      later(function () { current = (current + 1) % SCENES.length; loop(); }, end + 5200);
-    }, function () {
-      var s = SCENES[0];
-      setScene(s); setSql(s.sql); showRows(s); done(s);
-    });
-  })();
-
-  /* ---------- Investigate card ---------- */
-  (function () {
-    var el = document.getElementById("demo-agent");
-    var q = el.querySelector("[data-q]"), box = el.querySelector("[data-agent]");
-    demo(el, function (later, loop) {
-      q.innerHTML = '<span class="caret"></span>';
-      box.innerHTML = "";
-      var t = typeInto(q, AGENT.question, 400, later);
-      later(function () { q.textContent = AGENT.question; }, t + 200);
-      var end = playAgent(box, later, t + 500);
-      later(loop, end + 6000);
-    }, function () { q.textContent = AGENT.question; stillAgent(box); });
-  })();
-
-
-  /* ---------- knowledge that stays true ---------- */
-  (function () {
-    var el = document.getElementById("demo-notes");
-    var n2 = el.querySelector("[data-n2]"), st = el.querySelector("[data-st]"), col = el.querySelector("[data-col]"), why = el.querySelector("[data-why]");
-    var changed = el.querySelector("[data-changed]"), suggest = el.querySelector("[data-suggest]"), fixedBar = el.querySelector("[data-fixed]"), use = el.querySelector("[data-use]");
-    var CHECK = '<svg class="i"><use href="#i-check"/></svg>', ALERT = '<svg class="i"><use href="#i-alert"/></svg>';
-    function start() {
-      n2.classList.remove("doubt"); st.className = "kn-st"; st.innerHTML = "";
-      col.textContent = "users.last_login_at"; why.textContent = "From your code: auth/session.ts";
-      changed.hidden = suggest.hidden = fixedBar.hidden = true;
-    }
-    function flagged() {
-      n2.classList.add("doubt"); st.className = "kn-st doubt"; st.innerHTML = ALERT;
-      why.textContent = "May be out of date: users.last_login_at no longer exists";
-    }
-    function fixed() {
-      n2.classList.remove("doubt"); st.className = "kn-st ok"; st.innerHTML = CHECK;
-      col.textContent = "users.last_seen_at"; why.textContent = "Updated just now";
-      changed.hidden = suggest.hidden = true; fixedBar.hidden = false;
-    }
-    demo(el, function (later, loop) {
-      start();
-      later(function () { changed.hidden = false; }, 1200);
-      later(flagged, 2000);
-      later(function () { suggest.hidden = false; }, 3200);
-      later(function () { pressRun(use); }, 4600);
-      later(fixed, 4900);
-      later(loop, 9000);
-    }, fixed);
-  })();
-
-  /* ---------- pick your AI ---------- */
-  (function () {
-    var el = document.getElementById("demo-ai");
-    var cards = el.querySelectorAll("[data-p]"), label = el.querySelector("[data-label]"), field = el.querySelector("[data-field]"), help = el.querySelector("[data-help]");
-    var KEYCHAIN = "Stored in your system keychain.";
-    var STATES = [
-      ["Anthropic Claude API key", "Saved in Keychain", KEYCHAIN],
-      ["Claude Code", "Signed in with your Claude Max plan", "No key. Counts against your plan's limits."],
-      ["Credit key", "Saved in Keychain", "Prepaid. Goes via SayQL to Anthropic."],
-      ["Ollama address", "http://localhost:11434", "No key. Nothing leaves your machine."]
-    ];
-    function select(i) {
-      cards.forEach(function (c, j) { c.classList.toggle("on", i === j); });
-      label.textContent = STATES[i][0]; field.textContent = STATES[i][1]; help.textContent = STATES[i][2];
-    }
-    demo(el, function (later, loop) {
-      STATES.forEach(function (_, i) { later(function () { select(i); }, i * 1800); });
-      later(loop, STATES.length * 1800);
-    }, function () { select(0); });
   })();
 
   /* downloads: count, current version and direct installer links
