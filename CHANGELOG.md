@@ -3,6 +3,42 @@
 All notable changes to SayQL are listed here. Downloads are on the
 [releases page](https://github.com/dithzz/sayql-releases/releases).
 
+## 0.5.5 (2026-11-03)
+
+### Security fixes from a code audit
+
+- **Never-send columns hold in more queries.** On MySQL 5.7 and MariaDB, `PROCEDURE ANALYSE()` could return the
+  values of a never-send column; AI queries using it are now refused. So are signed or bracketed positions in
+  `ORDER BY` and `GROUP BY` (`ORDER BY +3`) that could sort by a withheld column.
+- **No sending data out from the database.** AI queries can't call functions that send data to the internet,
+  such as Postgres's `http_*` functions and RDS's `aws_s3.*` and `aws_lambda.*`.
+- **Less goes to the AI about never-send columns.** Their comments, enum values and CHECK constraints are left
+  out of the schema the AI sees.
+- SQL Server's `SETUSER`, `WRITETEXT` and `UPDATETEXT` count as writes.
+- In agent mode, a note's failed check shows the AI only the safe form of the database's error.
+
+### Fewer crashes
+
+- **A broken PDF can't close SayQL.** PDFs are read in a separate process with time and size limits; a PDF
+  SayQL can't read shows a message instead.
+- Fixed crashes when a renamed table or column appeared in a note with letters such as `İ`, on a reply from a
+  team server whose rows didn't match its columns, and on unusually deep SQL Server geometry or huge Postgres
+  arrays.
+
+### Audits
+
+- On Linux, an audit's working folder is now private to you, in SayQL's cache, rather than in the shared
+  `/tmp`. It's removed when the run ends, on every platform.
+- Secret files are kept out of OpenCode audits whatever their letter case (`.ENV`, `ID_RSA`), and more of them
+  are: `.envrc`, `.dev.vars`, `*.tfstate`, `*.tfvars`, `.pgpass`, `.my.cnf`, keystores and more.
+- The OpenCode and ripgrep executables are checked against SHA-256s built into SayQL, downloads time out
+  instead of hanging, and folder paths work with OpenCode on Windows.
+
+### Reliability
+
+- The app and SayQL's MCP server lock SayQL's saved files while changing them, so neither loses the other's
+  changes (settings, notes, suggestions, sources).
+
 ## 0.5.4 (2026-11-02)
 
 ### Audits without Claude Code
