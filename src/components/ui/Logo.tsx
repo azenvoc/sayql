@@ -1,4 +1,5 @@
-import { Cloud, Database, type LucideIcon } from "lucide-react";
+import { BrainCircuit, Cloud, Database, Plug, Zap, type LucideIcon } from "lucide-react";
+import { BrandMark } from "./BrandMark";
 import { cx } from "../../lib/cx";
 import LOGOS from "../../assets/logos/logos.json";
 import styles from "./Logo.module.css";
@@ -32,14 +33,18 @@ interface LogoInfo {
 
 /**
  * Brands with no logo SayQL can ship (no clean, licensed source), shown with a neutral icon in a
- * color of their own instead. The colors are theme tokens.
+ * color of their own instead. The colors are theme tokens. `sayql` is SayQL's own mark.
  */
 const NEUTRAL = {
   sqlserver: { title: "SQL Server", icon: Database, color: "var(--color-kind-mssql)" },
   azuresql: { title: "Azure SQL", icon: Cloud, color: "var(--color-kind-mssql)" },
+  openai: { title: "OpenAI", icon: BrainCircuit, color: "var(--color-text)" },
+  groq: { title: "Groq", icon: Zap, color: "var(--color-text)" },
+  /** Any server that speaks OpenAI's API. */
+  compatible: { title: "OpenAI-compatible", icon: Plug, color: "var(--color-text-muted)" },
 } satisfies Record<string, { title: string; icon: LucideIcon; color: string }>;
 
-export type LogoId = keyof typeof LOGOS | keyof typeof NEUTRAL;
+export type LogoId = keyof typeof LOGOS | keyof typeof NEUTRAL | "sayql";
 
 /** The path of each logo file, read once. */
 const PATHS = new Map(
@@ -51,6 +56,7 @@ const PATHS = new Map(
 
 /** A logo's name, e.g. for a label next to it. */
 export function logoTitle(id: LogoId): string {
+  if (id === "sayql") return "SayQL";
   return id in NEUTRAL
     ? NEUTRAL[id as keyof typeof NEUTRAL].title
     : LOGOS[id as keyof typeof LOGOS].title;
@@ -73,6 +79,12 @@ export function Logo({
   className?: string;
 }) {
   const a11y = label ? { role: "img", "aria-label": label } : { "aria-hidden": true as const };
+  if (id === "sayql")
+    return (
+      <span className={cx(styles.logo, className)} {...a11y}>
+        <BrandMark size={size} />
+      </span>
+    );
   const color = COLOR_URLS.get(id);
   if (color) {
     const dark = COLOR_URLS.get(`${id}-dark`);

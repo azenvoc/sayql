@@ -15,9 +15,19 @@ import {
   Wand2,
 } from "lucide-react";
 import { commands, type AiProvider, type Settings } from "../../api";
-import { Alert, BrandMark, Button, Dialog, Field, Select, TextInput } from "../../components/ui";
+import {
+  Alert,
+  BrandMark,
+  Button,
+  Dialog,
+  Field,
+  Logo,
+  Select,
+  TextInput,
+  type LogoId,
+} from "../../components/ui";
 import { cx } from "../../lib/cx";
-import { ClaudePlanCheck } from "../settings";
+import { ClaudePlanCheck, providerLogo } from "../settings";
 import { errorText } from "../../lib/errors";
 import styles from "./OnboardingDialog.module.css";
 
@@ -132,6 +142,8 @@ const WAYS: {
   title: string;
   tag?: string;
   local?: boolean;
+  /** The logos of the providers it covers. */
+  logos: LogoId[];
   summary: string;
   pros: string[];
   cons: string[];
@@ -139,6 +151,7 @@ const WAYS: {
   {
     id: "key",
     title: "Your own API key",
+    logos: ["anthropic", "openai", "googlegemini", "mistralai", "deepseek"],
     summary: "Anthropic, OpenAI, Gemini and more.",
     pros: [
       "Pay the provider directly, only for what you use",
@@ -149,6 +162,7 @@ const WAYS: {
   {
     id: "plan",
     title: "Your Claude plan",
+    logos: ["claude"],
     tag: "No API key",
     summary: "The Pro or Max plan you already have, through your installed Claude Code.",
     pros: ["No key and no extra bill", "Claude's models, on your own sign-in"],
@@ -161,6 +175,7 @@ const WAYS: {
   {
     id: "credits",
     title: "SayQL AI credits",
+    logos: ["sayql"],
     tag: "No Anthropic account",
     summary: "Prepaid Claude from SayQL.",
     pros: ["No other account to set up", "Prepaid, so no surprise bills"],
@@ -172,6 +187,7 @@ const WAYS: {
   {
     id: "local",
     title: "On this computer",
+    logos: ["ollama", "lmstudio"],
     local: true,
     summary: "Ollama or LM Studio.",
     pros: ["Nothing leaves your computer", "Free"],
@@ -206,6 +222,11 @@ function PickWay(p: OnboardingDialogProps & { onPick: (w: Way) => void }) {
       <div className={styles.ways}>
         {available.map((w) => (
           <button key={w.id} type="button" className={styles.way} onClick={() => p.onPick(w.id)}>
+            <span className={styles.wayLogos}>
+              {w.logos.map((id) => (
+                <Logo key={id} id={id} size={20} />
+              ))}
+            </span>
             <span className={styles.cardTitle}>
               {w.title}
               {w.tag && <span className={styles.tag}>{w.tag}</span>}
@@ -335,6 +356,7 @@ function SetUpWay(p: OnboardingDialogProps & { way: Way; onBack: () => void }) {
               onClick={() => choose(x.id)}
             >
               <span className={styles.cardTitle}>
+                <Logo id={providerLogo(x.id)} size={16} />
                 {x.label}
                 {x.id === "anthropic" && <span className={styles.tag}>Recommended</span>}
               </span>

@@ -216,6 +216,11 @@
   composes: card;
   gap: var(--space-1);
 }
+.wayLogos {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
 .way:hover {
   border-color: var(--color-accent);
 }

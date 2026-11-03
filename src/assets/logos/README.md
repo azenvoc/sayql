@@ -11,7 +11,7 @@ logo doesn't mean its owner endorses SayQL. Each logo is a trademark of its owne
   source and the brand's usage guidelines; `dark: true` marks a color too dark to read on the dark
   theme, where the logo is drawn in the text color instead.
 - `scripts/third_party_notices.py` lists them in THIRD-PARTY-NOTICES.txt from `logos.json`.
-- Brands without a clean source (Microsoft SQL Server and Azure SQL among them) get a neutral icon
+- Brands without a clean source (Microsoft SQL Server, Azure SQL, OpenAI and Groq) get a neutral icon
   in `src/components/ui/Logo.tsx` instead of their logo.
 
 To add one: copy `icons/<slug>.svg` from the `simple-icons` npm package, add its entry from the

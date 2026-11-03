@@ -2,7 +2,7 @@ import { ArrowDownToLine, Circle, MessageSquare, Plug, ShieldCheck, Sparkles } f
 import type { ConnectionConfig, Schema } from "../api";
 import type { ModelNames } from "../features/settings";
 import type { UpdateState } from "../features/updates";
-import { Button } from "../components/ui";
+import { Button, Logo } from "../components/ui";
 import { ProdBadge } from "../features/connections";
 import { privacySummary, useAgentAccess } from "../features/agent";
 import { cx } from "../lib/cx";
@@ -133,7 +133,7 @@ export function StatusBar({
         </Button>
       )}
       <span className={styles.statusItem}>
-        <Sparkles size={11} />
+        {aiReady ? <Logo id={modelNames.logo} size={11} /> : <Sparkles size={11} />}
         {aiReady
           ? `${modelNames.typing} while typing · ${modelNames.expert} for fixes`
           : "AI off — set up an AI provider in Settings"}

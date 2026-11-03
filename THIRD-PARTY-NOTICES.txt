@@ -48210,6 +48210,18 @@ MariaDB: https://mariadb.com/about-us/logos/
   guidelines: https://mariadb.com/about-us/logos/
 SQLite: https://github.com/sqlite/sqlite/blob/43e862723ec680542ca6f608f9963c0993dd7324/art/sqlite370.eps
   guidelines: https://sqlite.org/copyright.html
+Anthropic: https://www.anthropic.com
+Claude: https://claude.ai
+Google Gemini: https://gemini.google.com
+  guidelines: https://about.google/brand-resource-center/
+OpenRouter: https://openrouter.ai
+Mistral AI: https://chat.mistral.ai
+DeepSeek: https://www.deepseek.com
+Ollama: https://github.com/ollama/ollama/issues/2152#issuecomment-1905286922
+LM Studio: https://files.lmstudio.ai/lmstudio_icon2.svg
+Meta: https://www.meta.com
+  guidelines: https://www.facebook.com/brand/resources/meta/company-brand
+QWen: https://qwen.ai
 
 Simple Icons is released under CC0 1.0 Universal:
 https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md

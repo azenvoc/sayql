@@ -24,5 +24,60 @@
     "dark": true,
     "source": "https://github.com/sqlite/sqlite/blob/43e862723ec680542ca6f608f9963c0993dd7324/art/sqlite370.eps",
     "guidelines": "https://sqlite.org/copyright.html"
+  },
+  "anthropic": {
+    "title": "Anthropic",
+    "color": "#191919",
+    "dark": true,
+    "source": "https://www.anthropic.com"
+  },
+  "claude": {
+    "title": "Claude",
+    "color": "#D97757",
+    "source": "https://claude.ai"
+  },
+  "googlegemini": {
+    "title": "Google Gemini",
+    "color": "#8E75B2",
+    "source": "https://gemini.google.com",
+    "guidelines": "https://about.google/brand-resource-center/"
+  },
+  "openrouter": {
+    "title": "OpenRouter",
+    "color": "#94A3B8",
+    "source": "https://openrouter.ai"
+  },
+  "mistralai": {
+    "title": "Mistral AI",
+    "color": "#FA520F",
+    "source": "https://chat.mistral.ai"
+  },
+  "deepseek": {
+    "title": "DeepSeek",
+    "color": "#5786FE",
+    "source": "https://www.deepseek.com"
+  },
+  "ollama": {
+    "title": "Ollama",
+    "color": "#000000",
+    "dark": true,
+    "source": "https://github.com/ollama/ollama/issues/2152#issuecomment-1905286922"
+  },
+  "lmstudio": {
+    "title": "LM Studio",
+    "color": "#000000",
+    "dark": true,
+    "source": "https://files.lmstudio.ai/lmstudio_icon2.svg"
+  },
+  "meta": {
+    "title": "Meta",
+    "color": "#0467DF",
+    "source": "https://www.meta.com",
+    "guidelines": "https://www.facebook.com/brand/resources/meta/company-brand"
+  },
+  "qwen": {
+    "title": "QWen",
+    "color": "#6950EF",
+    "source": "https://qwen.ai"
   }
 }

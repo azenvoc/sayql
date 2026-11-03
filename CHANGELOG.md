@@ -5,12 +5,16 @@ All notable changes to SayQL are listed here. Downloads are on the
 
 ## Unreleased
 
-### Database logos
+### Database and AI logos
 
 - **New connection starts with your database.** A card with its logo for PostgreSQL, MySQL, MariaDB, SQL Server,
   Azure SQL and SQLite, with a filter (Enter picks the only match). Pasting a connection string still works,
   right there or on the form, and **All databases** goes back.
 - The navigator and the top bar show each connection's database logo.
+- **AI providers and models have logos too:** in the "How do you want to use AI?" setup, Settings → AI provider
+  (now a tile per provider), the Ask box's model menu (each provider, and each model by its maker, such as Claude,
+  Gemini, Mistral, Llama or Qwen through OpenRouter or Ollama) and the status bar. OpenAI, Groq and
+  OpenAI-compatible servers use a neutral icon; SayQL AI credits uses the SayQL logo.
 - Logos come from Simple Icons (CC0) and are bundled with the app, so nothing is downloaded. SQL Server and
   Azure SQL use a neutral icon. Sources and usage guidelines are in THIRD-PARTY-NOTICES.txt.
 
