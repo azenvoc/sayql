@@ -20,12 +20,12 @@
     <tr><td>You first run an audit without Claude Code</td><td>A one-time download of OpenCode 1.19.5 and ripgrep 15.1.0 (about 66 MB), each checked against a fixed SHA-256</td><td>GitHub (anomalyco/opencode and BurntSushi/ripgrep releases)</td></tr>
     <tr><td>Your team provides AI and you ask on a team connection</td><td>Your question, the schema, notes and, in Investigate if allowed, masked rows; only token counts are stored</td><td>Your team's SayQL server, which forwards it to your company's AI provider (with SayQL AI credits, through SayQL's service to Anthropic; only token counts are stored there)</td></tr>
     <tr><td>You first use voice input</td><td>A one-time download of the speech model (about 82 MB), checked against a fixed SHA-256. No audio</td><td>Hugging Face</td></tr>
-    <tr><td>SayQL starts</td><td>The app version and your operating system, to check for updates</td><td>GitHub (dithzz/sayql-releases)</td></tr>
+    <tr><td>SayQL starts</td><td>The app version and your operating system, to check for updates</td><td>GitHub (azenvoc/sayql-releases)</td></tr>
   </tbody>
 </table></div>
 <p>The Ask box never sends rows from your tables to an AI provider. Investigate can, only on connections where you turn it on; it is off by default. With a local model, nothing leaves your computer.</p>
 <p>Over MCP, counts and summaries (the default) and masked rows keep your rows from reaching an AI app by accident, but a count or a sum is still a fact about your rows, and an agent set on it can turn a value into one. Columns marked <b>never send</b> are the firm line: SayQL refuses any query that could read them.</p>
-<p>Read the full <a href="https://github.com/dithzz/sayql-releases/blob/main/PRIVACY.md">privacy notice</a>.</p>
+<p>Read the full <a href="https://github.com/azenvoc/sayql-releases/blob/main/PRIVACY.md">privacy notice</a>.</p>
 
 <h2>See it at a glance</h2>
 <p>The status bar shows, for the connection you're on, the most that can reach an AI from it: <b>No rows to AI</b>, <b>Counts to AI</b>, <b>Masked rows to AI</b> or <b>All rows to AI apps</b>. Its tooltip has a line each for the Ask box, Investigate, AI apps and never-send columns; click it to change them. Right-click a connection and choose <b>Overview…</b> for the same, plus what AI apps did with it, when it was last audited, the knowledge sources its audit reads, and your recent queries on it.</p>

@@ -4,8 +4,8 @@ Thanks for helping make SayQL better. Bug reports, ideas, docs fixes and code ar
 
 ## Before you start
 
-- **Bugs and ideas:** open an [issue](https://github.com/dithzz/sayql/issues/new/choose). For questions and
-  general feedback, use [Discussions](https://github.com/dithzz/sayql/discussions).
+- **Bugs and ideas:** open an [issue](https://github.com/azenvoc/sayql/issues/new/choose). For questions and
+  general feedback, use [Discussions](https://github.com/azenvoc/sayql/discussions).
 - **Security problems:** don't open a public issue. See [SECURITY.md](SECURITY.md).
 - **Larger changes:** open an issue first so we can agree on the approach before you spend time on it.
 

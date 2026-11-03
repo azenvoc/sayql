@@ -74,7 +74,7 @@ describe("update dialog", () => {
 
   it("links Details… to the version's release page", () => {
     expect(releaseUrl("0.6.0")).toBe(
-      "https://github.com/dithzz/sayql-releases/releases/tag/v0.6.0",
+      "https://github.com/azenvoc/sayql-releases/releases/tag/v0.6.0",
     );
   });
 });

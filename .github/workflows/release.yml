@@ -1,5 +1,5 @@
 # Builds installers for macOS, Windows and Linux and publishes them, plus the
-# updater's latest.json, as a draft release in the public dithzz/sayql-releases
+# updater's latest.json, as a draft release in the public azenvoc/sayql-releases
 # repository when a version tag (v0.1.0, v0.2.0, ...) is pushed.
 #
 # Early-access builds are not code-signed (macOS uses ad-hoc signing), so people
@@ -9,7 +9,7 @@
 # Secrets (Settings → Secrets and variables → Actions):
 #   TAURI_SIGNING_PRIVATE_KEY           contents of ~/.tauri/sayql-updater.key
 #   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  its password (macOS Keychain: "Sayql updater signing key password")
-#   RELEASES_TOKEN                      fine-grained token with Contents: read and write on dithzz/sayql-releases
+#   RELEASES_TOKEN                      fine-grained token with Contents: read and write on azenvoc/sayql-releases
 name: Release
 
 on:
@@ -99,7 +99,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          owner: dithzz
+          owner: azenvoc
           repo: sayql-releases
           # The release's tag points at the releases repo's own branch; this repo's
           # commits don't exist there.
@@ -142,7 +142,7 @@ jobs:
       - name: Point latest.json at public download URLs and add the changelog
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
-          REPO: dithzz/sayql-releases
+          REPO: azenvoc/sayql-releases
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail

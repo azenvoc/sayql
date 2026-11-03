@@ -14,12 +14,12 @@
 The governance layer between AI agents and your databases.<br>
 They get your schema and the numbers they need, not your rows, unless you say so.
 
-[![Latest release](https://img.shields.io/github/v/release/dithzz/sayql-releases?label=release&color=1f6feb)](https://github.com/dithzz/sayql-releases/releases/latest)
-[![CI](https://github.com/dithzz/sayql/actions/workflows/ci.yml/badge.svg)](https://github.com/dithzz/sayql/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/azenvoc/sayql-releases?label=release&color=1f6feb)](https://github.com/azenvoc/sayql-releases/releases/latest)
+[![CI](https://github.com/azenvoc/sayql/actions/workflows/ci.yml/badge.svg)](https://github.com/azenvoc/sayql/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-1f6feb)](LICENSE)
-[![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-475569)](https://github.com/dithzz/sayql-releases/releases/latest)
+[![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-475569)](https://github.com/azenvoc/sayql-releases/releases/latest)
 
-[**Download**](https://github.com/dithzz/sayql-releases/releases/latest) · [Docs](https://sayql.dev/docs/) · [Website](https://sayql.dev) · [Discussions](https://github.com/dithzz/sayql/discussions)
+[**Download**](https://github.com/azenvoc/sayql-releases/releases/latest) · [Docs](https://sayql.dev/docs/) · [Website](https://sayql.dev) · [Discussions](https://github.com/azenvoc/sayql/discussions)
 
 <br>
 
@@ -179,7 +179,7 @@ built in, so you can try everything without connecting anything.
 ## Get started
 
 1. **Download** the installer for your computer from the
-   [latest release](https://github.com/dithzz/sayql-releases/releases/latest): `.dmg` for macOS (`aarch64`
+   [latest release](https://github.com/azenvoc/sayql-releases/releases/latest): `.dmg` for macOS (`aarch64`
    for Apple silicon, `x64` for Intel), `-setup.exe` or `.msi` for Windows, `.AppImage`, `.deb` or `.rpm`
    for Linux.
 2. **Open it.** Early-access builds aren't code-signed yet, so confirm the first launch once: on macOS,
@@ -203,7 +203,7 @@ straight from your machine to your database, and sends data only to services you
 | You use Investigate on a connection where you turned it on | The agent's queries and, per your setting, row counts, column summaries, or up to 20 masked rows per query | Your AI provider |
 | An AI app uses SayQL through MCP | The schemas and database notes, and what you allow it to see of query results on that connection: by default counts and summaries, no row values (never the values of never-send columns) | That AI app (for example Claude or Cursor) |
 | You run a query | Your SQL | Your database |
-| SayQL starts | The app version and your operating system, to check for updates | GitHub (dithzz/sayql-releases) |
+| SayQL starts | The app version and your operating system, to check for updates | GitHub (azenvoc/sayql-releases) |
 | You first use voice input | A one-time download of the speech model (no audio) | Hugging Face |
 
 **Rows in your tables are never sent to an AI provider by the Ask box.** Investigate can send them, only on
@@ -306,7 +306,7 @@ You need Rust (stable), Node.js LTS, pnpm 10 and the
 [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for your platform.
 
 ```bash
-git clone https://github.com/dithzz/sayql.git
+git clone https://github.com/azenvoc/sayql.git
 cd sayql
 pnpm install
 pnpm tauri dev      # run the app
@@ -329,7 +329,7 @@ microphone (on Linux, install `libasound2-dev` to build). [docs/ARCHITECTURE.md]
 
 - **Signed builds** for macOS and Windows, removing the first-launch confirmation.
 
-Ideas and votes are welcome in [Discussions](https://github.com/dithzz/sayql/discussions).
+Ideas and votes are welcome in [Discussions](https://github.com/azenvoc/sayql/discussions).
 
 ## How SayQL is funded
 
@@ -350,11 +350,11 @@ SayQL is made by one person. The app is free and will stay that way; teams that 
 
 ## Community
 
-- **Questions, ideas and feedback:** [Discussions](https://github.com/dithzz/sayql/discussions)
-- **Bugs and feature requests:** [Issues](https://github.com/dithzz/sayql/issues/new/choose)
-- **Want to help?** Start with a [good first issue](https://github.com/dithzz/sayql/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-  or one marked [help wanted](https://github.com/dithzz/sayql/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
-- **What's new:** [CHANGELOG.md](CHANGELOG.md) and [releases](https://github.com/dithzz/sayql-releases/releases)
+- **Questions, ideas and feedback:** [Discussions](https://github.com/azenvoc/sayql/discussions)
+- **Bugs and feature requests:** [Issues](https://github.com/azenvoc/sayql/issues/new/choose)
+- **Want to help?** Start with a [good first issue](https://github.com/azenvoc/sayql/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+  or one marked [help wanted](https://github.com/azenvoc/sayql/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
+- **What's new:** [CHANGELOG.md](CHANGELOG.md) and [releases](https://github.com/azenvoc/sayql-releases/releases)
 
 If SayQL saves you time, a ⭐ helps other people find it.
 

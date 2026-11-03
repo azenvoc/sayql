@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         Thanks for reporting! Please don't include passwords, API keys or private data.
-        Security problems go through [a private report](https://github.com/dithzz/sayql/security/advisories/new) instead.
+        Security problems go through [a private report](https://github.com/azenvoc/sayql/security/advisories/new) instead.
   - type: textarea
     id: what
     attributes:

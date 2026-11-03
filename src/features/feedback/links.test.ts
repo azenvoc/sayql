@@ -13,7 +13,7 @@ describe("feedback links", () => {
 
   it("pre-fills the feedback template with the text, version and OS only", () => {
     const url = new URL(githubIssueUrl("feedback", "  Loved the follow-ups  ", mac));
-    expect(url.origin + url.pathname).toBe("https://github.com/dithzz/sayql/issues/new");
+    expect(url.origin + url.pathname).toBe("https://github.com/azenvoc/sayql/issues/new");
     expect(Object.fromEntries(url.searchParams)).toEqual({
       template: "feedback.yml",
       feedback: "Loved the follow-ups",

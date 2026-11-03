@@ -32,7 +32,7 @@ SayQL sends data only to services you configure, and only when you use them:
 | You sign in to a SayQL Team server and use a team connection | Your invite code (once), requests for team connections and their schemas, and your queries with the questions they answer and where they came from (Ask box, editor or Investigate) | Your company's SayQL server, at the address you entered |
 | You use the Ask box or Investigate on a team connection, when your team provides AI | Your question, the schema, saved database notes and, in Investigate if allowed, masked rows or summaries (what the AI provider would otherwise get), labelled with where it came from and the connection | Your company's SayQL server, which forwards it to your company's AI provider and keeps only token counts |
 | You turn on voice input, once | A download request for the speech model (about 82 MB), checked against a fixed SHA-256 before use. No audio is sent | Hugging Face (huggingface.co/ggerganov/whisper.cpp) |
-| SayQL checks for updates, each time it starts | The app version and your operating system | GitHub (github.com/dithzz/sayql-releases) |
+| SayQL checks for updates, each time it starts | The app version and your operating system | GitHub (github.com/azenvoc/sayql-releases) |
 
 When you are signed in to a team server, queries and questions on its connections go to that server (run by your company), which records them in its audit log. Without signing in, SayQL never contacts a team server. Your own connections never go there either way.
 

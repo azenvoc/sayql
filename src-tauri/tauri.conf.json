@@ -78,7 +78,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDBGQzVBQ0ZFRjNDRDQ0QTMKUldTalJNM3ovcXpGRDZZTXlnbGgwcmZ4dW9tSGV6cWRacEV3SXRKV1ByZ3R6VjhVWlJuTW1VdFAK",
       "endpoints": [
-        "https://github.com/dithzz/sayql-releases/releases/latest/download/latest.json"
+        "https://github.com/azenvoc/sayql-releases/releases/latest/download/latest.json"
       ],
       "windows": {
         "installMode": "passive"

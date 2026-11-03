@@ -6,7 +6,7 @@ import styles from "./UpdateDialog.module.css";
 
 /** The release page of a version, with its downloads and full notes. */
 export function releaseUrl(version: string): string {
-  return `https://github.com/dithzz/sayql-releases/releases/tag/v${version}`;
+  return `https://github.com/azenvoc/sayql-releases/releases/tag/v${version}`;
 }
 
 /** A byte count as MB with one decimal. */
