@@ -127,11 +127,19 @@ jobs:
   # anonymous GitHub API calls are limited to 60 an hour per IP, so a team behind one office
   # address could see failed updates. Public download URLs have no such limit and also work
   # in a browser. The tag name is used, so the URLs are right once the draft is published.
+  #
+  # It also sets latest.json's notes to the version's CHANGELOG.md section: the update dialog
+  # shows them, and the release body above is install instructions, not what changed.
   updater-links:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Point latest.json at public download URLs
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: CHANGELOG.md
+          sparse-checkout-cone-mode: false
+
+      - name: Point latest.json at public download URLs and add the changelog
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
           REPO: dithzz/sayql-releases
@@ -150,6 +158,20 @@ jobs:
               if "/releases/assets/" in p["url"]:
                   p["url"] = f"https://github.com/{repo}/releases/download/{tag}/{ids[p['url'].rsplit('/', 1)[-1]]}"
               print(key, p["url"])
+          # The "## 0.5.5 (2026-11-03)" section, without its heading, up to the next "## ".
+          version, section = tag.removeprefix("v"), []
+          for line in open("CHANGELOG.md", encoding="utf-8").read().splitlines():
+              if line.startswith("## "):
+                  if section:
+                      break
+                  if line[3:].split(" ", 1)[0] == version:
+                      section.append(line)
+              elif section:
+                  section.append(line)
+          if section:
+              d["notes"] = "\n".join(section[1:]).strip()
+          else:
+              print(f"CHANGELOG.md has no section for {version}; keeping the release body as notes.")
           json.dump(d, open("latest.json", "w"), indent=2)
           EOF
           gh release upload "$TAG" latest.json -R "$REPO" --clobber

@@ -8,6 +8,7 @@ export {
   subscribeToAi,
   subscribeToHandoffs,
   subscribeToMenu,
+  subscribeToUpdateProgress,
   subscribeToVoice,
 } from "./events";
 export type { MenuAction } from "./events";

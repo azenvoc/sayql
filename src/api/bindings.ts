@@ -232,7 +232,8 @@ export const commands = {
 	checkUpdate: () => __TAURI_INVOKE<UpdateInfo_Serialize | null>("check_update"),
 	/**
 	 *  Downloads the newer release, installs it once its signature checks out against the
-	 *  updater key in tauri.conf.json, and restarts into it.
+	 *  updater key in tauri.conf.json, and restarts into it. Progress arrives as `update://progress`
+	 *  events.
 	 */
 	installUpdate: () => __TAURI_INVOKE<null>("install_update"),
 	/**  Redeems an invite code, keeps the token in the keychain and the server in settings. */
@@ -297,6 +298,8 @@ export const QUERY_CANCELLED = "Query cancelled." as const;
 export const SOURCE_CAP_MESSAGE = "SayQL for teams keeps unlimited sources in sync for everyone." as const;
 
 export const TEAM_SIGNED_OUT = "Signed out of your team, sign in again." as const;
+
+export const UPDATE_PROGRESS_EVENT = "update://progress" as const;
 
 export const WRITE_CONFIRM = "WRITE_CONFIRM" as const;
 
@@ -1775,12 +1778,41 @@ export type UpdateInfo = UpdateInfo_Serialize | UpdateInfo_Deserialize;
 
 export type UpdateInfo_Deserialize = {
 	version: string,
+	/**  The version running now, to show next to the new one. */
+	currentVersion: string,
+	/**  The release date as `YYYY-MM-DD`, when the feed has one. */
+	date?: string | null,
+	/**  The release's changes, in Markdown (the version's CHANGELOG.md section). */
 	notes?: string | null,
 };
 
 export type UpdateInfo_Serialize = {
 	version: string,
+	/**  The version running now, to show next to the new one. */
+	currentVersion: string,
+	/**  The release date as `YYYY-MM-DD`, when the feed has one. */
+	date: string | null,
+	/**  The release's changes, in Markdown (the version's CHANGELOG.md section). */
 	notes: string | null,
+};
+
+/**  How much of the update has downloaded. `total` is missing when the server doesn't say. */
+export type UpdateProgress = UpdateProgress_Serialize | UpdateProgress_Deserialize;
+
+/**  How much of the update has downloaded. `total` is missing when the server doesn't say. */
+export type UpdateProgress_Deserialize = {
+	received: number,
+	total?: number | null,
+	/**  The download is done and the update is being installed. */
+	installing: boolean,
+};
+
+/**  How much of the update has downloaded. `total` is missing when the server doesn't say. */
+export type UpdateProgress_Serialize = {
+	received: number,
+	total: number | null,
+	/**  The download is done and the update is being installed. */
+	installing: boolean,
 };
 
 export type Usage = {
