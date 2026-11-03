@@ -1,0 +1,9 @@
+.logo {
+  display: inline-flex;
+  flex: none;
+}
+
+/* Brand colors too dark for the dark theme use the text color there. */
+:global(:root[data-theme="dark"]) .dark path {
+  fill: var(--color-text);
+}

@@ -114,3 +114,56 @@ describe("ConnectionDialog connection string", () => {
     expect(screen.getByText(/doesn't look like a connection string/)).toBeTruthy();
   });
 });
+
+describe("ConnectionDialog database cards", () => {
+  afterEach(cleanup);
+
+  const renderNew = (note?: string) =>
+    render(
+      <ConnectionDialog
+        initial={newConnection()}
+        note={note}
+        onClose={() => {}}
+        onSaved={() => {}}
+        onDeleted={() => {}}
+      />,
+    );
+
+  it("starts a new connection on a card for every database, each with its logo", () => {
+    renderNew();
+    for (const name of ["PostgreSQL", "MySQL", "MariaDB", "SQL Server", "Azure SQL", "SQLite"])
+      expect(screen.getByRole("button", { name: new RegExp(`^${name}`) })).toBeTruthy();
+    expect(screen.queryByLabelText("Host")).toBeNull();
+  });
+
+  it("filters the cards, and Enter picks the one left", () => {
+    renderNew();
+    const box = screen.getByLabelText("Filter databases");
+    fireEvent.change(box, { target: { value: "azure" } });
+    expect(screen.queryByRole("button", { name: /^PostgreSQL/ })).toBeNull();
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(screen.getByText("Azure SQL")).toBeTruthy();
+    expect((screen.getByLabelText("Port") as HTMLInputElement).value).toBe("1433");
+    expect(screen.getByLabelText<HTMLInputElement>("Encrypt connection").checked).toBe(true);
+  });
+
+  it("says so when no database matches", () => {
+    renderNew();
+    fireEvent.change(screen.getByLabelText("Filter databases"), { target: { value: "oracle" } });
+    expect(screen.getByText("No database matches")).toBeTruthy();
+  });
+
+  it("goes back to the cards from the form", () => {
+    renderNew();
+    fireEvent.click(screen.getByRole("button", { name: /^SQLite/ }));
+    expect(screen.getByLabelText("Database file")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "All databases" }));
+    expect(screen.getByLabelText("Filter databases")).toBeTruthy();
+  });
+
+  it("skips the cards for details an AI app filled in", () => {
+    renderNew("From Claude (MCP)");
+    expect(screen.queryByLabelText("Filter databases")).toBeNull();
+    expect(screen.getByLabelText("Host")).toBeTruthy();
+  });
+});

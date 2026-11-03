@@ -64,6 +64,29 @@ def npm_packages() -> list[dict]:
     return out
 
 
+def logo_notices() -> list[str]:
+    """The database and AI provider logos in src/assets/logos, from Simple Icons (CC0 1.0)."""
+    logos = json.loads((ROOT / "src" / "assets" / "logos" / "logos.json").read_text())
+    lines = [
+        "=" * 78,
+        "Logos (src/assets/logos), from Simple Icons 16.36.0 (CC0-1.0) https://simpleicons.org",
+        "Each logo is a trademark of its owner, shown only to identify that product; its use",
+        "doesn't mean the owner endorses SayQL. Original source and usage guidelines:",
+        "-" * 78,
+    ]
+    for logo in logos.values():
+        lines.append(f"{logo['title']}: {logo['source']}")
+        if logo.get("guidelines"):
+            lines.append(f"  guidelines: {logo['guidelines']}")
+    lines += [
+        "",
+        "Simple Icons is released under CC0 1.0 Universal:",
+        "https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md",
+        "",
+    ]
+    return lines
+
+
 def main() -> None:
     packages = sorted(rust_packages() + npm_packages(), key=lambda p: (p["name"].lower(), p["version"]))
     by_text: dict[str, list[dict]] = {}
@@ -101,6 +124,8 @@ def main() -> None:
         whisper = p["dir"] / "whisper.cpp" / "LICENSE"
         if p["name"] == "whisper-rs-sys" and whisper.exists():
             lines += ["=" * 78, f"whisper.cpp, bundled with whisper-rs-sys {p['version']} (MIT) https://github.com/ggml-org/whisper.cpp", "-" * 78, whisper.read_text(errors="replace").strip(), ""]
+
+    lines += logo_notices()
 
     OUT.write_text("\n".join(lines))
     print(f"Wrote {OUT.relative_to(ROOT)}: {len(packages)} packages, {len(missing)} without a license file.", file=sys.stderr)

@@ -33,6 +33,7 @@ import type { ConnectionConfig, DatabaseList, DbNote, Schema, Table } from "../.
 import {
   ContextMenu,
   IconButton,
+  Logo,
   Panel,
   Spinner,
   TextInput,
@@ -614,13 +615,7 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
           depth={0}
           expanded={active}
           selected={active}
-          icon={
-            c.kind === "sqlite" ? (
-              <Database size={14} color={DATABASE_KINDS[c.kind].color} />
-            ) : (
-              <Server size={14} color={DATABASE_KINDS[c.kind].color} />
-            )
-          }
+          icon={<Logo id={DATABASE_KINDS[c.kind].logo} size={14} />}
           label={
             <span className={styles.connName}>
               <span className={styles.connLabel}>{c.name}</span>
