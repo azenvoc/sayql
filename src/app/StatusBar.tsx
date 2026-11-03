@@ -126,8 +126,10 @@ export function StatusBar({
           variant="primary"
           icon={ArrowDownToLine}
           loading={updates.installing}
-          title={updates.error ?? updates.update.notes ?? undefined}
-          onClick={updates.install}
+          title={
+            updates.error ?? `SayQL ${updates.update.version} is available. Click for details.`
+          }
+          onClick={updates.show}
         >
           {updates.error ? "Update failed — retry" : `Update to ${updates.update.version}`}
         </Button>

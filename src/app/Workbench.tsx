@@ -62,7 +62,7 @@ import {
 } from "../features/settings";
 import { useSkills } from "../features/skills";
 import { hasUnsavedChanges, isPristine, useTabs, type EditorTab } from "../features/tabs";
-import { useUpdate } from "../features/updates";
+import { UpdateDialog, useUpdate } from "../features/updates";
 import { FeedbackDialog } from "../features/feedback";
 import { errorText } from "../lib/errors";
 import { useHandoffs } from "../features/handoff";
@@ -1180,6 +1180,8 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
       )}
       {help === "shortcuts" && <ShortcutSheet onClose={closeHelp} />}
       {help === "whatsNew" && <WhatsNewDialog version={version} onClose={closeHelp} />}
+      {/* Waits behind the first-run setup and any other dialog, then shows. */}
+      {updates.open && !dialog && !help && !setupStep && <UpdateDialog updates={updates} />}
       {setupStep && !dialog && (
         <OnboardingDialog
           settings={settings}
