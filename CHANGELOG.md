@@ -3,17 +3,6 @@
 All notable changes to SayQL are listed here. Downloads are on the
 [releases page](https://github.com/dithzz/sayql-releases/releases).
 
-## Unreleased
-
-### Database logos
-
-- **New connection starts with your database.** A card with its logo for PostgreSQL, MySQL, MariaDB, SQL Server,
-  Azure SQL and SQLite, with a filter (Enter picks the only match). Pasting a connection string still works,
-  right there or on the form, and **All databases** goes back.
-- The navigator and the top bar show each connection's database logo.
-- Logos come from Simple Icons (CC0) and are bundled with the app, so nothing is downloaded. SQL Server and
-  Azure SQL use a neutral icon. Sources and usage guidelines are in THIRD-PARTY-NOTICES.txt.
-
 ## 0.5.5 (2026-11-03)
 
 ### Security fixes from a code audit
