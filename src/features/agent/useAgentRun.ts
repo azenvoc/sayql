@@ -38,7 +38,16 @@ export function useAgentRun({ target, slot, initial, auto }: AgentRunOptions) {
       const runId = crypto.randomUUID();
       dispatch({ type: "start", runId, question, keepSteps: o.followUp });
       commands
-        .startAgent(target, question, runId, slot, o.focusTables, o.skill, o.followUp, latestAuto.current)
+        .startAgent(
+          target,
+          question,
+          runId,
+          slot,
+          o.focusTables,
+          o.skill,
+          o.followUp,
+          latestAuto.current,
+        )
         .catch((e) => dispatch({ type: "failed", runId, error: errorText(e) }));
     },
     [target, slot, latestAuto],
@@ -54,7 +63,9 @@ export function useAgentRun({ target, slot, initial, auto }: AgentRunOptions) {
       const id = latest.current.runId;
       if (!id) return;
       dispatch({ type: "replied" });
-      commands.replyAgent(id, r).catch((e) => dispatch({ type: "failed", runId: id, error: errorText(e) }));
+      commands
+        .replyAgent(id, r)
+        .catch((e) => dispatch({ type: "failed", runId: id, error: errorText(e) }));
     },
     [latest],
   );
@@ -67,10 +78,13 @@ export function useAgentRun({ target, slot, initial, auto }: AgentRunOptions) {
   }, [auto, pending, reply]);
 
   // A tab closed mid-run stops its run.
-  useEffect(() => () => {
-    const s = latest.current;
-    if (s.runId && isActive(s)) void commands.stopAgent(s.runId);
-  }, [latest]);
+  useEffect(
+    () => () => {
+      const s = latest.current;
+      if (s.runId && isActive(s)) void commands.stopAgent(s.runId);
+    },
+    [latest],
+  );
 
   return {
     state,

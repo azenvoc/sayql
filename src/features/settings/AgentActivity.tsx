@@ -8,7 +8,11 @@ import { APP_OPTIONS } from "../agent";
 import { when } from "./AppsList";
 import styles from "./ClaudeIntegration.module.css";
 
-const STATUS: Record<McpActivity["status"], string> = { ok: "OK", refused: "Refused", error: "Error" };
+const STATUS: Record<McpActivity["status"], string> = {
+  ok: "OK",
+  refused: "Refused",
+  error: "Error",
+};
 /** How much of the log to read; the backend keeps more and caps a read at 1000. */
 const LOG_LIMIT = 200;
 const ALL = "";
@@ -21,7 +25,12 @@ function short(ms: number): string {
   const today = d.toDateString() === new Date().toDateString();
   return today
     ? d.toLocaleTimeString(undefined, { timeStyle: "short" })
-    : d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    : d.toLocaleString(undefined, {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
 }
 
 /** What the entry did, in one line. */
@@ -29,10 +38,14 @@ function summary(e: McpActivity): string {
   if (e.tool === "export_csv") return `CSV export: ${e.sql}`;
   if (e.tool === "suggest_note") {
     // The MCP server logs what kind of suggestion it was ("suggested replacing a note"), never the note.
-    if (e.status === "ok" && e.detail?.startsWith("suggested ")) return `Suggested ${e.detail.slice("suggested ".length)}`;
+    if (e.status === "ok" && e.detail?.startsWith("suggested "))
+      return `Suggested ${e.detail.slice("suggested ".length)}`;
     return `Suggested a note${e.status === "ok" && e.detail ? `: ${e.detail}` : ""}`;
   }
-  if (e.tool === "audit") return e.status === "ok" && !e.connection ? "Fetched the audit prompt (connection not named)" : "Fetched the audit prompt";
+  if (e.tool === "audit")
+    return e.status === "ok" && !e.connection
+      ? "Fetched the audit prompt (connection not named)"
+      : "Fetched the audit prompt";
   return e.sql || e.tool;
 }
 
@@ -41,7 +54,10 @@ function result(e: McpActivity): string {
 }
 
 /** The detail beside the result; a suggested note's text is already the summary. */
-const detailOf = (e: McpActivity) => (e.detail && !((e.tool === "suggest_note" || e.tool === "audit") && e.status === "ok") ? e.detail : null);
+const detailOf = (e: McpActivity) =>
+  e.detail && !((e.tool === "suggest_note" || e.tool === "audit") && e.status === "ok")
+    ? e.detail
+    : null;
 
 /** What AI apps ran through SayQL over MCP: filters, a row to open for the full SQL, and clearing the log. */
 export function AgentActivity() {
@@ -84,27 +100,39 @@ export function AgentActivity() {
   const connections = [...new Set(log.map((e) => e.connection).filter(Boolean))].sort();
   const rows = log
     .map((e, i) => ({ e, i }))
-    .filter(({ e }) => (app === ALL || e.app === app) && (connection === ALL || e.connection === connection) && (shown === "all" || e.status === "refused"));
+    .filter(
+      ({ e }) =>
+        (app === ALL || e.app === app) &&
+        (connection === ALL || e.connection === connection) &&
+        (shown === "all" || e.status === "refused"),
+    );
 
   return (
     <div className={styles.activity}>
       <p className={styles.intro}>
-        What AI apps ran through SayQL on this computer: the SQL and how many rows it returned, not the rows themselves.
-        AI apps only: Investigate and your own queries aren&apos;t in this log. Click a row for the full SQL.
+        What AI apps ran through SayQL on this computer: the SQL and how many rows it returned, not
+        the rows themselves. AI apps only: Investigate and your own queries aren&apos;t in this log.
+        Click a row for the full SQL.
       </p>
       <div className={styles.filters}>
         <Select
           aria-label="App"
           className={styles.filter}
           value={app}
-          options={[{ value: ALL, label: "All apps" }, ...apps.map((a) => ({ value: a, label: a }))]}
+          options={[
+            { value: ALL, label: "All apps" },
+            ...apps.map((a) => ({ value: a, label: a })),
+          ]}
           onChange={setApp}
         />
         <Select
           aria-label="Connection"
           className={styles.filter}
           value={connection}
-          options={[{ value: ALL, label: "All connections" }, ...connections.map((c) => ({ value: c, label: c }))]}
+          options={[
+            { value: ALL, label: "All connections" },
+            ...connections.map((c) => ({ value: c, label: c })),
+          ]}
           onChange={setConnection}
         />
         <div className={styles.resultFilter}>
@@ -124,7 +152,9 @@ export function AgentActivity() {
         </Button>
       </div>
       {loaded && log.length === 0 ? (
-        <p className={styles.empty}>Nothing yet. Queries from Claude, Cursor and other MCP apps show up here.</p>
+        <p className={styles.empty}>
+          Nothing yet. Queries from Claude, Cursor and other MCP apps show up here.
+        </p>
       ) : loaded && rows.length === 0 ? (
         <p className={styles.empty}>Nothing in the log matches these filters.</p>
       ) : (
@@ -154,7 +184,11 @@ export function AgentActivity() {
                   return (
                     <Fragment key={`${e.at}-${i}`}>
                       <tr
-                        className={cx(styles.logRow, e.status !== "ok" && styles.notOk, expanded && styles.expandedRow)}
+                        className={cx(
+                          styles.logRow,
+                          e.status !== "ok" && styles.notOk,
+                          expanded && styles.expandedRow,
+                        )}
                         tabIndex={0}
                         aria-expanded={expanded}
                         onClick={() => toggle(i)}
@@ -167,7 +201,10 @@ export function AgentActivity() {
                       >
                         <td title={when(e.at)}>
                           <span className={styles.whenCell}>
-                            <ChevronRight size={12} className={cx(styles.chevron, expanded && styles.chevronOpen)} />
+                            <ChevronRight
+                              size={12}
+                              className={cx(styles.chevron, expanded && styles.chevronOpen)}
+                            />
                             {short(e.at)}
                           </span>
                         </td>
@@ -182,7 +219,11 @@ export function AgentActivity() {
                       {expanded && (
                         <tr className={cx(styles.detailRow, e.status !== "ok" && styles.notOk)}>
                           <td colSpan={5}>
-                            <pre className={styles.fullSql}>{e.tool === "suggest_note" || e.tool === "audit" ? summary(e) : e.sql || e.tool}</pre>
+                            <pre className={styles.fullSql}>
+                              {e.tool === "suggest_note" || e.tool === "audit"
+                                ? summary(e)
+                                : e.sql || e.tool}
+                            </pre>
                             <dl className={styles.facts}>
                               <div>
                                 <dt>When</dt>
@@ -205,7 +246,10 @@ export function AgentActivity() {
                               {e.maySee && (
                                 <div>
                                   <dt>App could see</dt>
-                                  <dd>{APP_OPTIONS.find((r) => r.value === e.maySee)?.label ?? e.maySee}</dd>
+                                  <dd>
+                                    {APP_OPTIONS.find((r) => r.value === e.maySee)?.label ??
+                                      e.maySee}
+                                  </dd>
                                 </div>
                               )}
                             </dl>

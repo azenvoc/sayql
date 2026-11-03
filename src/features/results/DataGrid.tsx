@@ -49,7 +49,11 @@ export function DataGrid({ result }: { result: QueryResult }) {
                     key={i}
                     role="gridcell"
                     title={text}
-                    className={cx(styles.cell, value === null && styles.null, typeof value === "number" && styles.number)}
+                    className={cx(
+                      styles.cell,
+                      value === null && styles.null,
+                      typeof value === "number" && styles.number,
+                    )}
                   >
                     {text}
                   </div>

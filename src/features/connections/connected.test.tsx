@@ -7,13 +7,25 @@ import { ConnectionDialog, newConnection } from "./ConnectionDialog";
 import { useConnections } from "./useConnections";
 
 vi.mock("../../api/commands", () => ({
-  commands: { openDatabase: vi.fn(), listDatabases: vi.fn(), refreshSchema: vi.fn(), saveConnection: vi.fn() },
+  commands: {
+    openDatabase: vi.fn(),
+    listDatabases: vi.fn(),
+    refreshSchema: vi.fn(),
+    saveConnection: vi.fn(),
+  },
 }));
 const openDatabase = vi.mocked(commands.openDatabase);
 const listDatabases = vi.mocked(commands.listDatabases);
 const saveConnection = vi.mocked(commands.saveConnection);
 
-const prod: ConnectionConfig = { ...newConnection(), id: "pg", name: "analytics@prod", host: "db.internal", database: "analytics", production: true };
+const prod: ConnectionConfig = {
+  ...newConnection(),
+  id: "pg",
+  name: "analytics@prod",
+  host: "db.internal",
+  database: "analytics",
+  production: true,
+};
 
 describe("connecting is the person's choice", () => {
   beforeEach(() => {
@@ -48,7 +60,14 @@ describe("the production tag", () => {
     expect(newConnection().production).toBe(false);
     saveConnection.mockImplementation(async (c) => ({ ...c, id: "new" }));
     const onSaved = vi.fn();
-    render(<ConnectionDialog initial={newConnection()} onClose={() => {}} onSaved={onSaved} onDeleted={() => {}} />);
+    render(
+      <ConnectionDialog
+        initial={newConnection()}
+        onClose={() => {}}
+        onSaved={onSaved}
+        onDeleted={() => {}}
+      />,
+    );
     fireEvent.click(screen.getByLabelText("This is a production database"));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalled());
@@ -57,7 +76,11 @@ describe("the production tag", () => {
 
   it("reads a connection saved before the tag existed as not production", () => {
     const { production: _, ...old } = prod;
-    render(<ConnectionDialog initial={old} onClose={() => {}} onSaved={() => {}} onDeleted={() => {}} />);
-    expect((screen.getByLabelText("This is a production database") as HTMLInputElement).checked).toBe(false);
+    render(
+      <ConnectionDialog initial={old} onClose={() => {}} onSaved={() => {}} onDeleted={() => {}} />,
+    );
+    expect(
+      (screen.getByLabelText("This is a production database") as HTMLInputElement).checked,
+    ).toBe(false);
   });
 });

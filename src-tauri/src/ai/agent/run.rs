@@ -216,7 +216,7 @@ pub struct Outcome {
     /// How tools reached the model in the end (it may have fallen back to text).
     pub mode: ToolMode,
     /// The evaluation reads the answer here; the app gets it from the Done event.
-    #[cfg_attr(not(test), allow(dead_code))]
+    #[cfg_attr(not(test), allow(dead_code, reason = "only the evaluation reads it"))]
     pub answer: Option<Answer>,
 }
 
@@ -556,7 +556,10 @@ impl Run<'_> {
 
     fn fall_back(&mut self, switched: &mut bool) {
         *switched = true;
-        #[cfg_attr(not(test), allow(irrefutable_let_patterns))]
+        #[cfg_attr(
+            not(test),
+            allow(irrefutable_let_patterns, reason = "Llm has a test-only variant")
+        )]
         if let Llm::Remote { mode, .. } = self.llm {
             *mode = ToolMode::Text;
         }

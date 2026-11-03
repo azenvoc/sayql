@@ -28,13 +28,21 @@ export async function runStatements(
     try {
       return { sql, result: await exec(sql, allowWrite), error: null, cancelled: false };
     } catch (e) {
-      return { sql, result: null, error: errorText(e), cancelled: false, refused: isTeamRefusal(e) };
+      return {
+        sql,
+        result: null,
+        error: errorText(e),
+        cancelled: false,
+        refused: isTeamRefusal(e),
+      };
     }
   };
   for (const sql of statements) {
     let outcome = await attempt(sql, false);
     if (outcome.error === WRITE_CONFIRM) {
-      outcome = (await confirm(sql)) ? await attempt(sql, true) : { sql, result: null, error: null, cancelled: true };
+      outcome = (await confirm(sql))
+        ? await attempt(sql, true)
+        : { sql, result: null, error: null, cancelled: true };
     }
     out.push(outcome);
     onProgress([...out]);

@@ -1,7 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import { Copy, Database, FileCode2, Plus, Save, Server, Table2, X } from "lucide-react";
-import { TEAM_SIGNED_OUT, commands, subscribeToMenu, type Bootstrap, type ConnectionConfig, type DbNote, type Script, type Table, type TeamAccount, type TeamAiStatus, type Target } from "../api";
-import { Alert, Button, Dialog, EmptyState, ErrorBoundary, Spinner, SplitPane, TabBar, type MenuEntry, type TabItem } from "../components/ui";
+import {
+  TEAM_SIGNED_OUT,
+  commands,
+  subscribeToMenu,
+  type Bootstrap,
+  type ConnectionConfig,
+  type DbNote,
+  type Script,
+  type Table,
+  type TeamAccount,
+  type TeamAiStatus,
+  type Target,
+} from "../api";
+import {
+  Alert,
+  Button,
+  Dialog,
+  EmptyState,
+  ErrorBoundary,
+  Spinner,
+  SplitPane,
+  TabBar,
+  type MenuEntry,
+  type TabItem,
+} from "../components/ui";
 import {
   AgentAccessDialog,
   NoteDialog,
@@ -18,20 +41,50 @@ import {
 } from "../features/agent";
 import { useLatest } from "../hooks/useLatest";
 import { usePersistentState } from "../hooks/usePersistentState";
-import { ConnectionDialog, DATABASE_KINDS, ProdBadge, newConnection, targetKey, useConnections } from "../features/connections";
+import {
+  ConnectionDialog,
+  DATABASE_KINDS,
+  ProdBadge,
+  newConnection,
+  targetKey,
+  useConnections,
+} from "../features/connections";
 import { DatabaseNavigator, type NavigatorScript } from "../features/navigator";
 import { CloseTabDialog, CloseTabsDialog, SaveScriptDialog, useScripts } from "../features/scripts";
 import { selectAllSql } from "../features/schema";
-import { SettingsPage, lowCreditText, useSettings, type AiAppsTab, type SettingsSection } from "../features/settings";
+import {
+  SettingsPage,
+  lowCreditText,
+  useSettings,
+  type AiAppsTab,
+  type SettingsSection,
+} from "../features/settings";
 import { useSkills } from "../features/skills";
 import { hasUnsavedChanges, isPristine, useTabs, type EditorTab } from "../features/tabs";
 import { useUpdate } from "../features/updates";
 import { FeedbackDialog } from "../features/feedback";
 import { errorText } from "../lib/errors";
 import { useHandoffs } from "../features/handoff";
-import { TeamSignInDialog, teamAiDestination, teamAiOn, useTeamConnections } from "../features/team";
-import { exampleQuestions, GetStarted, OnboardingDialog, useGetStarted, type OnboardingStep } from "../features/onboarding";
-import { DOCS_URL, ShortcutSheet, WhatsNewDialog, isTypingTarget, whatsNewOnStart } from "../features/help";
+import {
+  TeamSignInDialog,
+  teamAiDestination,
+  teamAiOn,
+  useTeamConnections,
+} from "../features/team";
+import {
+  exampleQuestions,
+  GetStarted,
+  OnboardingDialog,
+  useGetStarted,
+  type OnboardingStep,
+} from "../features/onboarding";
+import {
+  DOCS_URL,
+  ShortcutSheet,
+  WhatsNewDialog,
+  isTypingTarget,
+  whatsNewOnStart,
+} from "../features/help";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { version } from "../../package.json";
 import { QueryTab } from "./QueryTab";
@@ -45,7 +98,13 @@ import styles from "./Workbench.module.css";
 type OpenDialog =
   /** `fromSetup`: opened from the first-run setup, which resumes when it closes. */
   /** `note`: where the details came from, for a handoff from an AI app. */
-  | { kind: "connection"; config: ConnectionConfig; fromSetup?: boolean; note?: string; key?: string }
+  | {
+      kind: "connection";
+      config: ConnectionConfig;
+      fromSetup?: boolean;
+      note?: string;
+      key?: string;
+    }
   /** `createSkill`: opened from "Create skill…" in the Ask box. */
   | { kind: "settings"; section?: SettingsSection; aiAppsTab?: AiAppsTab; createSkill?: boolean }
   | { kind: "saveScript"; tabId: string; closeAfter: boolean }
@@ -85,8 +144,12 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
   );
 
   // Help: the shortcut sheet, and What's new, once after an update (not for someone new).
-  const [whatsNew] = useState(() => whatsNewOnStart(version, boot.settings.onboarded || boot.settings.aiReady));
-  const [help, setHelp] = useState<"shortcuts" | "whatsNew" | null>(() => (whatsNew.show ? "whatsNew" : null));
+  const [whatsNew] = useState(() =>
+    whatsNewOnStart(version, boot.settings.onboarded || boot.settings.aiReady),
+  );
+  const [help, setHelp] = useState<"shortcuts" | "whatsNew" | null>(() =>
+    whatsNew.show ? "whatsNew" : null,
+  );
   const closeHelp = () => {
     if (help === "whatsNew") whatsNew.markSeen();
     setHelp(null);
@@ -157,7 +220,11 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
   // has audited the connection. MCP serves the connections saved here, not a team's.
   const [teachHidden, setTeachHidden] = usePersistentState("sayql.teachHidden", false);
   const audits = useAudits();
-  const teachHere = !!active && !active.id.startsWith("team:") && !teachHidden && lastAudit(audits, active.id) === null;
+  const teachHere =
+    !!active &&
+    !active.id.startsWith("team:") &&
+    !teachHidden &&
+    lastAudit(audits, active.id) === null;
   const agentAccessConnection = dialog?.kind === "agentAccess" ? dialog.connection.id : null;
   const dialogAccess = useAgentAccess(agentAccessConnection);
   // Get started: a checklist under the navigator until it's done or hidden.
@@ -186,7 +253,9 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
       },
     },
   );
-  const currentProvider = settings.aiReady ? settings.providers.find((p) => p.id === settings.provider) : undefined;
+  const currentProvider = settings.aiReady
+    ? settings.providers.find((p) => p.id === settings.provider)
+    : undefined;
   // On SayQL AI credits: warn once per launch when the balance is low, before it runs out mid-work.
   const onCredits = settings.aiReady && settings.provider === "sayql";
   useEffect(() => {
@@ -220,7 +289,8 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
     setTeamAi,
   );
   /** Team AI for a connection: only team connections use it. */
-  const teamAiFor = (connectionId: string) => (conn.connection(connectionId)?.team && teamAiOn(teamAi) ? teamAi : null);
+  const teamAiFor = (connectionId: string) =>
+    conn.connection(connectionId)?.team && teamAiOn(teamAi) ? teamAi : null;
   // A query or schema load that found the team sign-in revoked: show the team as signed out.
   useEffect(() => {
     if (error?.includes(TEAM_SIGNED_OUT)) setTeam(null);
@@ -236,7 +306,9 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
     if (started.current) return;
     started.current = true;
     const teamTab = (id: string) => !!boot.settings.team && id.startsWith("team:");
-    tabs.closeWhere((t) => !conn.connection(t.target.connectionId) && !teamTab(t.target.connectionId));
+    tabs.closeWhere(
+      (t) => !conn.connection(t.target.connectionId) && !teamTab(t.target.connectionId),
+    );
     // Only on start.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -253,14 +325,18 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
   const showTarget = (t: Target) => {
     const name = conn.databaseName(t);
     const existing = tabs.tabs.find(
-      (x) => x.target.connectionId === t.connectionId && conn.databaseName(x.target) === name && !x.title,
+      (x) =>
+        x.target.connectionId === t.connectionId &&
+        conn.databaseName(x.target) === name &&
+        !x.title,
     );
     if (existing) tabs.activate(existing.id);
     else tabs.open(t);
     conn.connect(existing?.target ?? t);
   };
 
-  const openConnection = (c: ConnectionConfig) => showTarget({ connectionId: c.id, database: c.database.trim() || null });
+  const openConnection = (c: ConnectionConfig) =>
+    showTarget({ connectionId: c.id, database: c.database.trim() || null });
 
   const newTab = () => {
     if (target) tabs.open(target);
@@ -281,7 +357,8 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
   const requestCloseMany = (ids: string[]) => {
     if (ids.length === 1) return requestClose(ids[0]);
     const closing = new Set(ids);
-    if (tabs.tabs.some((t) => closing.has(t.id) && hasUnsavedChanges(t))) setDialog({ kind: "closeTabs", tabIds: ids });
+    if (tabs.tabs.some((t) => closing.has(t.id) && hasUnsavedChanges(t)))
+      setDialog({ kind: "closeTabs", tabIds: ids });
     else tabs.closeWhere((t) => closing.has(t.id));
   };
 
@@ -298,15 +375,41 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
     const saved = all.filter((x) => !hasUnsavedChanges(x));
     return [
       { label: "Close", icon: X, onSelect: () => requestClose(id) },
-      { label: "Close others", disabled: !others.length, onSelect: () => requestCloseMany(ids(others)) },
-      { label: "Close to the right", disabled: !right.length, onSelect: () => requestCloseMany(ids(right)) },
-      { label: "Close to the left", disabled: !left.length, onSelect: () => requestCloseMany(ids(left)) },
-      { label: "Close saved tabs", disabled: !saved.length, onSelect: () => requestCloseMany(ids(saved)) },
+      {
+        label: "Close others",
+        disabled: !others.length,
+        onSelect: () => requestCloseMany(ids(others)),
+      },
+      {
+        label: "Close to the right",
+        disabled: !right.length,
+        onSelect: () => requestCloseMany(ids(right)),
+      },
+      {
+        label: "Close to the left",
+        disabled: !left.length,
+        onSelect: () => requestCloseMany(ids(left)),
+      },
+      {
+        label: "Close saved tabs",
+        disabled: !saved.length,
+        onSelect: () => requestCloseMany(ids(saved)),
+      },
       { label: "Close all", onSelect: () => requestCloseMany(ids(all)) },
       "separator",
-      { label: "Duplicate", icon: Copy, onSelect: () => tabs.open(t.target, { title: t.title, question: t.question, sql: t.sql }) },
+      {
+        label: "Duplicate",
+        icon: Copy,
+        onSelect: () => tabs.open(t.target, { title: t.title, question: t.question, sql: t.sql }),
+      },
       { label: "New tab on this database", icon: Plus, onSelect: () => tabs.open(t.target) },
-      { label: scriptOf(t) ? "Save" : "Save as script…", icon: Save, shortcut: "⌘S", disabled: !t.sql.trim(), onSelect: () => requestSave(t) },
+      {
+        label: scriptOf(t) ? "Save" : "Save as script…",
+        icon: Save,
+        shortcut: "⌘S",
+        disabled: !t.sql.trim(),
+        onSelect: () => requestSave(t),
+      },
     ];
   };
 
@@ -327,26 +430,34 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
   // the menu bar owns ⌘W and ⌘, and sends them as menu actions (below). The listener is added
   // once and reads the latest state through a ref.
   const onKey = useLatest((e: KeyboardEvent) => {
-      if (e.key === "?" && !e.metaKey && !e.ctrlKey && !e.altKey && !isTypingTarget(e.target) && !dialog && !setupStep) {
-        e.preventDefault();
-        setHelp("shortcuts");
-        return;
-      }
-      if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
-      const key = e.key.toLowerCase();
-      if (key === "t") {
-        e.preventDefault();
-        newTab();
-      } else if (key === "s" && tabs.active) {
-        e.preventDefault();
-        requestSave(tabs.active);
-      } else if (key === "w" && !e.shiftKey) {
-        e.preventDefault();
-        closeActiveTab();
-      } else if (key === ",") {
-        e.preventDefault();
-        if (dialog?.kind !== "settings") openSettings();
-      }
+    if (
+      e.key === "?" &&
+      !e.metaKey &&
+      !e.ctrlKey &&
+      !e.altKey &&
+      !isTypingTarget(e.target) &&
+      !dialog &&
+      !setupStep
+    ) {
+      e.preventDefault();
+      setHelp("shortcuts");
+      return;
+    }
+    if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+    const key = e.key.toLowerCase();
+    if (key === "t") {
+      e.preventDefault();
+      newTab();
+    } else if (key === "s" && tabs.active) {
+      e.preventDefault();
+      requestSave(tabs.active);
+    } else if (key === "w" && !e.shiftKey) {
+      e.preventDefault();
+      closeActiveTab();
+    } else if (key === ",") {
+      e.preventDefault();
+      if (dialog?.kind !== "settings") openSettings();
+    }
   });
   useEffect(() => {
     const listener = (e: KeyboardEvent) => onKey.current(e);
@@ -360,8 +471,7 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
     if (action === "close-tab") closeActiveTab();
     else if (action === "settings") {
       if (dialog?.kind !== "settings") openSettings();
-    }
-    else if (action === "shortcuts") setHelp("shortcuts");
+    } else if (action === "shortcuts") setHelp("shortcuts");
     else if (action === "whats-new") setHelp("whatsNew");
     else if (action === "docs") void openUrl(DOCS_URL);
   };
@@ -396,8 +506,14 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
       id: t.id,
       label: t.title || db || name,
       detail: t.title ? (db ?? name) : db ? name : undefined,
-      title: [name, db, t.title].filter(Boolean).join(" / ") + (conn.isConnected(t.target.connectionId) ? "" : " (not connected)"),
-      icon: busyTabs.has(t.id) ? <Spinner size={13} /> : <Icon size={14} color={c ? DATABASE_KINDS[c.kind].color : undefined} />,
+      title:
+        [name, db, t.title].filter(Boolean).join(" / ") +
+        (conn.isConnected(t.target.connectionId) ? "" : " (not connected)"),
+      icon: busyTabs.has(t.id) ? (
+        <Spinner size={13} />
+      ) : (
+        <Icon size={14} color={c ? DATABASE_KINDS[c.kind].color : undefined} />
+      ),
       dirty: hasUnsavedChanges(t),
       badge: <ProdBadge connection={c} />,
       // Not connected yet: shown dimmed until the person connects.
@@ -413,12 +529,17 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
       location: c?.kind === "sqlite" ? c.name : (s.database ?? c?.database ?? c?.name ?? ""),
       orphaned: !c,
       // With no database open, "This database" lists them all.
-      here: !target || (!!c && target.connectionId === c.id && (s.database || c.database || null) === (target.database || c.database || null)),
+      here:
+        !target ||
+        (!!c &&
+          target.connectionId === c.id &&
+          (s.database || c.database || null) === (target.database || c.database || null)),
     };
   });
 
   /** A name to suggest when a tab is saved for the first time. */
-  const suggestedName = (t: EditorTab) => t.title || t.question.trim().slice(0, 60) || `${tabLabel(t).db ?? tabLabel(t).name} query`;
+  const suggestedName = (t: EditorTab) =>
+    t.title || t.question.trim().slice(0, 60) || `${tabLabel(t).db ?? tabLabel(t).name} query`;
 
   const openSettings = (at?: { section: SettingsSection; aiAppsTab?: AiAppsTab }) => {
     setDialog({ kind: "settings", ...at });
@@ -445,23 +566,28 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
   const openNewConnection = () => setDialog({ kind: "connection", config: newConnection() });
 
   // AI apps hand over a connection to finish or SQL to review; nothing runs or saves on its own.
-  useHandoffs({
-    connection: conn.connection,
-    openConnectionDialog: (config, note) => setDialog({ kind: "connection", config, note, key: crypto.randomUUID() }),
-    openTab: (t, init) => tabs.open(t, init),
-    openScript,
-    openTeamSignIn: (server, code) => setDialog({ kind: "teamSignIn", server, code, key: crypto.randomUUID() }),
-    finishTeamSso: (code) =>
-      commands.teamSsoFinish(code).then(
-        (account) => {
-          setDialog((d) => (d?.kind === "teamSignIn" ? null : d));
-          setTeam(account);
-          setNotice(`Signed in to your team as ${account.email}.`);
-        },
-        (e) => setNotice(`Couldn't sign in to your team: ${errorText(e)}`),
-      ),
-    notify: setNotice,
-  }, scripts.loaded);
+  useHandoffs(
+    {
+      connection: conn.connection,
+      openConnectionDialog: (config, note) =>
+        setDialog({ kind: "connection", config, note, key: crypto.randomUUID() }),
+      openTab: (t, init) => tabs.open(t, init),
+      openScript,
+      openTeamSignIn: (server, code) =>
+        setDialog({ kind: "teamSignIn", server, code, key: crypto.randomUUID() }),
+      finishTeamSso: (code) =>
+        commands.teamSsoFinish(code).then(
+          (account) => {
+            setDialog((d) => (d?.kind === "teamSignIn" ? null : d));
+            setTeam(account);
+            setNotice(`Signed in to your team as ${account.email}.`);
+          },
+          (e) => setNotice(`Couldn't sign in to your team: ${errorText(e)}`),
+        ),
+      notify: setNotice,
+    },
+    scripts.loaded,
+  );
 
   return (
     <div className={styles.workbench}>
@@ -472,7 +598,13 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
         onNewConnection={openNewConnection}
         pendingSuggestions={noteSuggestions.suggestions.length}
         // With suggested notes waiting, the gear opens them: Settings → AI apps → Suggestions.
-        onOpenSettings={() => openSettings(noteSuggestions.suggestions.length > 0 ? { section: "mcp", aiAppsTab: "suggestions" } : undefined)}
+        onOpenSettings={() =>
+          openSettings(
+            noteSuggestions.suggestions.length > 0
+              ? { section: "mcp", aiAppsTab: "suggestions" }
+              : undefined,
+          )
+        }
       />
 
       {notice && (
@@ -499,15 +631,20 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
                 <Button size="sm" onClick={() => setDialog({ kind: "note", note: doubtful[0] })}>
                   Review
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setHiddenDoubts((h) => [...h, doubtKey])}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setHiddenDoubts((h) => [...h, doubtKey])}
+                >
                   Not now
                 </Button>
               </>
             }
           >
-            {doubtful.length === 1 ? "1 note" : `${doubtful.length} notes`} about {databaseName ?? "this database"} may be out of
-            date: {doubtful[0].suspect?.reason}
-            {doubtful.length > 1 ? ", and more" : ""}. The AI is told to check them before relying on them.
+            {doubtful.length === 1 ? "1 note" : `${doubtful.length} notes`} about{" "}
+            {databaseName ?? "this database"} may be out of date: {doubtful[0].suspect?.reason}
+            {doubtful.length > 1 ? ", and more" : ""}. The AI is told to check them before relying
+            on them.
           </Alert>
         </div>
       )}
@@ -550,63 +687,82 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
           maxSize={560}
           first={
             <div className={styles.sideColumn}>
-            <DatabaseNavigator
-              connections={conn.connections}
-              activeId={active?.id ?? null}
-              databases={conn.databases}
-              databaseName={databaseName}
-              schema={schema}
-              loading={loading}
-              connected={targetConnected}
-              onConnect={() => target && conn.connect(target)}
-              onOpen={(id) => {
-                const c = conn.connection(id);
-                if (c && id !== active?.id) openConnection(c);
-                else if (target) conn.connect(target);
-              }}
-              onOpenDatabase={(database) => active && showTarget({ connectionId: active.id, database })}
-              onAdd={openNewConnection}
-              onEdit={(c) => setDialog({ kind: "connection", config: c })}
-              onDeleteConnection={(c) => setDialog({ kind: "deleteConnection", connection: c })}
-              onRefresh={() => target && conn.ensure(target, true)}
-              onPreviewTable={previewTable}
-              onNewTab={(connectionId, database) => {
-                const c = conn.connection(connectionId);
-                if (c) tabs.open({ connectionId, database: database ?? (c.database.trim() || null) });
-              }}
-              onOpenSql={openSql}
-              selectedTables={tabs.active?.focusTables ?? []}
-              // A new pick is meant to be used, so it switches a hidden selection back on.
-              onSelectTables={(focusTables) => tabs.active && tabs.update(tabs.active.id, { focusTables, focusEnabled: true })}
-              scripts={navigatorScripts}
-              onOpenScript={openScript}
-              onDeleteScript={(id) => {
-                const s = scripts.scripts.find((x) => x.id === id);
-                if (s) setDialog({ kind: "deleteScript", script: s });
-              }}
-              notes={notes}
-              sharedNotes={sharedNotes}
-              onEditNote={(note) => setDialog({ kind: "note", note: sharedNotes ? null : note })}
-              onDeleteNote={(note) => void commands.deleteNote(note.id).then(() => setNotesVersion((v) => v + 1))}
-              onCheckNotes={() => {
-                if (!target) return;
-                void commands.checkNotes(target).then(
-                  (n) => {
-                    setNotes(n);
-                    conn.ensure(target, true);
-                  },
-                  (e) => setNotice(String(e)),
-                );
-              }}
-              suggestedNotes={suggestionsHere.length}
-              onReviewSuggestions={() => setDialog({ kind: "noteSuggestions" })}
-              onTeach={teachHere ? () => setDialog({ kind: "teach" }) : undefined}
-              onHideTeach={() => setTeachHidden(true)}
-              onAgentSettings={(connection) => setDialog({ kind: "agentAccess", connection })}
-              onOverview={(connection) => setDialog({ kind: "overview", connection })}
-              onTeamSignIn={settings.team ? undefined : () => setDialog({ kind: "teamSignIn", server: "", code: "", key: crypto.randomUUID() })}
-            />
-            {!getStarted.hidden && !setupStep && <GetStarted items={getStarted.items} onHide={getStarted.hide} />}
+              <DatabaseNavigator
+                connections={conn.connections}
+                activeId={active?.id ?? null}
+                databases={conn.databases}
+                databaseName={databaseName}
+                schema={schema}
+                loading={loading}
+                connected={targetConnected}
+                onConnect={() => target && conn.connect(target)}
+                onOpen={(id) => {
+                  const c = conn.connection(id);
+                  if (c && id !== active?.id) openConnection(c);
+                  else if (target) conn.connect(target);
+                }}
+                onOpenDatabase={(database) =>
+                  active && showTarget({ connectionId: active.id, database })
+                }
+                onAdd={openNewConnection}
+                onEdit={(c) => setDialog({ kind: "connection", config: c })}
+                onDeleteConnection={(c) => setDialog({ kind: "deleteConnection", connection: c })}
+                onRefresh={() => target && conn.ensure(target, true)}
+                onPreviewTable={previewTable}
+                onNewTab={(connectionId, database) => {
+                  const c = conn.connection(connectionId);
+                  if (c)
+                    tabs.open({ connectionId, database: database ?? (c.database.trim() || null) });
+                }}
+                onOpenSql={openSql}
+                selectedTables={tabs.active?.focusTables ?? []}
+                // A new pick is meant to be used, so it switches a hidden selection back on.
+                onSelectTables={(focusTables) =>
+                  tabs.active && tabs.update(tabs.active.id, { focusTables, focusEnabled: true })
+                }
+                scripts={navigatorScripts}
+                onOpenScript={openScript}
+                onDeleteScript={(id) => {
+                  const s = scripts.scripts.find((x) => x.id === id);
+                  if (s) setDialog({ kind: "deleteScript", script: s });
+                }}
+                notes={notes}
+                sharedNotes={sharedNotes}
+                onEditNote={(note) => setDialog({ kind: "note", note: sharedNotes ? null : note })}
+                onDeleteNote={(note) =>
+                  void commands.deleteNote(note.id).then(() => setNotesVersion((v) => v + 1))
+                }
+                onCheckNotes={() => {
+                  if (!target) return;
+                  void commands.checkNotes(target).then(
+                    (n) => {
+                      setNotes(n);
+                      conn.ensure(target, true);
+                    },
+                    (e) => setNotice(String(e)),
+                  );
+                }}
+                suggestedNotes={suggestionsHere.length}
+                onReviewSuggestions={() => setDialog({ kind: "noteSuggestions" })}
+                onTeach={teachHere ? () => setDialog({ kind: "teach" }) : undefined}
+                onHideTeach={() => setTeachHidden(true)}
+                onAgentSettings={(connection) => setDialog({ kind: "agentAccess", connection })}
+                onOverview={(connection) => setDialog({ kind: "overview", connection })}
+                onTeamSignIn={
+                  settings.team
+                    ? undefined
+                    : () =>
+                        setDialog({
+                          kind: "teamSignIn",
+                          server: "",
+                          code: "",
+                          key: crypto.randomUUID(),
+                        })
+                }
+              />
+              {!getStarted.hidden && !setupStep && (
+                <GetStarted items={getStarted.items} onHide={getStarted.hide} />
+              )}
             </div>
           }
           second={
@@ -625,32 +781,34 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
                   const { name, db } = tabLabel(t);
                   return (
                     <ErrorBoundary key={t.id} label="This tab" hidden={t.id !== tabs.active?.id}>
-                    <QueryTab
-                      tab={t}
-                      active={t.id === tabs.active?.id}
-                      label={db ? `${name} · ${db}` : name}
-                      schema={conn.schemaState(t.target).schema}
-                      connected={conn.isConnected(t.target.connectionId)}
-                      production={!!conn.connection(t.target.connectionId)?.production}
-                      onConnect={() => conn.connect(t.target)}
-                      settings={settings}
-                      modelNames={modelNames}
-                      onChange={(patch) => tabs.update(t.id, patch)}
-                      onOpenSettings={() => openSettings()}
-                      skills={skills.skills}
-                      onCreateSkill={() => setDialog({ kind: "settings", section: "skills", createSkill: true })}
-                      onSave={() => requestSave(t)}
-                      onOpenQuery={(sql, question) => tabs.open(t.target, { sql, question })}
-                      onSaveAsScript={(sql, question) => {
-                        const id = tabs.open(t.target, { sql, question });
-                        setDialog({ kind: "saveScript", tabId: id, closeAfter: false });
-                      }}
-                      onAgentBusy={(busy) => setBusy(t.id, busy)}
-                      onNotesChanged={() => setNotesVersion((v) => v + 1)}
-                      onSettingsChange={setSettings}
-                      onNotice={setNotice}
-                      teamAi={teamAiFor(t.target.connectionId)}
-                    />
+                      <QueryTab
+                        tab={t}
+                        active={t.id === tabs.active?.id}
+                        label={db ? `${name} · ${db}` : name}
+                        schema={conn.schemaState(t.target).schema}
+                        connected={conn.isConnected(t.target.connectionId)}
+                        production={!!conn.connection(t.target.connectionId)?.production}
+                        onConnect={() => conn.connect(t.target)}
+                        settings={settings}
+                        modelNames={modelNames}
+                        onChange={(patch) => tabs.update(t.id, patch)}
+                        onOpenSettings={() => openSettings()}
+                        skills={skills.skills}
+                        onCreateSkill={() =>
+                          setDialog({ kind: "settings", section: "skills", createSkill: true })
+                        }
+                        onSave={() => requestSave(t)}
+                        onOpenQuery={(sql, question) => tabs.open(t.target, { sql, question })}
+                        onSaveAsScript={(sql, question) => {
+                          const id = tabs.open(t.target, { sql, question });
+                          setDialog({ kind: "saveScript", tabId: id, closeAfter: false });
+                        }}
+                        onAgentBusy={(busy) => setBusy(t.id, busy)}
+                        onNotesChanged={() => setNotesVersion((v) => v + 1)}
+                        onSettingsChange={setSettings}
+                        onNotice={setNotice}
+                        teamAi={teamAiFor(t.target.connectionId)}
+                      />
                     </ErrorBoundary>
                   );
                 })}
@@ -704,7 +862,11 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
           notes={dialog.connection.id === active?.id ? notes.length : null}
           provider={destinationFor(dialog.connection.id)}
           onClose={() => setDialog(null)}
-          onEdit={dialog.connection.team ? undefined : () => setDialog({ kind: "connection", config: dialog.connection })}
+          onEdit={
+            dialog.connection.team
+              ? undefined
+              : () => setDialog({ kind: "connection", config: dialog.connection })
+          }
           onConnect={() => {
             const c = dialog.connection;
             if (c.id !== active?.id) openConnection(c);
@@ -764,29 +926,33 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
           }}
         />
       )}
-      {dialog?.kind === "closeTabs" && (() => {
-        const closing = new Set(dialog.tabIds);
-        const unsaved = tabs.tabs.filter((t) => closing.has(t.id) && hasUnsavedChanges(t));
-        return (
-          <CloseTabsDialog
-            count={tabs.tabs.filter((t) => closing.has(t.id)).length}
-            unsaved={unsaved.map((t) => tabItems.find((i) => i.id === t.id)?.label ?? "Untitled")}
-            onCancel={() => setDialog(null)}
-            onDiscard={() => {
-              tabs.closeWhere((t) => closing.has(t.id));
-              setDialog(null);
-            }}
-            onKeepUnsaved={() => {
-              tabs.closeWhere((t) => closing.has(t.id) && !hasUnsavedChanges(t));
-              setDialog(null);
-            }}
-          />
-        );
-      })()}
+      {dialog?.kind === "closeTabs" &&
+        (() => {
+          const closing = new Set(dialog.tabIds);
+          const unsaved = tabs.tabs.filter((t) => closing.has(t.id) && hasUnsavedChanges(t));
+          return (
+            <CloseTabsDialog
+              count={tabs.tabs.filter((t) => closing.has(t.id)).length}
+              unsaved={unsaved.map((t) => tabItems.find((i) => i.id === t.id)?.label ?? "Untitled")}
+              onCancel={() => setDialog(null)}
+              onDiscard={() => {
+                tabs.closeWhere((t) => closing.has(t.id));
+                setDialog(null);
+              }}
+              onKeepUnsaved={() => {
+                tabs.closeWhere((t) => closing.has(t.id) && !hasUnsavedChanges(t));
+                setDialog(null);
+              }}
+            />
+          );
+        })()}
       {dialog?.kind === "agentAccess" && dialogAccess && (
         <AgentAccessDialog
           connectionName={dialog.connection.name}
-          target={{ connectionId: dialog.connection.id, database: target?.connectionId === dialog.connection.id ? target.database : null }}
+          target={{
+            connectionId: dialog.connection.id,
+            database: target?.connectionId === dialog.connection.id ? target.database : null,
+          }}
           provider={(() => {
             const ai = teamAiFor(dialog.connection.id);
             if (ai) return teamAiDestination(ai);
@@ -803,7 +969,11 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
           key={dialog.note?.id ?? "new"}
           note={dialog.note}
           databaseName={databaseName ?? active?.name ?? "this database"}
-          fix={dialog.note ? noteSuggestions.suggestions.find((s) => s.replaces === dialog.note?.id) : undefined}
+          fix={
+            dialog.note
+              ? noteSuggestions.suggestions.find((s) => s.replaces === dialog.note?.id)
+              : undefined
+          }
           suggest={sharedNotes && !dialog.note}
           onSave={async (text, check) => {
             if (sharedNotes && !dialog.note) {
@@ -811,8 +981,18 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
               setNotesVersion((v) => v + 1);
               return sent;
             }
-            const base: DbNote = dialog.note ?? { id: "", connectionId: target.connectionId, database: target.database, text, updatedAt: 0 };
-            await commands.saveNote({ ...base, text, check: check.trim() ? { sql: check.trim() } : null });
+            const base: DbNote = dialog.note ?? {
+              id: "",
+              connectionId: target.connectionId,
+              database: target.database,
+              text,
+              updatedAt: 0,
+            };
+            await commands.saveNote({
+              ...base,
+              text,
+              check: check.trim() ? { sql: check.trim() } : null,
+            });
             setNotesVersion((v) => v + 1);
           }}
           onConfirm={
@@ -836,10 +1016,11 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
           onDismissFix={noteSuggestions.dismiss}
           onDelete={
             dialog.note
-              ? () => void commands.deleteNote(dialog.note!.id).then(() => {
-                  setNotesVersion((v) => v + 1);
-                  setDialog(null);
-                })
+              ? () =>
+                  void commands.deleteNote(dialog.note!.id).then(() => {
+                    setNotesVersion((v) => v + 1);
+                    setDialog(null);
+                  })
               : undefined
           }
           onClose={() => setDialog(null)}
@@ -852,10 +1033,14 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
           actions={<Button onClick={() => setDialog(null)}>Done</Button>}
         >
           <p className={styles.dialogLead}>
-            AI apps suggest these from what they found. Accepted notes are saved like your own and go to the Ask box, agent
-            mode and every AI app using SayQL.
+            AI apps suggest these from what they found. Accepted notes are saved like your own and
+            go to the Ask box, agent mode and every AI app using SayQL.
           </p>
-          <NoteSuggestions suggestions={suggestionsHere} onAccept={noteSuggestions.accept} onDismiss={noteSuggestions.dismiss} />
+          <NoteSuggestions
+            suggestions={suggestionsHere}
+            onAccept={noteSuggestions.accept}
+            onDismiss={noteSuggestions.dismiss}
+          />
         </Dialog>
       )}
       {dialog?.kind === "teach" && active && (
@@ -879,7 +1064,11 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
         >
           <TeachSayql
             heading={false}
-            target={{ connectionId: active.id, name: active.name, database: target?.database ?? null }}
+            target={{
+              connectionId: active.id,
+              name: active.name,
+              database: target?.database ?? null,
+            }}
             onSetUp={() => openSettings({ section: "mcp", aiAppsTab: "access" })}
             onAudit={() => setDialog({ kind: "audit" })}
           />
@@ -887,7 +1076,11 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
       )}
       {dialog?.kind === "audit" && active && (
         <AuditDialog
-          target={{ connectionId: active.id, name: active.name, database: target?.database ?? null }}
+          target={{
+            connectionId: active.id,
+            name: active.name,
+            database: target?.database ?? null,
+          }}
           onReview={() => setDialog({ kind: "noteSuggestions" })}
           onClose={() => setDialog(null)}
         />
@@ -912,7 +1105,9 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
             </>
           }
         >
-          <p style={{ margin: 0 }}>The saved script is removed. If it’s open in a tab, the tab keeps its SQL as unsaved.</p>
+          <p style={{ margin: 0 }}>
+            The saved script is removed. If it’s open in a tab, the tab keeps its SQL as unsaved.
+          </p>
         </Dialog>
       )}
       {dialog?.kind === "deleteConnection" && (
@@ -936,7 +1131,8 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
           }
         >
           <p style={{ margin: 0 }}>
-            The saved connection and its password are removed from SayQL, and its tabs close. The database itself isn’t touched.
+            The saved connection and its password are removed from SayQL, and its tabs close. The
+            database itself isn’t touched.
           </p>
         </Dialog>
       )}

@@ -20,7 +20,16 @@ vi.mock("../../api", async (orig) => ({
     auditPrompt: (id: string, db: string | null) => auditPrompt(id, db),
     auditAgents: () =>
       Promise.resolve([
-        { id: "claude", label: "Claude Code", path: "/bin/claude", version: "2.1.267", supported: true, ready: true, problem: null, installUrl: "" },
+        {
+          id: "claude",
+          label: "Claude Code",
+          path: "/bin/claude",
+          version: "2.1.267",
+          supported: true,
+          ready: true,
+          problem: null,
+          installUrl: "",
+        },
       ]),
   },
 }));
@@ -39,7 +48,10 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-const pick = (id: string) => fireEvent.change(screen.getByRole("combobox", { name: "Your coding agent" }), { target: { value: id } });
+const pick = (id: string) =>
+  fireEvent.change(screen.getByRole("combobox", { name: "Your coding agent" }), {
+    target: { value: id },
+  });
 
 it("defaults to Claude Code: the setup command, Run audit and the slash command", async () => {
   render(<TeachSayql target={target} />);
@@ -49,7 +61,9 @@ it("defaults to Claude Code: the setup command, Run audit and the slash command"
   expect(screen.getByText("/mcp__sayql__audit Shop")).toBeTruthy();
   expect(screen.getByRole("button", { name: "Copy audit prompt" })).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Copy the setup command" }));
-  await waitFor(() => expect(writeText).toHaveBeenCalledWith(`claude mcp add --scope user sayql -- ${PATH}`));
+  await waitFor(() =>
+    expect(writeText).toHaveBeenCalledWith(`claude mcp add --scope user sayql -- ${PATH}`),
+  );
 });
 
 it("preselects an installed agent and remembers a pick", async () => {
@@ -68,7 +82,13 @@ it("Cursor: Open in Cursor, the config behind a disclosure, and the / menu", asy
   localStorage.setItem(CODING_AGENT_KEY, '"cursor"');
   render(<TeachSayql target={target} />);
   fireEvent.click(await screen.findByRole("button", { name: "Open in Cursor" }));
-  await waitFor(() => expect(openInstallLink).toHaveBeenCalledWith(expect.stringMatching(/^cursor:\/\/anysphere\.cursor-deeplink\/mcp\/install\?name=sayql&config=/)));
+  await waitFor(() =>
+    expect(openInstallLink).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /^cursor:\/\/anysphere\.cursor-deeplink\/mcp\/install\?name=sayql&config=/,
+      ),
+    ),
+  );
   expect(screen.queryByText(/"mcpServers"/)).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Or edit the config file" }));
   expect(screen.getByText(/"mcpServers"/)).toBeTruthy();
@@ -102,7 +122,11 @@ it("Other: the generic config to copy, and paste the prompt", async () => {
   render(<TeachSayql target={target} />);
   expect(await screen.findByText("Connect your app to SayQL.")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Copy config" }));
-  await waitFor(() => expect(JSON.parse(writeText.mock.calls[0][0])).toEqual({ mcpServers: { sayql: { command: PATH, args: [] } } }));
+  await waitFor(() =>
+    expect(JSON.parse(writeText.mock.calls[0][0])).toEqual({
+      mcpServers: { sayql: { command: PATH, args: [] } },
+    }),
+  );
   expect(screen.getByText(/paste it into your app's chat/)).toBeTruthy();
 });
 

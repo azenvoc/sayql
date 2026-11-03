@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, type MouseEvent } from "react";
-import { LayoutDashboard,
+import {
+  LayoutDashboard,
   Bot,
   CircleCheck,
   Copy,
@@ -29,7 +30,16 @@ import { LayoutDashboard,
   X,
 } from "lucide-react";
 import type { ConnectionConfig, DatabaseList, DbNote, Schema, Table } from "../../api";
-import { ContextMenu, IconButton, Panel, Spinner, TextInput, TreeRow, useContextMenu, type MenuEntry } from "../../components/ui";
+import {
+  ContextMenu,
+  IconButton,
+  Panel,
+  Spinner,
+  TextInput,
+  TreeRow,
+  useContextMenu,
+  type MenuEntry,
+} from "../../components/ui";
 import { usePersistentState } from "../../hooks/usePersistentState";
 import { cx } from "../../lib/cx";
 import { DATABASE_KINDS, ProdBadge } from "../connections";
@@ -114,8 +124,10 @@ const SUGGEST = "Suggest a note…";
 
 /** A note's tooltip: its text, and why it may be out of date or when it was checked. */
 function noteTitle(n: DbNote, shared?: boolean): string {
-  if (n.suspect) return `${n.text}\n\nMay be out of date: ${n.suspect.reason}.${shared ? "" : " Click to review."}`;
-  if (n.verifiedAt) return `${n.text}\n\nChecked against the data ${new Date(n.verifiedAt).toLocaleDateString()}.`;
+  if (n.suspect)
+    return `${n.text}\n\nMay be out of date: ${n.suspect.reason}.${shared ? "" : " Click to review."}`;
+  if (n.verifiedAt)
+    return `${n.text}\n\nChecked against the data ${new Date(n.verifiedAt).toLocaleDateString()}.`;
   return n.text;
 }
 
@@ -126,7 +138,10 @@ function noteTitle(n: DbNote, shared?: boolean): string {
 export function DatabaseNavigator(p: DatabaseNavigatorProps) {
   const [filter, setFilter] = useState("");
   /** Saved scripts: only the open database's, or all of them. */
-  const [scriptsShown, setScriptsShown] = usePersistentState<"here" | "all">("sayql.scriptsShown", "here");
+  const [scriptsShown, setScriptsShown] = usePersistentState<"here" | "all">(
+    "sayql.scriptsShown",
+    "here",
+  );
   const [teamHintHidden, setTeamHintHidden] = usePersistentState("sayql.teamHintHidden", false);
   const anyHere = p.scripts.some((s) => s.here);
   const shownScripts = scriptsShown === "all" ? p.scripts : p.scripts.filter((s) => s.here);
@@ -136,10 +151,16 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
 
   const { tables, views } = useMemo(() => {
     const all = (p.schema?.tables ?? []).filter(
-      (t) => !query || t.name.toLowerCase().includes(query) || t.columns.some((c) => c.name.toLowerCase().includes(query)),
+      (t) =>
+        !query ||
+        t.name.toLowerCase().includes(query) ||
+        t.columns.some((c) => c.name.toLowerCase().includes(query)),
     );
     // Materialized views go with views: both are queried like tables but are not written to.
-    return { tables: all.filter((t) => t.kind === "table"), views: all.filter((t) => t.kind !== "table") };
+    return {
+      tables: all.filter((t) => t.kind === "table"),
+      views: all.filter((t) => t.kind !== "table"),
+    };
   }, [p.schema, query]);
 
   // Click selects one table, ⌘/Ctrl-click adds or removes one, ⇧-click selects a range.
@@ -154,7 +175,9 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
     }
     anchor.current = key;
     if (e.metaKey || e.ctrlKey) {
-      p.onSelectTables(current.includes(key) ? current.filter((k) => k !== key) : [...current, key]);
+      p.onSelectTables(
+        current.includes(key) ? current.filter((k) => k !== key) : [...current, key],
+      );
     } else {
       p.onSelectTables([key]); // also safe for the two clicks of a double-click preview
     }
@@ -168,9 +191,24 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
     // A team connection is managed by the team admin: no editing or deleting it here.
     if (c.team) {
       return [
-        { label: active && p.connected ? "Connected" : "Connect", icon: Plug, disabled: active && p.connected, onSelect: () => p.onOpen(c.id) },
-        { label: "New SQL tab", icon: FilePlus2, shortcut: active ? "⌘T" : undefined, onSelect: () => p.onNewTab(c.id, null) },
-        { label: "Refresh", icon: RefreshCw, disabled: !active || !p.connected || p.loading, onSelect: p.onRefresh },
+        {
+          label: active && p.connected ? "Connected" : "Connect",
+          icon: Plug,
+          disabled: active && p.connected,
+          onSelect: () => p.onOpen(c.id),
+        },
+        {
+          label: "New SQL tab",
+          icon: FilePlus2,
+          shortcut: active ? "⌘T" : undefined,
+          onSelect: () => p.onNewTab(c.id, null),
+        },
+        {
+          label: "Refresh",
+          icon: RefreshCw,
+          disabled: !active || !p.connected || p.loading,
+          onSelect: p.onRefresh,
+        },
         "separator",
         { label: "Overview…", icon: LayoutDashboard, onSelect: () => p.onOverview(c) },
         { label: "Investigate settings…", icon: Bot, onSelect: () => p.onAgentSettings(c) },
@@ -184,27 +222,62 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
       ];
     }
     return [
-      { label: active && p.connected ? "Connected" : "Connect", icon: Plug, disabled: active && p.connected, onSelect: () => p.onOpen(c.id) },
-      { label: "New SQL tab", icon: FilePlus2, shortcut: active ? "⌘T" : undefined, onSelect: () => p.onNewTab(c.id, null) },
-      { label: "Refresh", icon: RefreshCw, disabled: !active || !p.connected || p.loading, onSelect: p.onRefresh },
+      {
+        label: active && p.connected ? "Connected" : "Connect",
+        icon: Plug,
+        disabled: active && p.connected,
+        onSelect: () => p.onOpen(c.id),
+      },
+      {
+        label: "New SQL tab",
+        icon: FilePlus2,
+        shortcut: active ? "⌘T" : undefined,
+        onSelect: () => p.onNewTab(c.id, null),
+      },
+      {
+        label: "Refresh",
+        icon: RefreshCw,
+        disabled: !active || !p.connected || p.loading,
+        onSelect: p.onRefresh,
+      },
       "separator",
       { label: "Overview…", icon: LayoutDashboard, onSelect: () => p.onOverview(c) },
       { label: "Edit connection…", icon: Pencil, onSelect: () => p.onEdit(c) },
       { label: "Investigate settings…", icon: Bot, onSelect: () => p.onAgentSettings(c) },
-      { label: "Add database note…", icon: StickyNote, disabled: !active || !p.schema, onSelect: () => p.onEditNote(null) },
+      {
+        label: "Add database note…",
+        icon: StickyNote,
+        disabled: !active || !p.schema,
+        onSelect: () => p.onEditNote(null),
+      },
       { label: "Copy name", icon: Copy, onSelect: () => copy(c.name) },
       "separator",
-      { label: "Delete connection…", icon: Trash2, danger: true, onSelect: () => p.onDeleteConnection(c) },
+      {
+        label: "Delete connection…",
+        icon: Trash2,
+        danger: true,
+        onSelect: () => p.onDeleteConnection(c),
+      },
     ];
   };
 
   const databaseMenu = (c: ConnectionConfig, name: string): MenuEntry[] => {
     const current = name === p.databaseName;
     return [
-      { label: current ? "Open" : "Open database", icon: FolderOpen, disabled: current, onSelect: () => p.onOpenDatabase(name) },
+      {
+        label: current ? "Open" : "Open database",
+        icon: FolderOpen,
+        disabled: current,
+        onSelect: () => p.onOpenDatabase(name),
+      },
       { label: "New SQL tab", icon: FilePlus2, onSelect: () => p.onNewTab(c.id, name) },
       { label: "Refresh", icon: RefreshCw, disabled: !current || p.loading, onSelect: p.onRefresh },
-      { label: current && p.sharedNotes ? SUGGEST : "Add database note…", icon: StickyNote, disabled: !current, onSelect: () => p.onEditNote(null) },
+      {
+        label: current && p.sharedNotes ? SUGGEST : "Add database note…",
+        icon: StickyNote,
+        disabled: !current,
+        onSelect: () => p.onEditNote(null),
+      },
       "separator",
       { label: "Copy name", icon: Copy, onSelect: () => copy(name) },
     ];
@@ -220,7 +293,11 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
     });
     return [
       { label: "View data", icon: Table2, onSelect: () => p.onPreviewTable(t) },
-      { label: "Count rows", icon: Hash, onSelect: () => p.onOpenSql(`Count ${t.name}`, countRowsSql(t, dialect), true) },
+      {
+        label: "Count rows",
+        icon: Hash,
+        onSelect: () => p.onOpenSql(`Count ${t.name}`, countRowsSql(t, dialect), true),
+      },
       {
         label: "Generate SQL",
         icon: Wand2,
@@ -228,13 +305,21 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
         submenu:
           t.kind !== "table"
             ? [template("select", "SELECT")]
-            : [template("select", "SELECT"), template("insert", "INSERT"), template("update", "UPDATE"), template("delete", "DELETE")],
+            : [
+                template("select", "SELECT"),
+                template("insert", "INSERT"),
+                template("update", "UPDATE"),
+                template("delete", "DELETE"),
+              ],
       },
       "separator",
       {
         label: picked ? "Remove from AI context" : "Add to AI context",
         icon: Sparkles,
-        onSelect: () => p.onSelectTables(picked ? p.selectedTables.filter((k) => k !== key) : [...p.selectedTables, key]),
+        onSelect: () =>
+          p.onSelectTables(
+            picked ? p.selectedTables.filter((k) => k !== key) : [...p.selectedTables, key],
+          ),
       },
       { label: "Copy name", icon: Copy, onSelect: () => copy(t.name) },
       { label: "Copy as SQL reference", onSelect: () => copy(tableRef(t, dialect)) },
@@ -249,10 +334,20 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
   ];
 
   const scriptMenu = (sc: NavigatorScript): MenuEntry[] => [
-    { label: "Open", icon: FolderOpen, disabled: sc.orphaned, onSelect: () => p.onOpenScript(sc.id) },
+    {
+      label: "Open",
+      icon: FolderOpen,
+      disabled: sc.orphaned,
+      onSelect: () => p.onOpenScript(sc.id),
+    },
     { label: "Copy name", icon: Copy, onSelect: () => copy(sc.name) },
     "separator",
-    { label: "Delete script…", icon: Trash2, danger: true, onSelect: () => p.onDeleteScript(sc.id) },
+    {
+      label: "Delete script…",
+      icon: Trash2,
+      danger: true,
+      onSelect: () => p.onDeleteScript(sc.id),
+    },
   ];
 
   const doubtful = p.notes.filter((n) => n.suspect).length;
@@ -264,10 +359,14 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
           { label: SUGGEST, icon: StickyNote, onSelect: () => p.onEditNote(null) },
         ]
       : [
-    { label: n.suspect ? "Review note…" : "Edit note…", icon: Pencil, onSelect: () => p.onEditNote(n) },
-    { label: "Copy", icon: Copy, onSelect: () => copy(n.text) },
-    "separator",
-    { label: "Delete note", icon: Trash2, danger: true, onSelect: () => p.onDeleteNote(n) },
+          {
+            label: n.suspect ? "Review note…" : "Edit note…",
+            icon: Pencil,
+            onSelect: () => p.onEditNote(n),
+          },
+          { label: "Copy", icon: Copy, onSelect: () => copy(n.text) },
+          "separator",
+          { label: "Delete note", icon: Trash2, danger: true, onSelect: () => p.onDeleteNote(n) },
         ];
 
   const toggle = (set: Set<string>, key: string) => {
@@ -288,7 +387,11 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
           expanded={open}
           icon={t.kind !== "table" ? <Eye size={14} /> : <Table2 size={14} />}
           label={<span className={cx(styles.mono, t.kind !== "table" && styles.view)}>{key}</span>}
-          meta={t.row_estimate != null && t.row_estimate >= 0 ? t.row_estimate.toLocaleString() : undefined}
+          meta={
+            t.row_estimate != null && t.row_estimate >= 0
+              ? t.row_estimate.toLocaleString()
+              : undefined
+          }
           selected={p.selectedTables.includes(key)}
           title="Click to use as AI context (⌘-click for several, ⇧-click for a range) · double-click to preview rows"
           onClick={(e) => select(key, e)}
@@ -313,7 +416,13 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
                 icon={icon}
                 label={<span className={styles.mono}>{c.name}</span>}
                 meta={c.data_type}
-                title={fk ? `References ${fk.ref_table}.${fk.ref_column}` : c.nullable ? "Nullable" : "Not null"}
+                title={
+                  fk
+                    ? `References ${fk.ref_table}.${fk.ref_column}`
+                    : c.nullable
+                      ? "Nullable"
+                      : "Not null"
+                }
                 onContextMenu={(e) => menu.open(e, columnMenu(t, c.name))}
               />
             );
@@ -362,11 +471,22 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
                   p.notes.length || undefined
                 )
               }
-              title={p.sharedNotes ? SHARED_HINT : "Facts about this database that the Ask box, Investigate and MCP use"}
+              title={
+                p.sharedNotes
+                  ? SHARED_HINT
+                  : "Facts about this database that the Ask box, Investigate and MCP use"
+              }
               actions={
                 p.onCheckNotes &&
                 !p.sharedNotes &&
-                p.notes.length > 0 && <IconButton icon={RefreshCw} label="Check notes against the database now" size="sm" onClick={p.onCheckNotes} />
+                p.notes.length > 0 && (
+                  <IconButton
+                    icon={RefreshCw}
+                    label="Check notes against the database now"
+                    size="sm"
+                    onClick={p.onCheckNotes}
+                  />
+                )
               }
               onClick={() => setCollapsed((s) => toggle(s, `${key}:notes`))}
             />
@@ -382,7 +502,10 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
             )}
             {p.sharedNotes && !collapsed.has(`${key}:notes`) && (
               <>
-                <TreeRow depth={depth + 1} label={<span className={styles.message}>{SHARED_HINT}</span>} />
+                <TreeRow
+                  depth={depth + 1}
+                  label={<span className={styles.message}>{SHARED_HINT}</span>}
+                />
                 <TreeRow
                   depth={depth + 1}
                   icon={<StickyNote size={13} className={styles.suggested} />}
@@ -399,12 +522,18 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
                   depth={depth + 1}
                   icon={
                     n.suspect ? (
-                      <TriangleAlert size={13} className={styles.doubtful} aria-label="May be out of date" />
+                      <TriangleAlert
+                        size={13}
+                        className={styles.doubtful}
+                        aria-label="May be out of date"
+                      />
                     ) : n.verifiedAt ? (
                       <CircleCheck size={13} className={styles.verified} aria-label="Checked" />
                     ) : undefined
                   }
-                  label={<span className={n.suspect ? styles.noteDoubtful : styles.note}>{n.text}</span>}
+                  label={
+                    <span className={n.suspect ? styles.noteDoubtful : styles.note}>{n.text}</span>
+                  }
                   title={noteTitle(n, p.sharedNotes)}
                   onClick={n.suspect && !p.sharedNotes ? () => p.onEditNote(n) : undefined}
                   onDoubleClick={p.sharedNotes ? undefined : () => p.onEditNote(n)}
@@ -419,12 +548,19 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
             icon={<Wand2 size={14} className={styles.suggested} />}
             label={<span className={styles.suggested}>Teach SayQL this database</span>}
             title="Let Claude Code or Cursor read your code and suggest notes: which tables are retired, what a status means."
-            actions={p.onHideTeach && <IconButton icon={X} label="Don't show again" size="sm" onClick={p.onHideTeach} />}
+            actions={
+              p.onHideTeach && (
+                <IconButton icon={X} label="Don't show again" size="sm" onClick={p.onHideTeach} />
+              )
+            }
             onClick={p.onTeach}
           />
         )}
         {tables.length + views.length === 0 && (
-          <TreeRow depth={depth} label={<span className={styles.message}>{query ? "No matches" : "No tables"}</span>} />
+          <TreeRow
+            depth={depth}
+            label={<span className={styles.message}>{query ? "No matches" : "No tables"}</span>}
+          />
         )}
       </>
     );
@@ -493,8 +629,23 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
           }
           meta={active && p.loading && !list ? <Spinner size={12} /> : DATABASE_KINDS[c.kind].short}
           // Team connections show no host or password, and can't be edited here.
-          title={c.team ? [c.team.database, c.team.notes, "Shared by your team admin"].filter(Boolean).join(" · ") : undefined}
-          actions={c.team ? undefined : <IconButton icon={Pencil} label="Edit connection" size="sm" onClick={() => p.onEdit(c)} />}
+          title={
+            c.team
+              ? [c.team.database, c.team.notes, "Shared by your team admin"]
+                  .filter(Boolean)
+                  .join(" · ")
+              : undefined
+          }
+          actions={
+            c.team ? undefined : (
+              <IconButton
+                icon={Pencil}
+                label="Edit connection"
+                size="sm"
+                onClick={() => p.onEdit(c)}
+              />
+            )
+          }
           onClick={() => p.onOpen(c.id)}
           onContextMenu={(e) => menu.open(e, connectionMenu(c))}
         />
@@ -533,7 +684,13 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
       actions={
         <>
           <IconButton icon={Plus} label="New connection" size="sm" onClick={p.onAdd} />
-          <IconButton icon={RefreshCw} label="Reload schema" size="sm" onClick={p.onRefresh} disabled={!p.activeId || p.loading} />
+          <IconButton
+            icon={RefreshCw}
+            label="Reload schema"
+            size="sm"
+            onClick={p.onRefresh}
+            disabled={!p.activeId || p.loading}
+          />
         </>
       }
     >
@@ -559,7 +716,14 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
               icon={<Users size={14} />}
               label={<span className={styles.message}>Have a team invite? Sign in</span>}
               title="Sign in to your company's SayQL server to use the database connections your team shares."
-              actions={<IconButton icon={X} label="Hide" size="sm" onClick={() => setTeamHintHidden(true)} />}
+              actions={
+                <IconButton
+                  icon={X}
+                  label="Hide"
+                  size="sm"
+                  onClick={() => setTeamHintHidden(true)}
+                />
+              }
               onClick={p.onTeamSignIn}
             />
           </div>
@@ -593,14 +757,23 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
                       type="button"
                       role="radio"
                       aria-checked={scriptsShown === v}
-                      className={cx(styles.scriptFilterOption, scriptsShown === v && styles.scriptFilterOn)}
-                      title={v === "here" ? "Only scripts for the open database" : "Scripts for every database"}
+                      className={cx(
+                        styles.scriptFilterOption,
+                        scriptsShown === v && styles.scriptFilterOn,
+                      )}
+                      title={
+                        v === "here"
+                          ? "Only scripts for the open database"
+                          : "Scripts for every database"
+                      }
                       onClick={(e) => {
                         e.stopPropagation();
                         setScriptsShown(v);
                       }}
                     >
-                      {v === "here" ? `This database${anyHere ? ` ${p.scripts.filter((s) => s.here).length}` : ""}` : `All ${p.scripts.length}`}
+                      {v === "here"
+                        ? `This database${anyHere ? ` ${p.scripts.filter((s) => s.here).length}` : ""}`
+                        : `All ${p.scripts.length}`}
                     </button>
                   ))}
                 </span>
@@ -608,7 +781,10 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
               onClick={() => setCollapsed((s) => toggle(s, "scripts"))}
             />
             {!collapsed.has("scripts") && shownScripts.length === 0 && (
-              <TreeRow depth={1} label={<span className={styles.message}>No scripts for this database</span>} />
+              <TreeRow
+                depth={1}
+                label={<span className={styles.message}>No scripts for this database</span>}
+              />
             )}
             {!collapsed.has("scripts") &&
               shownScripts.map((s) => (
@@ -621,7 +797,14 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
                   title={s.orphaned ? "Its connection was deleted" : `Open ${s.name}`}
                   onClick={() => !s.orphaned && p.onOpenScript(s.id)}
                   onContextMenu={(e) => menu.open(e, scriptMenu(s))}
-                  actions={<IconButton icon={Trash2} label={`Delete ${s.name}`} size="sm" onClick={() => p.onDeleteScript(s.id)} />}
+                  actions={
+                    <IconButton
+                      icon={Trash2}
+                      label={`Delete ${s.name}`}
+                      size="sm"
+                      onClick={() => p.onDeleteScript(s.id)}
+                    />
+                  }
                 />
               ))}
           </div>

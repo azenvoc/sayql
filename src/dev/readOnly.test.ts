@@ -39,10 +39,12 @@ describe("isReadOnly (dev copy of classify.rs)", () => {
 
   it("ignores write words inside strings, quoted names and comments", () => {
     expect(roEverywhere("SELECT * FROM audit WHERE action = 'DELETE'")).toBe(true);
-    expect(isReadOnly("SELECT [Update], \"insert\" FROM t", "mssql")).toBe(true);
-    expect(isReadOnly("SELECT `drop`, \"insert\" FROM t", "mysql")).toBe(true);
-    expect(isReadOnly("SELECT \"insert\" FROM t", "postgres")).toBe(true);
-    expect(roEverywhere("SELECT REPLACE(name, 'a', 'b') FROM t WHERE note = 'it''s DELETE'")).toBe(true);
+    expect(isReadOnly('SELECT [Update], "insert" FROM t', "mssql")).toBe(true);
+    expect(isReadOnly('SELECT `drop`, "insert" FROM t', "mysql")).toBe(true);
+    expect(isReadOnly('SELECT "insert" FROM t', "postgres")).toBe(true);
+    expect(roEverywhere("SELECT REPLACE(name, 'a', 'b') FROM t WHERE note = 'it''s DELETE'")).toBe(
+      true,
+    );
   });
 
   it("reads each dialect's comments and strings the way the database does", () => {

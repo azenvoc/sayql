@@ -32,7 +32,15 @@ export interface TeachSayqlProps {
  * "Teach SayQL your database": pick your coding agent, connect it, run the audit in your project,
  * approve the notes it suggests. Shown on first use and as the empty state of suggested notes.
  */
-export function TeachSayql({ onSetUp, target, heading = true, onDismiss, connections, onReview, onAudit }: TeachSayqlProps) {
+export function TeachSayql({
+  onSetUp,
+  target,
+  heading = true,
+  onDismiss,
+  connections,
+  onReview,
+  onAudit,
+}: TeachSayqlProps) {
   const { agent, choose, context, apps, connectedAs } = useCodingAgent();
   const connected = (apps ?? []).some((a) => a.lastUsed != null);
   const [copied, setCopied] = useState<"command" | "prompt" | null>(null);
@@ -45,12 +53,18 @@ export function TeachSayql({ onSetUp, target, heading = true, onDismiss, connect
   };
   const copyCommand = (command: string) => {
     setError(null);
-    navigator.clipboard.writeText(command).then(() => flash("command"), (e) => setError(errorText(e)));
+    navigator.clipboard.writeText(command).then(
+      () => flash("command"),
+      (e) => setError(errorText(e)),
+    );
   };
   const copyPrompt = () => {
     if (!target) return;
     setError(null);
-    copyAuditPrompt(target).then(() => flash("prompt"), (e) => setError(errorText(e)));
+    copyAuditPrompt(target).then(
+      () => flash("prompt"),
+      (e) => setError(errorText(e)),
+    );
   };
   const done = connected;
   const setup = context ? (
@@ -67,16 +81,21 @@ export function TeachSayql({ onSetUp, target, heading = true, onDismiss, connect
   );
 
   return (
-    <section className={cx(styles.card, !heading && styles.bare)} aria-label="Teach SayQL your database">
+    <section
+      className={cx(styles.card, !heading && styles.bare)}
+      aria-label="Teach SayQL your database"
+    >
       {(heading || onDismiss) && (
         <div className={styles.head}>
           {heading && <h3 className={styles.title}>Teach SayQL your database</h3>}
-          {onDismiss && <IconButton icon={X} label="Don't show again" size="sm" onClick={onDismiss} />}
+          {onDismiss && (
+            <IconButton icon={X} label="Don't show again" size="sm" onClick={onDismiss} />
+          )}
         </div>
       )}
       <p className={styles.lead}>
-        Your code knows things your schema doesn&apos;t: which tables are retired, what a status means. Let your coding
-        agent tell SayQL.
+        Your code knows things your schema doesn&apos;t: which tables are retired, what a status
+        means. Let your coding agent tell SayQL.
       </p>
       <AgentPicker agent={agent} onChoose={choose} />
       <ol className={styles.steps}>
@@ -94,8 +113,17 @@ export function TeachSayql({ onSetUp, target, heading = true, onDismiss, connect
                 <strong>An AI app is connected.</strong> {connectedNames(apps ?? [])} SayQL.{" "}
                 {context && (
                   <>
-                    <button type="button" className={styles.link} aria-expanded={setupOpen} aria-controls={setupId} onClick={() => setSetupOpen(!setupOpen)}>
-                      <ChevronRight size={12} className={cx(styles.chevron, setupOpen && styles.chevronOpen)} />
+                    <button
+                      type="button"
+                      className={styles.link}
+                      aria-expanded={setupOpen}
+                      aria-controls={setupId}
+                      onClick={() => setSetupOpen(!setupOpen)}
+                    >
+                      <ChevronRight
+                        size={12}
+                        className={cx(styles.chevron, setupOpen && styles.chevronOpen)}
+                      />
                       Connect {agent.short} too
                     </button>
                     {setupOpen && <div id={setupId}>{setup}</div>}
@@ -132,14 +160,14 @@ export function TeachSayql({ onSetUp, target, heading = true, onDismiss, connect
             3
           </span>
           <div className={styles.body}>
-            <strong>Approve what&apos;s right.</strong> Every note you accept makes SayQL&apos;s answers better, for you and
-            every agent after.
+            <strong>Approve what&apos;s right.</strong> Every note you accept makes SayQL&apos;s
+            answers better, for you and every agent after.
           </div>
         </li>
       </ol>
       <p className={styles.again}>
-        Run it again now and then, and after big changes: code moves on and notes go stale. The audit also flags notes that
-        look out of date.
+        Run it again now and then, and after big changes: code moves on and notes go stale. The
+        audit also flags notes that look out of date.
       </p>
       {error && <p className={styles.error}>{error}</p>}
     </section>
@@ -166,7 +194,16 @@ interface AuditStepProps {
 }
 
 /** Step 2, for the agent: SayQL runs it, its slash command, its prompt menu, or paste the prompt. */
-function AuditStep({ agent, target, connections, onReview, onAudit, copied, onCopyCommand, onCopyPrompt }: AuditStepProps) {
+function AuditStep({
+  agent,
+  target,
+  connections,
+  onReview,
+  onAudit,
+  copied,
+  onCopyCommand,
+  onCopyPrompt,
+}: AuditStepProps) {
   const how = agent.audit;
   const paste = how.kind === "paste";
   const command = how.kind === "run" || how.kind === "prompt" ? how.command(target) : null;
@@ -183,7 +220,12 @@ function AuditStep({ agent, target, connections, onReview, onAudit, copied, onCo
   );
   const promptButton = target ? (
     <div className={styles.copy}>
-      <Button size="sm" variant={paste ? "secondary" : "ghost"} icon={copied === "prompt" ? Check : Copy} onClick={onCopyPrompt}>
+      <Button
+        size="sm"
+        variant={paste ? "secondary" : "ghost"}
+        icon={copied === "prompt" ? Check : Copy}
+        onClick={onCopyPrompt}
+      >
         {copied === "prompt" ? "Copied" : "Copy audit prompt"}
       </Button>
       {!paste && <span className={styles.hint}>or paste the prompt into the chat yourself.</span>}
@@ -191,8 +233,8 @@ function AuditStep({ agent, target, connections, onReview, onAudit, copied, onCo
   ) : (
     <span className={styles.hint}>
       {" "}
-      {paste ? "Copy the audit prompt" : "To paste the prompt instead, copy it"} for a connection in Settings → AI apps →
-      Access.
+      {paste ? "Copy the audit prompt" : "To paste the prompt instead, copy it"} for a connection in
+      Settings → AI apps → Access.
     </span>
   );
 
@@ -201,10 +243,16 @@ function AuditStep({ agent, target, connections, onReview, onAudit, copied, onCo
       <strong>Run an audit in your project.</strong>{" "}
       {how.kind === "run" ? (
         <>
-          Let SayQL run your installed {agent.short} in the project folder, read-only, on your own sign-in, with no
-          setup:
+          Let SayQL run your installed {agent.short} in the project folder, read-only, on your own
+          sign-in, with no setup:
           <div className={styles.copy}>
-            <AuditButton target={target} connections={connections} onReview={onReview} onOpen={onAudit} variant="primary" />
+            <AuditButton
+              target={target}
+              connections={connections}
+              onReview={onReview}
+              onOpen={onAudit}
+              variant="primary"
+            />
           </div>
           Or in {how.where}, type {commandLine}
           <br />
@@ -219,8 +267,8 @@ function AuditStep({ agent, target, connections, onReview, onAudit, copied, onCo
       ) : (
         <>Copy the audit prompt and paste it into {how.where}. </>
       )}
-      It reads your schema, its usage figures and your code, and suggests notes. It needs no rows; any query it runs gets
-      only what you allow on that connection.
+      It reads your schema, its usage figures and your code, and suggests notes. It needs no rows;
+      any query it runs gets only what you allow on that connection.
       {agent.caveat && <span className={styles.hint}> {agent.caveat}</span>}
       {promptButton}
     </>

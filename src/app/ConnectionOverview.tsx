@@ -2,7 +2,15 @@ import { useEffect, useState } from "react";
 import { Bot, Database, Pencil, Plug, ShieldCheck, StickyNote } from "lucide-react";
 import { commands, type ConnectionConfig, type McpActivity, type Schema } from "../api";
 import { Button, Dialog } from "../components/ui";
-import { AuditButton, KnowledgeSources, auditAge, lastAudit, privacySummary, useAgentAccess, useAudits } from "../features/agent";
+import {
+  AuditButton,
+  KnowledgeSources,
+  auditAge,
+  lastAudit,
+  privacySummary,
+  useAgentAccess,
+  useAudits,
+} from "../features/agent";
 import { MyActivityLog } from "../features/settings";
 import { DATABASE_KINDS, ProdBadge } from "../features/connections";
 import styles from "./ConnectionOverview.module.css";
@@ -56,7 +64,12 @@ export function ConnectionOverview(p: ConnectionOverviewProps) {
   const columns = p.schema?.tables.reduce((n, t) => n + t.columns.length, 0) ?? 0;
 
   return (
-    <Dialog title={c.name} onClose={p.onClose} size="lg" actions={<Button onClick={p.onClose}>Close</Button>}>
+    <Dialog
+      title={c.name}
+      onClose={p.onClose}
+      size="lg"
+      actions={<Button onClick={p.onClose}>Close</Button>}
+    >
       <div className={styles.body}>
         <p className={styles.where}>
           {where(c)} <ProdBadge connection={c} />
@@ -119,8 +132,9 @@ export function ConnectionOverview(p: ConnectionOverviewProps) {
             </h3>
             {c.team ? (
               <p className={styles.muted}>
-                AI apps on this computer can&apos;t use team connections. AI agents reach them only through your team&apos;s agent
-                gateway, with their own keys and the rules your admin sets; what they run is in the team&apos;s audit log.
+                AI apps on this computer can&apos;t use team connections. AI agents reach them only
+                through your team&apos;s agent gateway, with their own keys and the rules your admin
+                sets; what they run is in the team&apos;s audit log.
               </p>
             ) : apps === null ? (
               <p className={styles.muted}>Loading…</p>
@@ -149,7 +163,10 @@ export function ConnectionOverview(p: ConnectionOverviewProps) {
         {!c.team && (
           <>
             <h3 className={styles.sectionTitle}>Knowledge sources</h3>
-            <p className={styles.muted}>The code and documents the audit reads for this connection. They stay on this computer and go only to the AI you choose, when you run an audit.</p>
+            <p className={styles.muted}>
+              The code and documents the audit reads for this connection. They stay on this computer
+              and go only to the AI you choose, when you run an audit.
+            </p>
             <KnowledgeSources connectionId={c.id} />
           </>
         )}

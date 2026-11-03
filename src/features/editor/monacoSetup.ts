@@ -55,12 +55,45 @@ monaco.editor.defineTheme("sayql-dark", {
   },
 });
 
-export const monacoTheme = (theme: ResolvedTheme) => (theme === "dark" ? "sayql-dark" : "sayql-light");
+export const monacoTheme = (theme: ResolvedTheme) =>
+  theme === "dark" ? "sayql-dark" : "sayql-light";
 
 const KEYWORDS = [
-  "SELECT", "FROM", "WHERE", "GROUP BY", "ORDER BY", "HAVING", "LIMIT", "JOIN", "LEFT JOIN", "INNER JOIN",
-  "ON", "AS", "AND", "OR", "NOT", "IN", "IS NULL", "IS NOT NULL", "COUNT", "SUM", "AVG", "MIN", "MAX",
-  "DISTINCT", "CASE", "WHEN", "THEN", "ELSE", "END", "WITH", "UNION", "DESC", "ASC", "BETWEEN", "LIKE",
+  "SELECT",
+  "FROM",
+  "WHERE",
+  "GROUP BY",
+  "ORDER BY",
+  "HAVING",
+  "LIMIT",
+  "JOIN",
+  "LEFT JOIN",
+  "INNER JOIN",
+  "ON",
+  "AS",
+  "AND",
+  "OR",
+  "NOT",
+  "IN",
+  "IS NULL",
+  "IS NOT NULL",
+  "COUNT",
+  "SUM",
+  "AVG",
+  "MIN",
+  "MAX",
+  "DISTINCT",
+  "CASE",
+  "WHEN",
+  "THEN",
+  "ELSE",
+  "END",
+  "WITH",
+  "UNION",
+  "DESC",
+  "ASC",
+  "BETWEEN",
+  "LIKE",
 ];
 
 let completionSchema: Schema | null = null;
@@ -73,7 +106,12 @@ export function setCompletionSchema(schema: Schema | null) {
 monaco.languages.registerCompletionItemProvider("sql", {
   provideCompletionItems(model, position) {
     const word = model.getWordUntilPosition(position);
-    const range = new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn);
+    const range = new monaco.Range(
+      position.lineNumber,
+      word.startColumn,
+      position.lineNumber,
+      word.endColumn,
+    );
     const Kind = monaco.languages.CompletionItemKind;
     const suggestions: monaco.languages.CompletionItem[] = KEYWORDS.map((k) => ({
       label: k,
@@ -85,7 +123,13 @@ monaco.languages.registerCompletionItemProvider("sql", {
       const name = qualifiedName(t);
       suggestions.push({ label: name, kind: Kind.Struct, detail: t.kind, insertText: name, range });
       for (const c of t.columns) {
-        suggestions.push({ label: c.name, kind: Kind.Field, detail: `${t.name} · ${c.data_type}`, insertText: c.name, range });
+        suggestions.push({
+          label: c.name,
+          kind: Kind.Field,
+          detail: `${t.name} · ${c.data_type}`,
+          insertText: c.name,
+          range,
+        });
       }
     }
     return { suggestions };

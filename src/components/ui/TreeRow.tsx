@@ -25,7 +25,20 @@ export interface TreeRowProps {
 }
 
 /** One row of a navigator tree. Indentation and caret come from `depth` and `expanded`. */
-export function TreeRow({ depth, label, icon, expanded, selected, meta, actions, title, onClick, onDoubleClick, onContextMenu, onToggle }: TreeRowProps) {
+export function TreeRow({
+  depth,
+  label,
+  icon,
+  expanded,
+  selected,
+  meta,
+  actions,
+  title,
+  onClick,
+  onDoubleClick,
+  onContextMenu,
+  onToggle,
+}: TreeRowProps) {
   return (
     <div
       className={cx(styles.row, selected && styles.selected)}
@@ -48,7 +61,11 @@ export function TreeRow({ depth, label, icon, expanded, selected, meta, actions,
           })
         }
       >
-        {expanded === undefined ? null : expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+        {expanded === undefined ? null : expanded ? (
+          <ChevronDown size={13} />
+        ) : (
+          <ChevronRight size={13} />
+        )}
       </span>
       {icon && <span className={styles.icon}>{icon}</span>}
       <span className={styles.label}>{label}</span>

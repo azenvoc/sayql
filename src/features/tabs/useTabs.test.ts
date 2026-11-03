@@ -25,7 +25,11 @@ describe("useTabs", () => {
     const { result } = renderHook(() => useTabs());
     const ids: string[] = [];
     act(() => {
-      ids.push(result.current.open(target("a")), result.current.open(target("b")), result.current.open(target("c")));
+      ids.push(
+        result.current.open(target("a")),
+        result.current.open(target("b")),
+        result.current.open(target("c")),
+      );
     });
     act(() => result.current.activate(ids[1]));
     act(() => result.current.close(ids[1]));

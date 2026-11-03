@@ -24,6 +24,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
+    // oxlint-disable-next-line no-console -- the crash's stack, for the webview's developer tools
     console.error(`${this.props.label} crashed`, error, info.componentStack);
   }
 

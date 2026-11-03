@@ -35,7 +35,11 @@ export function Button({
       disabled={disabled || loading}
       {...rest}
     >
-      {loading ? <Loader2 size={iconSize} className={styles.spin} /> : Icon && <Icon size={iconSize} />}
+      {loading ? (
+        <Loader2 size={iconSize} className={styles.spin} />
+      ) : (
+        Icon && <Icon size={iconSize} />
+      )}
       {children}
       {shortcut && <span className={styles.shortcut}>{shortcut}</span>}
     </button>
@@ -50,14 +54,29 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
   active?: boolean;
 }
 
-export function IconButton({ icon: Icon, label, size = "md", active, className, type = "button", ...rest }: IconButtonProps) {
+export function IconButton({
+  icon: Icon,
+  label,
+  size = "md",
+  active,
+  className,
+  type = "button",
+  ...rest
+}: IconButtonProps) {
   return (
     <button
       type={type}
       aria-label={label}
       title={label}
       aria-pressed={active}
-      className={cx(styles.button, styles.ghost, styles.iconButton, size === "sm" && styles.sm, active && styles.active, className)}
+      className={cx(
+        styles.button,
+        styles.ghost,
+        styles.iconButton,
+        size === "sm" && styles.sm,
+        active && styles.active,
+        className,
+      )}
       {...rest}
     >
       <Icon size={size === "sm" ? 14 : 16} />

@@ -1,4 +1,13 @@
 export { commands } from "./commands";
-export { AGENT_EVENT, AUDIT_EVENT, subscribeToAgent, subscribeToAudit, subscribeToAi, subscribeToHandoffs, subscribeToMenu, subscribeToVoice } from "./events";
+export {
+  AGENT_EVENT,
+  AUDIT_EVENT,
+  subscribeToAgent,
+  subscribeToAudit,
+  subscribeToAi,
+  subscribeToHandoffs,
+  subscribeToMenu,
+  subscribeToVoice,
+} from "./events";
 export type { MenuAction } from "./events";
 export * from "./types";

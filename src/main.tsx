@@ -12,7 +12,10 @@ async function start() {
   // feels native. Text fields and the SQL editor keep theirs (cut, copy, paste).
   if (!import.meta.env.DEV) {
     document.addEventListener("contextmenu", (e) => {
-      if (!(e.target as Element).closest("input, textarea, [contenteditable='true'], .monaco-editor")) e.preventDefault();
+      if (
+        !(e.target as Element).closest("input, textarea, [contenteditable='true'], .monaco-editor")
+      )
+        e.preventDefault();
     });
   }
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(

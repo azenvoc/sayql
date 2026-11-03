@@ -7,7 +7,9 @@ import { errorText } from "../../lib/errors";
 /** "Pro", "Max"… for a plan name Claude Code reports. */
 export function planName(check: PlanCheck): string {
   if (check.authMethod !== "claude.ai") return "an API key or cloud account, set up in Claude Code";
-  return check.plan ? `your Claude ${check.plan[0].toUpperCase()}${check.plan.slice(1)} plan` : "your Claude plan";
+  return check.plan
+    ? `your Claude ${check.plan[0].toUpperCase()}${check.plan.slice(1)} plan`
+    : "your Claude plan";
 }
 
 /**
@@ -43,18 +45,27 @@ export function ClaudePlanCheck({ onChecked }: { onChecked?: (ok: boolean) => vo
 
   return (
     <div data-testid="claude-plan-check">
-      {busy && !check && !error && <Alert tone="info">Checking Claude Code on this computer…</Alert>}
+      {busy && !check && !error && (
+        <Alert tone="info">Checking Claude Code on this computer…</Alert>
+      )}
       {check && (
         <Alert tone="success">
-          Claude Code {check.version} is signed in with {planName(check)}. SayQL starts it for each request, with no tools; it reads
-          only its version and sign-in status, never your credentials.
+          Claude Code {check.version} is signed in with {planName(check)}. SayQL starts it for each
+          request, with no tools; it reads only its version and sign-in status, never your
+          credentials.
         </Alert>
       )}
       {error && (
         <Alert
           tone="warning"
           actions={
-            <Button size="sm" variant="ghost" icon={RefreshCw} loading={busy} onClick={() => void run()}>
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={RefreshCw}
+              loading={busy}
+              onClick={() => void run()}
+            >
               Check again
             </Button>
           }

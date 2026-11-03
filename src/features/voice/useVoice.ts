@@ -49,7 +49,8 @@ export function useVoice({ active, prompt, onTranscript }: VoiceOptions) {
         dispatch({ type: "failed", message: NOTHING_HEARD });
       }
     } catch (e) {
-      if (current.current.kind === "transcribing") dispatch({ type: "failed", message: errorText(e) });
+      if (current.current.kind === "transcribing")
+        dispatch({ type: "failed", message: errorText(e) });
     }
   };
 
@@ -64,7 +65,8 @@ export function useVoice({ active, prompt, onTranscript }: VoiceOptions) {
 
   /** Esc: drops the recording, the prompt or the message. */
   const cancel = () => {
-    if (current.current.kind === "recording" || current.current.kind === "starting") void commands.voiceCancel();
+    if (current.current.kind === "recording" || current.current.kind === "starting")
+      void commands.voiceCancel();
     dispatch({ type: "cancel" });
   };
 

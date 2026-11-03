@@ -238,7 +238,10 @@ macro_rules! collect_fn {
             let mut affected: Option<u64> = None;
             let mut truncated = false;
             {
-                #[allow(deprecated)]
+                #[allow(
+                    deprecated,
+                    reason = "fetch_many is sqlx's one call that returns rows and affected counts together"
+                )]
                 let mut stream = sqlx::query(sql.clone()).fetch_many(&mut *conn);
                 while let Some(item) = stream.try_next().await? {
                     match item {

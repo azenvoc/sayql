@@ -57,18 +57,23 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev libdbus-1-dev libasound2-dev
 
+      # pnpm's version comes from package.json's packageManager, Node's from .node-version.
       - uses: pnpm/action-setup@v6
-        with:
-          version: 10
 
       - uses: actions/setup-node@v7
         with:
-          node-version: lts/*
+          node-version-file: .node-version
           cache: pnpm
 
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.rust_targets }}
+
+      # The Rust in src-tauri/rust-toolchain.toml (the build runs there), with this build's target.
+      - name: Install the pinned Rust
+        working-directory: src-tauri
+        shell: bash
+        run: |
+          rustup toolchain install
+          if [ -n "${{ matrix.rust_targets }}" ]; then rustup target add ${{ matrix.rust_targets }}; fi
 
       - uses: swatinem/rust-cache@v2
         with:

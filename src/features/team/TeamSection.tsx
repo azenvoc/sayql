@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { TEAM_SIGNED_OUT, commands, type TeamAccount, type TeamAiUsage, type TeamStatus } from "../../api";
+import {
+  TEAM_SIGNED_OUT,
+  commands,
+  type TeamAccount,
+  type TeamAiUsage,
+  type TeamStatus,
+} from "../../api";
 import { Alert, Button, Spinner } from "../../components/ui";
 import { errorText } from "../../lib/errors";
 import { TeamSignInDialog } from "./TeamSignInDialog";
@@ -23,7 +29,14 @@ function UsageBar({ label, usage }: { label: string; usage: TeamAiUsage | null }
         {label}: {usageText(usage)}
       </span>
       {share != null && (
-        <span className={styles.bar} role="meter" aria-label={`${label}: AI tokens used this month`} aria-valuenow={Math.round(share * 100)} aria-valuemin={0} aria-valuemax={100}>
+        <span
+          className={styles.bar}
+          role="meter"
+          aria-label={`${label}: AI tokens used this month`}
+          aria-valuenow={Math.round(share * 100)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
           <span className={styles.fill} style={{ width: `${share * 100}%` }} />
         </span>
       )}
@@ -65,7 +78,9 @@ export function TeamSection({ account, onChange }: TeamSectionProps) {
   if (!account) {
     return (
       <div className={styles.body}>
-        <p className={styles.lead}>Using SayQL with a team? Sign in to your company's SayQL server.</p>
+        <p className={styles.lead}>
+          Using SayQL with a team? Sign in to your company's SayQL server.
+        </p>
         <div className={styles.row}>
           <Button variant="primary" onClick={() => setSigningIn(true)}>
             Sign in
@@ -113,8 +128,9 @@ export function TeamSection({ account, onChange }: TeamSectionProps) {
         )}
       </dl>
       <p className={styles.lead}>
-        Your team's connections are in the Database Navigator under Team. Queries on them, and the questions they answer, go to
-        this server, which keeps them in its audit log. Your own connections never go there.
+        Your team's connections are in the Database Navigator under Team. Queries on them, and the
+        questions they answer, go to this server, which keeps them in its audit log. Your own
+        connections never go there.
         {teamAiOn(status?.ai) &&
           " On team connections, AI requests (your question, the schema and, in Investigate if allowed, masked rows) also go to this server, which forwards them to your team's AI provider and keeps only token counts. Your own connections use your own AI provider."}
       </p>

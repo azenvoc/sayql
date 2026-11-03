@@ -47,13 +47,17 @@ export function resolveSelection(sql: string, sel: Range, dialect?: Dialect): Re
   const lead = text.length - text.trimStart().length;
   const trimmed = { start: sel.start + lead, end: sel.start + text.trimEnd().length };
 
-  const touched = statementRanges(sql, dialect).filter((r) => r.start < trimmed.end && trimmed.start < r.end);
+  const touched = statementRanges(sql, dialect).filter(
+    (r) => r.start < trimmed.end && trimmed.start < r.end,
+  );
   if (touched.length === 0) return null;
   const whole = { start: touched[0].start, end: touched[touched.length - 1].end };
 
   // Each touched statement is fully selected (comments and the closing `;` may be left out).
   const coversAll = touched.every((r) => {
-    const outside = sql.slice(r.start, Math.max(r.start, trimmed.start)) + sql.slice(Math.min(r.end, trimmed.end), r.end);
+    const outside =
+      sql.slice(r.start, Math.max(r.start, trimmed.start)) +
+      sql.slice(Math.min(r.end, trimmed.end), r.end);
     return core(outside) === "";
   });
   if (coversAll) return { sql: text.trim(), range: trimmed, expanded: false };
@@ -62,7 +66,11 @@ export function resolveSelection(sql: string, sel: Range, dialect?: Dialect): Re
   const before = sql.slice(0, trimmed.start).trimEnd();
   const after = sql.slice(trimmed.end).trimStart();
   const subquery =
-    touched.length === 1 && /^(select|with)\b/i.test(inner) && balanced(inner) && before.endsWith("(") && after.startsWith(")");
+    touched.length === 1 &&
+    /^(select|with)\b/i.test(inner) &&
+    balanced(inner) &&
+    before.endsWith("(") &&
+    after.startsWith(")");
   if (subquery) return { sql: text.trim(), range: trimmed, expanded: false };
 
   return { sql: sql.slice(whole.start, whole.end).trim(), range: whole, expanded: true };

@@ -29,7 +29,8 @@ export function setStorageNamespace(namespace: string, fresh = false): void {
   prefix = namespace;
   if (!fresh || !namespace) return;
   try {
-    for (const key of Object.keys(localStorage)) if (key.startsWith(namespace)) localStorage.removeItem(key);
+    for (const key of Object.keys(localStorage))
+      if (key.startsWith(namespace)) localStorage.removeItem(key);
   } catch {
     // No storage: nothing to clear.
   }

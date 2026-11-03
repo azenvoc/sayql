@@ -85,7 +85,20 @@ export interface SqlWorkspaceProps {
 }
 
 /** The SQL editor view: the plain-English Ask bar above an editable SQL editor. */
-export function SqlWorkspace({ connectionName, schema, connected = true, active, modelNames, onOpenSettings, skills, generation: g, query: q, focus, origin, agent }: SqlWorkspaceProps) {
+export function SqlWorkspace({
+  connectionName,
+  schema,
+  connected = true,
+  active,
+  modelNames,
+  onOpenSettings,
+  skills,
+  generation: g,
+  query: q,
+  focus,
+  origin,
+  agent,
+}: SqlWorkspaceProps) {
   // Loading the schema (or it failed): wait, unless the tab isn't connected yet, where Run and
   // asking are what connect it, or a question is already being typed.
   const waiting = connected && !schema;
@@ -103,8 +116,20 @@ export function SqlWorkspace({ connectionName, schema, connected = true, active,
               {origin}
             </Badge>
           )}
-          <IconButton icon={Save} label="Save script (⌘S)" size="sm" onClick={q.onSave} disabled={!q.sql.trim()} />
-          <IconButton icon={Eraser} label="Clear" size="sm" onClick={() => q.onSqlChange("")} disabled={!q.sql} />
+          <IconButton
+            icon={Save}
+            label="Save script (⌘S)"
+            size="sm"
+            onClick={q.onSave}
+            disabled={!q.sql.trim()}
+          />
+          <IconButton
+            icon={Eraser}
+            label="Clear"
+            size="sm"
+            onClick={() => q.onSqlChange("")}
+            disabled={!q.sql}
+          />
           <Button
             size="sm"
             variant="ghost"
@@ -116,30 +141,42 @@ export function SqlWorkspace({ connectionName, schema, connected = true, active,
             Improve
           </Button>
           {q.running && (
-            <Button size="sm" variant="ghost" icon={Square} onClick={q.onCancel} title="Stop the running query on the server">
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={Square}
+              onClick={q.onCancel}
+              title="Stop the running query on the server"
+            >
               Cancel
             </Button>
           )}
           {agent?.running ? (
             <>
               {agent.label && <span className={styles.agentLabel}>{agent.label}</span>}
-              <Button size="sm" variant="danger" icon={CircleStop} onClick={agent.onStop} title="Stop the investigation and its running query">
+              <Button
+                size="sm"
+                variant="danger"
+                icon={CircleStop}
+                onClick={agent.onStop}
+                title="Stop the investigation and its running query"
+              >
                 Stop
               </Button>
             </>
           ) : (
-          <Button
-            size="sm"
-            variant="primary"
-            icon={Play}
-            shortcut="⌘↵"
-            onClick={q.onRun}
-            loading={q.running}
-            disabled={waiting || (!q.sql.trim() && !writing)}
-            title={hasSelection ? "Run only the selected statements" : undefined}
-          >
-            {hasSelection ? "Run selection" : writing ? "Run when ready" : "Run"}
-          </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              icon={Play}
+              shortcut="⌘↵"
+              onClick={q.onRun}
+              loading={q.running}
+              disabled={waiting || (!q.sql.trim() && !writing)}
+              title={hasSelection ? "Run only the selected statements" : undefined}
+            >
+              {hasSelection ? "Run selection" : writing ? "Run when ready" : "Run"}
+            </Button>
           )}
         </>
       }

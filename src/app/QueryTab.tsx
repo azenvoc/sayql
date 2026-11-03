@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Plug, Wand2 } from "lucide-react";
-import { QUERY_CANCELLED, commands, type QueryResult, type Schema, type Settings, type Skill, type TeamAiStatus } from "../api";
+import {
+  QUERY_CANCELLED,
+  commands,
+  type QueryResult,
+  type Schema,
+  type Settings,
+  type Skill,
+  type TeamAiStatus,
+} from "../api";
 import { teamAiDestination } from "../features/team";
 import { Badge, Button, SplitPane } from "../components/ui";
 import {
@@ -15,7 +23,13 @@ import {
   useAgentAccess,
   useAgentRun,
 } from "../features/agent";
-import { parseCommand, planRequest, useSqlGeneration, withCommand, type TaskKind } from "../features/ask";
+import {
+  parseCommand,
+  planRequest,
+  useSqlGeneration,
+  withCommand,
+  type TaskKind,
+} from "../features/ask";
 import { cx } from "../lib/cx";
 import { errorText } from "../lib/errors";
 import { resolveSelection, type TextRange } from "../features/editor";
@@ -67,7 +81,20 @@ export interface QueryTabProps {
 
 /** One editor tab: Ask bar and SQL editor above, results below, bound to the tab's database. */
 export function QueryTab(props: QueryTabProps) {
-  const { tab, active, label, schema, connected, settings, modelNames, onChange, onOpenSettings, skills, onCreateSkill, onSave } = props;
+  const {
+    tab,
+    active,
+    label,
+    schema,
+    connected,
+    settings,
+    modelNames,
+    onChange,
+    onOpenSettings,
+    skills,
+    onCreateSkill,
+    onSave,
+  } = props;
   const askRef = useRef<HTMLTextAreaElement>(null);
   // On a team connection with team AI, the team's AI answers: no personal key needed.
   const teamAi = props.teamAi ?? null;
@@ -90,7 +117,14 @@ export function QueryTab(props: QueryTabProps) {
    */
   const aiWroteSql = useRef(!tab.origin);
   const query = useQueryRunner(tab.target, (sql, error) => {
-    if (ranSelection.current || autoFixUsed.current || !aiWroteSql.current || !aiReady || !generation.question.trim()) return;
+    if (
+      ranSelection.current ||
+      autoFixUsed.current ||
+      !aiWroteSql.current ||
+      !aiReady ||
+      !generation.question.trim()
+    )
+      return;
     autoFixUsed.current = true;
     generation.fix(sql, error);
   });
@@ -105,7 +139,11 @@ export function QueryTab(props: QueryTabProps) {
     onChange({ lastRun: sql.trim() ? { question: asked, sql } : null });
     // On a team connection, the team server's audit log records the question the SQL answers.
     const fromAsk = (task !== "manual" || aiWroteSql.current) && !!asked.trim();
-    query.run(sql, schema?.dialect, fromAsk ? { source: "ask", question: asked } : { source: "editor" });
+    query.run(
+      sql,
+      schema?.dialect,
+      fromAsk ? { source: "ask", question: asked } : { source: "editor" },
+    );
   };
 
   const generation = useSqlGeneration({
@@ -155,9 +193,16 @@ export function QueryTab(props: QueryTabProps) {
 
   // Agent mode: one run per tab, kept (queries and answer, no rows) when it ends.
   const [auto, setAuto] = useAgentAuto();
-  const agent = useAgentRun({ target: tab.target, slot: tab.id, initial: tab.agentRun ?? null, auto });
+  const agent = useAgentRun({
+    target: tab.target,
+    slot: tab.id,
+    initial: tab.agentRun ?? null,
+    auto,
+  });
   const access = useAgentAccess(tab.target.connectionId);
-  const [accessDialog, setAccessDialog] = useState<{ afterTurnOn: (() => void) | null } | null>(null);
+  const [accessDialog, setAccessDialog] = useState<{ afterTurnOn: (() => void) | null } | null>(
+    null,
+  );
   const [view, setView] = useState<"agent" | "results">(tab.agentRun ? "agent" : "results");
   /** The agent step whose rows the Results view shows; null shows the last query run here. */
   const [picked, setPicked] = useState<number | null>(null);
@@ -166,7 +211,8 @@ export function QueryTab(props: QueryTabProps) {
   const provider = settings.providers.find((p) => p.id === settings.provider);
 
   useEffect(() => {
-    if (agent.state.runId && !isActive(agent.state)) onChange({ agentRun: forStorage(agent.state) });
+    if (agent.state.runId && !isActive(agent.state))
+      onChange({ agentRun: forStorage(agent.state) });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agent.state.phase]);
   useEffect(() => props.onAgentBusy(agent.active), [agent.active]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -178,7 +224,11 @@ export function QueryTab(props: QueryTabProps) {
       followUpNext.current = false;
       setView("agent");
       setPicked(null);
-      agent.start(question, { focusTables: focusEnabled ? (tab.focusTables ?? []) : [], skill, followUp });
+      agent.start(question, {
+        focusTables: focusEnabled ? (tab.focusTables ?? []) : [],
+        skill,
+        followUp,
+      });
     };
     if (!aiReady) return onOpenSettings();
     if (!access?.enabled) return setAccessDialog({ afterTurnOn: go });
@@ -186,14 +236,22 @@ export function QueryTab(props: QueryTabProps) {
   };
 
   const runningStep = agent.state.steps.find((s) => s.status === "running");
-  const agentLabel =
-    agent.state.pending ? "Waiting for you" : runningStep ? `Step ${runningStep.id}: ${runningStep.text}` : agent.active ? "Thinking…" : null;
+  const agentLabel = agent.state.pending
+    ? "Waiting for you"
+    : runningStep
+      ? `Step ${runningStep.id}: ${runningStep.text}`
+      : agent.active
+        ? "Thinking…"
+        : null;
   const step = picked === null ? null : (agent.state.steps.find((s) => s.id === picked) ?? null);
   // A run kept with the tab keeps its queries, not its rows: opening such a step reads them again
   // (read-only, as the agent ran it).
-  const [reread, setReread] = useState<Record<string, { result: QueryResult | null; error: string | null }>>({});
+  const [reread, setReread] = useState<
+    Record<string, { result: QueryResult | null; error: string | null }>
+  >({});
   const rereadKey = step ? `${agent.state.runId}:${step.id}` : "";
-  const rowsLost = !!step?.sql && step.status === "done" && step.rows.length === 0 && (step.rowCount ?? 0) > 0;
+  const rowsLost =
+    !!step?.sql && step.status === "done" && step.rows.length === 0 && (step.rowCount ?? 0) > 0;
   useEffect(() => {
     if (!rowsLost || !step?.sql || reread[rereadKey]) return;
     setReread((r) => ({ ...r, [rereadKey]: { result: null, error: null } }));
@@ -211,7 +269,13 @@ export function QueryTab(props: QueryTabProps) {
           result: again
             ? again.result
             : step.status === "done"
-              ? { columns: step.columns, rows: step.rows, rowsAffected: null, truncated: step.truncated, elapsedMs: step.elapsedMs ?? 0 }
+              ? {
+                  columns: step.columns,
+                  rows: step.rows,
+                  rowsAffected: null,
+                  truncated: step.truncated,
+                  elapsedMs: step.elapsedMs ?? 0,
+                }
               : null,
           error: again ? again.error : step.error,
           cancelled: false,
@@ -228,7 +292,9 @@ export function QueryTab(props: QueryTabProps) {
     const r = selection && resolveSelection(tab.sql, selection, schema?.dialect);
     if (!r) return run();
     ranSelection.current = true;
-    setWidened(r.expanded ? { range: r.range, count: statementRanges(r.sql, schema?.dialect).length } : null);
+    setWidened(
+      r.expanded ? { range: r.range, count: statementRanges(r.sql, schema?.dialect).length } : null,
+    );
     query.run(r.sql, schema?.dialect, { source: "editor" });
   };
 
@@ -333,13 +399,21 @@ export function QueryTab(props: QueryTabProps) {
               onRetry: generation.retry,
               onImprove: () => generation.improve(tab.sql),
               canImprove: canUseAi && !busy && !!tab.sql.trim(),
-              followUp: lastRun ? { question: lastRun.question, onStartFresh: () => onChange({ lastRun: null }) } : undefined,
+              followUp: lastRun
+                ? { question: lastRun.question, onStartFresh: () => onChange({ lastRun: null }) }
+                : undefined,
               explanation: generation.explanation,
               onDismissExplanation: generation.dismissExplanation,
               agentHint: (
                 <>
-                  {access?.enabled ? describeAccess(access) : "Investigate is off for this connection"}
-                  <Button size="sm" variant="ghost" onClick={() => setAccessDialog({ afterTurnOn: null })}>
+                  {access?.enabled
+                    ? describeAccess(access)
+                    : "Investigate is off for this connection"}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setAccessDialog({ afterTurnOn: null })}
+                  >
                     {access?.enabled ? "Change" : "Turn on"}
                   </Button>
                 </>
@@ -348,7 +422,9 @@ export function QueryTab(props: QueryTabProps) {
                 ? () => {
                     const { command, rest } = parseCommand(generation.question, skills);
                     const skill = command?.kind === "skill" ? command.skill.slug : null;
-                    generation.setQuestion(withCommand("investigate", skill ? withCommand(skill, rest) : rest));
+                    generation.setQuestion(
+                      withCommand("investigate", skill ? withCommand(skill, rest) : rest),
+                    );
                     investigate(rest, skill);
                   }
                 : undefined,
@@ -389,31 +465,35 @@ export function QueryTab(props: QueryTabProps) {
         }
         second={
           agent.state.phase === "idle" ? (
-          <ResultsPanel
-            outcomes={query.outcomes}
-            total={query.total}
-            running={query.running}
-            note={widened ? `Ran the full statement${widened.count > 1 ? "s" : ""}` : undefined}
-            errorHint={
-              autoFixFailed
-                ? `${modelNames.expert} couldn't fix it automatically. Try rephrasing your question, or edit the SQL above.`
-                : undefined
-            }
-            errorAction={
-              // The AI rewrites one whole query, so a selection or a script is left to the person.
-              canUseAi && !ranSelection.current && query.total === 1 && query.error !== QUERY_CANCELLED && !query.refused && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  icon={Wand2}
-                  disabled={busy}
-                  onClick={() => query.error && generation.fix(tab.sql, query.error)}
-                >
-                  Fix with AI
-                </Button>
-              )
-            }
-          />
+            <ResultsPanel
+              outcomes={query.outcomes}
+              total={query.total}
+              running={query.running}
+              note={widened ? `Ran the full statement${widened.count > 1 ? "s" : ""}` : undefined}
+              errorHint={
+                autoFixFailed
+                  ? `${modelNames.expert} couldn't fix it automatically. Try rephrasing your question, or edit the SQL above.`
+                  : undefined
+              }
+              errorAction={
+                // The AI rewrites one whole query, so a selection or a script is left to the person.
+                canUseAi &&
+                !ranSelection.current &&
+                query.total === 1 &&
+                query.error !== QUERY_CANCELLED &&
+                !query.refused && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon={Wand2}
+                    disabled={busy}
+                    onClick={() => query.error && generation.fix(tab.sql, query.error)}
+                  >
+                    Fix with AI
+                  </Button>
+                )
+              }
+            />
           ) : (
             <div className={styles.results}>
               <div className={styles.views} role="tablist" aria-label="Investigation or results">
@@ -426,7 +506,11 @@ export function QueryTab(props: QueryTabProps) {
                     className={cx(styles.view, view === v && styles.viewActive)}
                     onClick={() => setView(v)}
                   >
-                    {v === "agent" ? "Investigation" : step ? `Results · step ${step.id}` : "Results"}
+                    {v === "agent"
+                      ? "Investigation"
+                      : step
+                        ? `Results · step ${step.id}`
+                        : "Results"}
                   </button>
                 ))}
               </div>
@@ -445,7 +529,9 @@ export function QueryTab(props: QueryTabProps) {
                   onAnswer={agent.answer}
                   onStop={agent.stop}
                   onOpenQuery={(sql) => props.onOpenQuery(sql, agent.state.question)}
-                  onSaveScript={(sqls) => props.onSaveAsScript(joinStatements(sqls), agent.state.question)}
+                  onSaveScript={(sqls) =>
+                    props.onSaveAsScript(joinStatements(sqls), agent.state.question)
+                  }
                   onRerun={(sqls) => {
                     setPicked(null);
                     setView("results");
@@ -458,10 +544,19 @@ export function QueryTab(props: QueryTabProps) {
                   }}
                   onSteer={(id, sql) => {
                     followUpNext.current = true;
-                    investigate(`I changed the query of step ${id}. Run this instead and continue from there:\n${sql}`, null);
+                    investigate(
+                      `I changed the query of step ${id}. Run this instead and continue from there:\n${sql}`,
+                      null,
+                    );
                   }}
                   onSaveNote={async (text) => {
-                    await commands.saveNote({ id: "", connectionId: tab.target.connectionId, database: tab.target.database, text, updatedAt: 0 });
+                    await commands.saveNote({
+                      id: "",
+                      connectionId: tab.target.connectionId,
+                      database: tab.target.database,
+                      text,
+                      updatedAt: 0,
+                    });
                     props.onNotesChanged();
                   }}
                 />
@@ -469,8 +564,18 @@ export function QueryTab(props: QueryTabProps) {
                 <ResultsPanel
                   outcomes={stepOutcome ?? query.outcomes}
                   total={stepOutcome ? 1 : query.total}
-                  running={stepOutcome ? step?.status === "running" || (!!again && !again.result && !again.error) : query.running}
-                  note={step ? (again ? `Investigation step ${step.id}, run again: rows aren't kept after SayQL restarts` : `Investigation step ${step.id}`) : undefined}
+                  running={
+                    stepOutcome
+                      ? step?.status === "running" || (!!again && !again.result && !again.error)
+                      : query.running
+                  }
+                  note={
+                    step
+                      ? again
+                        ? `Investigation step ${step.id}, run again: rows aren't kept after SayQL restarts`
+                        : `Investigation step ${step.id}`
+                      : undefined
+                  }
                 />
               )}
             </div>
@@ -481,7 +586,11 @@ export function QueryTab(props: QueryTabProps) {
         <AgentAccessDialog
           connectionName={label}
           target={tab.target}
-          provider={teamAi ? teamAiDestination(teamAi) : { label: provider?.label ?? settings.provider, local: provider?.local ?? false }}
+          provider={
+            teamAi
+              ? teamAiDestination(teamAi)
+              : { label: provider?.label ?? settings.provider, local: provider?.local ?? false }
+          }
           access={access}
           onSave={async (a) => {
             const saved = await saveAgentAccess(tab.target.connectionId, a);
@@ -503,4 +612,5 @@ export function QueryTab(props: QueryTabProps) {
 }
 
 /** Statements as one script, each ending with `;`. */
-const joinStatements = (sqls: string[]) => sqls.map((s) => s.trim().replace(/;+$/, "") + ";").join("\n\n");
+const joinStatements = (sqls: string[]) =>
+  sqls.map((s) => s.trim().replace(/;+$/, "") + ";").join("\n\n");

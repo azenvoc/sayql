@@ -14,6 +14,28 @@ default-run = "sayql"
 name = "sayql_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+# The code rules every change follows (AGENTS.md). CI fails on any warning these produce
+# beyond the per-file counts in lint-baseline.json, which may only go down
+# (scripts/lint-ratchet.mjs). An exception is `#[expect(lint, reason = "...")]` on the item.
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+# Release builds abort on a panic, so code must not panic on data from outside.
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+todo = "warn"
+unimplemented = "warn"
+indexing_slicing = "warn"
+# Byte-slicing text panics inside a multi-byte character.
+string_slice = "warn"
+# stdout is the MCP protocol; errors go back to the caller instead of stderr.
+print_stdout = "warn"
+print_stderr = "warn"
+dbg_macro = "warn"
+allow_attributes_without_reason = "warn"
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 

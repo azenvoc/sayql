@@ -20,7 +20,10 @@ const EVENT: &str = "agent://event";
 /// Progress arrives as `agent://event`s tagged with `run_id`. `follow_up` continues the
 /// tab's last run (its queries and answer, not its rows) instead of starting fresh.
 #[tauri::command]
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "a Tauri command takes each webview argument by name"
+)]
 pub async fn start_agent(
     app: AppHandle,
     state: State<'_, AppState>,

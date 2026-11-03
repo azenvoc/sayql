@@ -16,8 +16,16 @@ interface Editing {
 const blank: Skill = { slug: "", description: "", instruction: "" };
 
 /** The Skills part of Settings: list, create, edit and delete. Saves each skill right away. */
-export function SkillsSection({ skills, startCreating }: { skills: SkillsApi; startCreating?: boolean }) {
-  const [editing, setEditing] = useState<Editing | null>(startCreating ? { skill: blank, original: null } : null);
+export function SkillsSection({
+  skills,
+  startCreating,
+}: {
+  skills: SkillsApi;
+  startCreating?: boolean;
+}) {
+  const [editing, setEditing] = useState<Editing | null>(
+    startCreating ? { skill: blank, original: null } : null,
+  );
   const [error, setError] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -29,7 +37,8 @@ export function SkillsSection({ skills, startCreating }: { skills: SkillsApi; st
     setError(null);
     setEditing({ skill, original });
   };
-  const update = (patch: Partial<Skill>) => editing && setEditing({ ...editing, skill: { ...editing.skill, ...patch } });
+  const update = (patch: Partial<Skill>) =>
+    editing && setEditing({ ...editing, skill: { ...editing.skill, ...patch } });
 
   const save = async () => {
     if (!editing) return;
@@ -62,8 +71,18 @@ export function SkillsSection({ skills, startCreating }: { skills: SkillsApi; st
               <ScrollText size={14} className={styles.icon} />
               <span className={styles.slug}>/{s.slug}</span>
               <span className={styles.description}>{s.description || s.instruction}</span>
-              <IconButton icon={Pencil} label={`Edit /${s.slug}`} size="sm" onClick={() => edit(s, s.slug)} />
-              <IconButton icon={Trash2} label={`Delete /${s.slug}`} size="sm" onClick={() => remove(s.slug)} />
+              <IconButton
+                icon={Pencil}
+                label={`Edit /${s.slug}`}
+                size="sm"
+                onClick={() => edit(s, s.slug)}
+              />
+              <IconButton
+                icon={Trash2}
+                label={`Delete /${s.slug}`}
+                size="sm"
+                onClick={() => remove(s.slug)}
+              />
             </li>
           ))}
         </ul>
@@ -72,7 +91,13 @@ export function SkillsSection({ skills, startCreating }: { skills: SkillsApi; st
           <div className={styles.examples}>
             <span className={styles.examplesLabel}>No skills yet. Start from an example:</span>
             {EXAMPLE_SKILLS.map((ex) => (
-              <button key={ex.slug} type="button" className={styles.example} title={ex.instruction} onClick={() => edit(ex, null)}>
+              <button
+                key={ex.slug}
+                type="button"
+                className={styles.example}
+                title={ex.instruction}
+                onClick={() => edit(ex, null)}
+              >
                 <span className={styles.slug}>/{ex.slug}</span> {ex.description}
               </button>
             ))}
@@ -93,7 +118,9 @@ export function SkillsSection({ skills, startCreating }: { skills: SkillsApi; st
                   maxLength={SKILL_LIMITS.slug}
                   value={editing.skill.slug}
                   placeholder="pii-safe"
-                  onChange={(e) => update({ slug: e.target.value.toLowerCase().replace(/\s/g, "-") })}
+                  onChange={(e) =>
+                    update({ slug: e.target.value.toLowerCase().replace(/\s/g, "-") })
+                  }
                 />
               </div>
             )}
@@ -109,7 +136,10 @@ export function SkillsSection({ skills, startCreating }: { skills: SkillsApi; st
               />
             )}
           </Field>
-          <Field label="Instruction" hint="Added to the AI request when you use this skill. Plain English, not SQL.">
+          <Field
+            label="Instruction"
+            hint="Added to the AI request when you use this skill. Plain English, not SQL."
+          >
             {(id) => (
               <textarea
                 id={id}

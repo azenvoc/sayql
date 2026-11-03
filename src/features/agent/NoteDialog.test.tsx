@@ -13,8 +13,14 @@ const doubtful: DbNote = {
   source: "Claude Code",
   evidence: "auth/session.ts sets it",
   anchors: [{ table: "users" }, { table: "users", column: "last_login_at" }],
-  suspect: { reason: "the column users.last_login_at no longer exists", since: Date.UTC(2026, 9, 29) },
-  check: { sql: "SELECT count(*) > 0 FROM users WHERE last_login_at IS NOT NULL", last: { ok: false, at: Date.UTC(2026, 9, 29) } },
+  suspect: {
+    reason: "the column users.last_login_at no longer exists",
+    since: Date.UTC(2026, 9, 29),
+  },
+  check: {
+    sql: "SELECT count(*) > 0 FROM users WHERE last_login_at IS NOT NULL",
+    last: { ok: false, at: Date.UTC(2026, 9, 29) },
+  },
   history: [{ text: "users.last_login is set on sign-in", at: Date.UTC(2026, 0, 2), source: "" }],
 };
 
@@ -58,14 +64,32 @@ describe("NoteDialog", () => {
 
   it("saves the text with its check, and runs the check on request", async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
-    const passed = { ...doubtful, suspect: null, check: { ...doubtful.check!, last: { ok: true, at: Date.now() } } };
+    const passed = {
+      ...doubtful,
+      suspect: null,
+      check: { ...doubtful.check!, last: { ok: true, at: Date.now() } },
+    };
     const onCheck = vi.fn().mockResolvedValue(passed);
-    render(<NoteDialog {...base} note={{ ...doubtful, suspect: null }} onSave={onSave} onCheck={onCheck} />);
+    render(
+      <NoteDialog
+        {...base}
+        note={{ ...doubtful, suspect: null }}
+        onSave={onSave}
+        onCheck={onCheck}
+      />,
+    );
     fireEvent.click(screen.getByText("Check now"));
     await waitFor(() => expect(screen.getByText(/Passed/)).toBeTruthy());
     expect((screen.getByText("Save") as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.change(screen.getByLabelText("Note"), { target: { value: "users.last_seen_at is set on sign-in" } });
+    fireEvent.change(screen.getByLabelText("Note"), {
+      target: { value: "users.last_seen_at is set on sign-in" },
+    });
     fireEvent.click(screen.getByText("Save"));
-    await waitFor(() => expect(onSave).toHaveBeenCalledWith("users.last_seen_at is set on sign-in", doubtful.check!.sql));
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        "users.last_seen_at is set on sign-in",
+        doubtful.check!.sql,
+      ),
+    );
   });
 });

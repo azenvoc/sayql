@@ -20,7 +20,15 @@ export interface SqlEditorProps {
   active: boolean;
 }
 
-export function SqlEditor({ value, onChange, onRun, onSelectionChange, select, schema, active }: SqlEditorProps) {
+export function SqlEditor({
+  value,
+  onChange,
+  onRun,
+  onSelectionChange,
+  select,
+  schema,
+  active,
+}: SqlEditorProps) {
   const { resolved } = useTheme();
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const runRef = useLatest(onRun);

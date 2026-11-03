@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { commands, type McpApp, type McpSetup } from "../../api";
 import { storage } from "../../lib/storage";
-import { agentById, agentForClient, preselectAgent, type CodingAgent, type Os, type SetupContext } from "./agents";
+import {
+  agentById,
+  agentForClient,
+  preselectAgent,
+  type CodingAgent,
+  type Os,
+  type SetupContext,
+} from "./agents";
 
 /** Where the person's pick is kept. */
 export const CODING_AGENT_KEY = "sayql.codingAgent";
@@ -44,7 +51,9 @@ export interface CodingAgentState {
 
 /** The person's coding agent: picked before, else guessed from what's installed and connected. */
 export function useCodingAgent(): CodingAgentState {
-  const [saved, setSaved] = useState<string | null>(() => storage.get<string | null>(CODING_AGENT_KEY, null));
+  const [saved, setSaved] = useState<string | null>(() =>
+    storage.get<string | null>(CODING_AGENT_KEY, null),
+  );
   const [installed, setInstalled] = useState<string[]>([]);
   const [apps, setApps] = useState<McpApp[] | null>(null);
   const [setup, setSetup] = useState<McpSetup | null | undefined>(undefined);
@@ -80,6 +89,8 @@ export function useCodingAgent(): CodingAgentState {
 
   const agent = agentById(preselectAgent({ saved, installed, apps: apps ?? [] }))!;
   const context = setup?.path ? { path: setup.path, os: setup.os ?? guessOs() } : null;
-  const connectedAs = (apps ?? []).find((a) => a.lastUsed != null && agentForClient(a.name)?.id === agent.id);
+  const connectedAs = (apps ?? []).find(
+    (a) => a.lastUsed != null && agentForClient(a.name)?.id === agent.id,
+  );
   return { agent, choose, setup, context, apps, connectedAs };
 }

@@ -10,7 +10,10 @@ use tauri::State;
 /// On a team connection the query goes to the team server, tagged with `source` (`ask` or
 /// `editor`) and the `question` it answers, and only read-only statements are sent.
 #[tauri::command]
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "a Tauri command takes each webview argument by name"
+)]
 pub async fn run_query(
     state: State<'_, AppState>,
     id: String,
@@ -68,7 +71,10 @@ pub async fn run_query(
     out
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "run_query's arguments, passed on as they are"
+)]
 async fn run(
     state: &AppState,
     id: String,

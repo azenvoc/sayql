@@ -13,7 +13,13 @@ export interface CloseTabsDialogProps {
 }
 
 /** Shown when closing several tabs at once and some have SQL that isn't saved. */
-export function CloseTabsDialog({ count, unsaved, onCancel, onDiscard, onKeepUnsaved }: CloseTabsDialogProps) {
+export function CloseTabsDialog({
+  count,
+  unsaved,
+  onCancel,
+  onDiscard,
+  onKeepUnsaved,
+}: CloseTabsDialogProps) {
   const some = unsaved.length === 1 ? "1 tab has" : `${unsaved.length} tabs have`;
   return (
     <Dialog
@@ -35,7 +41,8 @@ export function CloseTabsDialog({ count, unsaved, onCancel, onDiscard, onKeepUns
       }
     >
       <p>
-        {some} SQL that isn’t saved: {unsaved.map((n) => `“${n}”`).join(", ")}. Closed without saving, it’s gone.
+        {some} SQL that isn’t saved: {unsaved.map((n) => `“${n}”`).join(", ")}. Closed without
+        saving, it’s gone.
       </p>
     </Dialog>
   );

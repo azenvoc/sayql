@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { commands, type AgentAccess } from "../../api";
 import { agentLevelShort } from "./resultLevels";
 
-const OFF: AgentAccess = { enabled: false, results: "off", apps: "counts", askBeforeSend: true, neverSend: [] };
+const OFF: AgentAccess = {
+  enabled: false,
+  results: "off",
+  apps: "counts",
+  askBeforeSend: true,
+  neverSend: [],
+};
 
 // Shared by every tab and the navigator, so a change in one shows in all.
 const cache = new Map<string, AgentAccess>();
@@ -10,7 +16,10 @@ const listeners = new Set<() => void>();
 const notify = () => listeners.forEach((l) => l());
 
 /** Saves a connection's agent access and updates everyone showing it. */
-export async function saveAgentAccess(connectionId: string, access: AgentAccess): Promise<AgentAccess> {
+export async function saveAgentAccess(
+  connectionId: string,
+  access: AgentAccess,
+): Promise<AgentAccess> {
   const saved = await commands.saveAgentAccess(connectionId, access);
   cache.set(connectionId, saved);
   notify();

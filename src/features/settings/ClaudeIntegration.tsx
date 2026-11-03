@@ -26,33 +26,52 @@ let lastTab: AiAppsTab = "access";
  * How to add SayQL to the person's coding agent, first on the Access tab: open and set apart
  * while no app has connected (`first`), one line that opens once one has.
  */
-function ConnectApp({ setup, open, first, onToggle }: { setup: McpSetup | null; open: boolean; first: boolean; onToggle: () => void }) {
+function ConnectApp({
+  setup,
+  open,
+  first,
+  onToggle,
+}: {
+  setup: McpSetup | null;
+  open: boolean;
+  first: boolean;
+  onToggle: () => void;
+}) {
   const bodyId = useId();
   const { agent, choose, context } = useCodingAgent();
   return (
     <section className={cx(styles.group, first && styles.connectFirst)}>
-      <button type="button" className={styles.disclosure} aria-expanded={open} aria-controls={bodyId} onClick={onToggle}>
+      <button
+        type="button"
+        className={styles.disclosure}
+        aria-expanded={open}
+        aria-controls={bodyId}
+        onClick={onToggle}
+      >
         <ChevronRight size={14} className={cx(styles.chevron, open && styles.chevronOpen)} />
         <span className={styles.heading}>Connect an app</span>
       </button>
       {!open && !first && (
-        <p className={styles.detail}>Add SayQL to another AI app: Claude Code, Cursor, VS Code, Codex and more.</p>
+        <p className={styles.detail}>
+          Add SayQL to another AI app: Claude Code, Cursor, VS Code, Codex and more.
+        </p>
       )}
       {open && (
         <div id={bodyId} className={styles.groupBody}>
           <p className={styles.intro}>
-            Add SayQL to an AI app once. It can also fill in a new connection, or open SQL or a saved script here, for you to
-            finish. Passwords and writes never go through MCP.
+            Add SayQL to an AI app once. It can also fill in a new connection, or open SQL or a
+            saved script here, for you to finish. Passwords and writes never go through MCP.
           </p>
           {setup && !setup.exists && (
             <Alert tone="warning">
-              The MCP server isn&apos;t next to SayQL. Building from source? Run `cargo build --bin sayql-mcp` in src-tauri.
+              The MCP server isn&apos;t next to SayQL. Building from source? Run `cargo build --bin
+              sayql-mcp` in src-tauri.
             </Alert>
           )}
           {setup?.exists && setup.appimage && (
             <Alert tone="warning">
-              The AppImage opens from a new folder each time, so this path stops working after SayQL restarts. Install the
-              .deb or .rpm to use MCP.
+              The AppImage opens from a new folder each time, so this path stops working after SayQL
+              restarts. Install the .deb or .rpm to use MCP.
             </Alert>
           )}
           <AgentPicker agent={agent} onChoose={choose} />
@@ -112,7 +131,14 @@ function AccessTab({
   const first = !!apps && apps.apps.length === 0;
   return (
     <>
-      {connectOpen !== null && <ConnectApp setup={setup} open={connectOpen} first={first} onToggle={() => setConnectOpen(!connectOpen)} />}
+      {connectOpen !== null && (
+        <ConnectApp
+          setup={setup}
+          open={connectOpen}
+          first={first}
+          onToggle={() => setConnectOpen(!connectOpen)}
+        />
+      )}
       <AppsList
         list={apps}
         onBlock={(app, blocked) => update(commands.setMcpAppBlocked(app.name, blocked))}
@@ -136,7 +162,12 @@ export interface ClaudeIntegrationProps {
 }
 
 /** Settings → AI apps: what AI apps over MCP may see and did, and the notes they suggested, in three tabs. */
-export function ClaudeIntegration({ connections, provider, suggestions, tab: initial }: ClaudeIntegrationProps) {
+export function ClaudeIntegration({
+  connections,
+  provider,
+  suggestions,
+  tab: initial,
+}: ClaudeIntegrationProps) {
   const [tab, setTabState] = useState<AiAppsTab>(initial ?? lastTab);
   const setTab = (t: AiAppsTab) => {
     lastTab = t;
@@ -150,16 +181,24 @@ export function ClaudeIntegration({ connections, provider, suggestions, tab: ini
   }, [initial]);
 
   const base = useId();
-  const tabRefs = useRef<Record<AiAppsTab, HTMLButtonElement | null>>({ access: null, activity: null, suggestions: null });
+  const tabRefs = useRef<Record<AiAppsTab, HTMLButtonElement | null>>({
+    access: null,
+    activity: null,
+    suggestions: null,
+  });
   // Arrow keys, Home and End move between tabs, as in any tab list.
   const onKeyDown = (e: KeyboardEvent) => {
     const i = TABS.findIndex((t) => t.id === tab);
     const next =
-      e.key === "ArrowRight" ? (i + 1) % TABS.length
-      : e.key === "ArrowLeft" ? (i - 1 + TABS.length) % TABS.length
-      : e.key === "Home" ? 0
-      : e.key === "End" ? TABS.length - 1
-      : -1;
+      e.key === "ArrowRight"
+        ? (i + 1) % TABS.length
+        : e.key === "ArrowLeft"
+          ? (i - 1 + TABS.length) % TABS.length
+          : e.key === "Home"
+            ? 0
+            : e.key === "End"
+              ? TABS.length - 1
+              : -1;
     if (next < 0) return;
     e.preventDefault();
     setTab(TABS[next].id);
@@ -170,8 +209,9 @@ export function ClaudeIntegration({ connections, provider, suggestions, tab: ini
   return (
     <div className={styles.section}>
       <p className={styles.intro}>
-        Let Claude, Cursor or any other MCP app list your connections, read schemas and run <strong>read-only</strong>{" "}
-        queries. You choose, per connection, what it gets back: by default counts and summaries, not your rows.
+        Let Claude, Cursor or any other MCP app list your connections, read schemas and run{" "}
+        <strong>read-only</strong> queries. You choose, per connection, what it gets back: by
+        default counts and summaries, not your rows.
       </p>
       <div className={styles.tabs} role="tablist" aria-label="AI apps" onKeyDown={onKeyDown}>
         {TABS.map((t) => (
@@ -198,10 +238,27 @@ export function ClaudeIntegration({ connections, provider, suggestions, tab: ini
           </button>
         ))}
       </div>
-      <div id={`${base}-${tab}-panel`} role="tabpanel" aria-labelledby={`${base}-${tab}-tab`} className={styles.panel}>
-        {tab === "access" && <AccessTab connections={connections} provider={provider} onReview={() => setTab("suggestions")} />}
+      <div
+        id={`${base}-${tab}-panel`}
+        role="tabpanel"
+        aria-labelledby={`${base}-${tab}-tab`}
+        className={styles.panel}
+      >
+        {tab === "access" && (
+          <AccessTab
+            connections={connections}
+            provider={provider}
+            onReview={() => setTab("suggestions")}
+          />
+        )}
         {tab === "activity" && <AgentActivity />}
-        {tab === "suggestions" && <SuggestedNotes connections={connections} {...suggestions} onSetUp={() => setTab("access")} />}
+        {tab === "suggestions" && (
+          <SuggestedNotes
+            connections={connections}
+            {...suggestions}
+            onSetUp={() => setTab("access")}
+          />
+        )}
       </div>
     </div>
   );

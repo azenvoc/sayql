@@ -455,7 +455,7 @@ fn is_sha(s: &str) -> bool {
 
 /// The files changed between two commits of the copy in `dir` (`git diff --name-only`).
 /// Both commits must be in the copy, which keeps the last 50.
-#[allow(dead_code)] // Used by the code map (part C of the 0.5.0 plan).
+#[allow(dead_code, reason = "used by the code map (part C of the 0.5.0 plan)")]
 pub async fn changed_files(dir: &Path, old: &str, new: &str) -> AppResult<Vec<String>> {
     if !is_sha(old) || !is_sha(new) {
         return Err("That isn't a commit.".into());

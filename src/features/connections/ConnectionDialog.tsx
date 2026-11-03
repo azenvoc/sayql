@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { PlugZap, Trash2 } from "lucide-react";
 import { commands, type ConnectionConfig, type DatabaseKind } from "../../api";
-import { Alert, Button, Checkbox, Dialog, Field, FieldRow, SegmentedControl, TextInput } from "../../components/ui";
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Dialog,
+  Field,
+  FieldRow,
+  SegmentedControl,
+  TextInput,
+} from "../../components/ui";
 import { errorText } from "../../lib/errors";
 import { parseConnectionString } from "./connectionString";
 import { DATABASE_KINDS, KIND_OPTIONS } from "./kinds";
@@ -36,7 +45,13 @@ export interface ConnectionDialogProps {
   onDeleted: (id: string) => void;
 }
 
-export function ConnectionDialog({ initial, note, onClose, onSaved, onDeleted }: ConnectionDialogProps) {
+export function ConnectionDialog({
+  initial,
+  note,
+  onClose,
+  onSaved,
+  onDeleted,
+}: ConnectionDialogProps) {
   const isNew = !initial.id;
   const [c, setC] = useState(initial);
   // null = leave the password saved in the keychain unchanged.
@@ -53,7 +68,10 @@ export function ConnectionDialog({ initial, note, onClose, onSaved, onDeleted }:
   const fillFrom = (text: string) => {
     const parsed = parseConnectionString(text);
     if (!parsed) {
-      setPasteStatus({ ok: false, text: "That doesn't look like a connection string SayQL can read." });
+      setPasteStatus({
+        ok: false,
+        text: "That doesn't look like a connection string SayQL can read.",
+      });
       return;
     }
     set(parsed.fields);
@@ -62,7 +80,10 @@ export function ConnectionDialog({ initial, note, onClose, onSaved, onDeleted }:
     setStatus(null);
     setPasteStatus({
       ok: true,
-      text: parsed.password !== null ? "Filled in, including the password. Check the details, then Test or Save." : "Filled in. Enter the password, then Test or Save.",
+      text:
+        parsed.password !== null
+          ? "Filled in, including the password. Check the details, then Test or Save."
+          : "Filled in. Enter the password, then Test or Save.",
     });
   };
 
@@ -80,7 +101,9 @@ export function ConnectionDialog({ initial, note, onClose, onSaved, onDeleted }:
 
   const save = async () => {
     try {
-      onSaved(await commands.saveConnection({ ...c, name: c.name.trim() || defaultName(c) }, password));
+      onSaved(
+        await commands.saveConnection({ ...c, name: c.name.trim() || defaultName(c) }, password),
+      );
     } catch (e) {
       setStatus({ ok: false, text: errorText(e) });
     }
@@ -103,7 +126,12 @@ export function ConnectionDialog({ initial, note, onClose, onSaved, onDeleted }:
       onClose={onClose}
       secondaryActions={
         !isNew && (
-          <Button variant="dangerGhost" icon={Trash2} onClick={remove} title="Removes the saved connection; the database is not touched">
+          <Button
+            variant="dangerGhost"
+            icon={Trash2}
+            onClick={remove}
+            title="Removes the saved connection; the database is not touched"
+          >
             {confirmDelete ? "Click again to delete" : "Delete"}
           </Button>
         )
@@ -121,7 +149,11 @@ export function ConnectionDialog({ initial, note, onClose, onSaved, onDeleted }:
       }
     >
       {note && <Alert tone="info">{note}. Check the details, then enter the password.</Alert>}
-      <Field label="Connection string" optional hint="Paste one to fill in the fields below. The password is saved to your keychain only when you click Save.">
+      <Field
+        label="Connection string"
+        optional
+        hint="Paste one to fill in the fields below. The password is saved to your keychain only when you click Save."
+      >
         {(id) => (
           <TextInput
             id={id}
@@ -150,25 +182,46 @@ export function ConnectionDialog({ initial, note, onClose, onSaved, onDeleted }:
           />
         )}
       </Field>
-      {pasteStatus && <Alert tone={pasteStatus.ok ? "success" : "warning"}>{pasteStatus.text}</Alert>}
+      {pasteStatus && (
+        <Alert tone={pasteStatus.ok ? "success" : "warning"}>{pasteStatus.text}</Alert>
+      )}
       <Field label="Database type">
         {() => (
           <SegmentedControl<DatabaseKind>
             ariaLabel="Database type"
             value={c.kind}
             options={KIND_OPTIONS}
-            onChange={(kind) => set({ kind, port: DATABASE_KINDS[kind].defaultPort, ssl: DATABASE_KINDS[kind].defaultSsl })}
+            onChange={(kind) =>
+              set({
+                kind,
+                port: DATABASE_KINDS[kind].defaultPort,
+                ssl: DATABASE_KINDS[kind].defaultSsl,
+              })
+            }
           />
         )}
       </Field>
       <Field label="Name" optional>
-        {(id) => <TextInput id={id} value={c.name} placeholder={defaultName(c)} onChange={(e) => set({ name: e.target.value })} />}
+        {(id) => (
+          <TextInput
+            id={id}
+            value={c.name}
+            placeholder={defaultName(c)}
+            onChange={(e) => set({ name: e.target.value })}
+          />
+        )}
       </Field>
 
       {c.kind === "sqlite" ? (
         <Field label="Database file">
           {(id) => (
-            <TextInput id={id} mono value={c.file} placeholder="/path/to/database.sqlite" onChange={(e) => set({ file: e.target.value })} />
+            <TextInput
+              id={id}
+              mono
+              value={c.file}
+              placeholder="/path/to/database.sqlite"
+              onChange={(e) => set({ file: e.target.value })}
+            />
           )}
         </Field>
       ) : (
@@ -191,17 +244,32 @@ export function ConnectionDialog({ initial, note, onClose, onSaved, onDeleted }:
                   style={{ width: 90 }}
                   inputMode="numeric"
                   value={c.port ?? ""}
-                  onChange={(e) => set({ port: e.target.value ? Number(e.target.value.replace(/\D/g, "")) : null })}
+                  onChange={(e) =>
+                    set({ port: e.target.value ? Number(e.target.value.replace(/\D/g, "")) : null })
+                  }
                 />
               )}
             </Field>
           </FieldRow>
           <Field label="Database">
-            {(id) => <TextInput id={id} value={c.database} onChange={(e) => set({ database: e.target.value })} />}
+            {(id) => (
+              <TextInput
+                id={id}
+                value={c.database}
+                onChange={(e) => set({ database: e.target.value })}
+              />
+            )}
           </Field>
           <FieldRow>
             <Field label="User" grow>
-              {(id) => <TextInput id={id} autoComplete="off" value={c.user} onChange={(e) => set({ user: e.target.value })} />}
+              {(id) => (
+                <TextInput
+                  id={id}
+                  autoComplete="off"
+                  value={c.user}
+                  onChange={(e) => set({ user: e.target.value })}
+                />
+              )}
             </Field>
             <Field label="Password" grow>
               {(id) => (
@@ -226,7 +294,11 @@ export function ConnectionDialog({ initial, note, onClose, onSaved, onDeleted }:
               hint="Internal SQL Servers often use a self-signed certificate. Trust it only for servers you know, never for public ones."
             >
               {() => (
-                <Checkbox label="Trust server certificate" checked={c.trustCert} onChange={(trustCert) => set({ trustCert })} />
+                <Checkbox
+                  label="Trust server certificate"
+                  checked={c.trustCert}
+                  onChange={(trustCert) => set({ trustCert })}
+                />
               )}
             </Field>
           )}
@@ -237,7 +309,13 @@ export function ConnectionDialog({ initial, note, onClose, onSaved, onDeleted }:
         label="Production"
         hint="Shows a PROD badge on this connection in the navigator, its tabs and the status bar, so it's never mistaken for a test database. It doesn't change how queries run."
       >
-        {() => <Checkbox label="This is a production database" checked={!!c.production} onChange={(production) => set({ production })} />}
+        {() => (
+          <Checkbox
+            label="This is a production database"
+            checked={!!c.production}
+            onChange={(production) => set({ production })}
+          />
+        )}
       </Field>
 
       {status && <Alert tone={status.ok ? "success" : "danger"}>{status.text}</Alert>}

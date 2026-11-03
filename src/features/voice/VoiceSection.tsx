@@ -1,6 +1,12 @@
 import { Download, RefreshCw, Trash2 } from "lucide-react";
 import { Alert, Button } from "../../components/ui";
-import { cancelVoiceDownload, downloadVoiceModel, megabytes, removeVoiceModel, useVoiceModel } from "./voiceModel";
+import {
+  cancelVoiceDownload,
+  downloadVoiceModel,
+  megabytes,
+  removeVoiceModel,
+  useVoiceModel,
+} from "./voiceModel";
 import { SHORTCUT } from "./voicePhase";
 import styles from "./VoiceControls.module.css";
 
@@ -15,8 +21,8 @@ export function VoiceSection({ className }: { className?: string }) {
   return (
     <>
       <p className={className}>
-        Click the mic in the Ask box or press {SHORTCUT} to say your question. Speech is turned into text on this
-        computer. Audio is never saved or sent anywhere.
+        Click the mic in the Ask box or press {SHORTCUT} to say your question. Speech is turned into
+        text on this computer. Audio is never saved or sent anywhere.
       </p>
       <div className={styles.panel}>
         {model.downloading ? (
@@ -24,7 +30,13 @@ export function VoiceSection({ className }: { className?: string }) {
             <span className={styles.text}>
               Downloading… {megabytes(model.received)} of {megabytes(model.total || model.bytes)}
             </span>
-            <span className={styles.progress} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+            <span
+              className={styles.progress}
+              role="progressbar"
+              aria-valuenow={pct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
               <span className={styles.progressFill} style={{ width: `${pct}%` }} />
             </span>
             <Button size="sm" variant="ghost" onClick={cancelVoiceDownload}>
@@ -33,7 +45,9 @@ export function VoiceSection({ className }: { className?: string }) {
           </>
         ) : model.ready ? (
           <>
-            <span className={styles.text}>Speech model (Whisper base.en, {megabytes(model.bytes)}) is downloaded.</span>
+            <span className={styles.text}>
+              Speech model (Whisper base.en, {megabytes(model.bytes)}) is downloaded.
+            </span>
             <Button size="sm" icon={RefreshCw} onClick={redownload}>
               Redownload
             </Button>
@@ -43,8 +57,15 @@ export function VoiceSection({ className }: { className?: string }) {
           </>
         ) : (
           <>
-            <span className={styles.text}>Speech model (Whisper base.en, {megabytes(model.bytes)}) isn't downloaded.</span>
-            <Button size="sm" variant="primary" icon={Download} onClick={() => void downloadVoiceModel()}>
+            <span className={styles.text}>
+              Speech model (Whisper base.en, {megabytes(model.bytes)}) isn't downloaded.
+            </span>
+            <Button
+              size="sm"
+              variant="primary"
+              icon={Download}
+              onClick={() => void downloadVoiceModel()}
+            >
               Download
             </Button>
           </>

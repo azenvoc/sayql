@@ -122,7 +122,10 @@ impl Store {
     }
 
     /// [`Self::suggest_note_change`] with a query that checks the note.
-    #[allow(clippy::too_many_arguments)]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the fields of one suggestion; existing debt, see AGENTS.md"
+    )]
     pub fn suggest_checked_note_change(
         &self,
         connection_id: &str,

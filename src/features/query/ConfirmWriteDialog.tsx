@@ -10,7 +10,12 @@ export interface ConfirmWriteDialogProps {
 }
 
 /** Shown before any statement SayQL can't confirm only reads data. */
-export function ConfirmWriteDialog({ sql, connectionName, onCancel, onConfirm }: ConfirmWriteDialogProps) {
+export function ConfirmWriteDialog({
+  sql,
+  connectionName,
+  onCancel,
+  onConfirm,
+}: ConfirmWriteDialogProps) {
   return (
     <Dialog
       title="Run a statement that may change data?"
@@ -28,8 +33,8 @@ export function ConfirmWriteDialog({ sql, connectionName, onCancel, onConfirm }:
       }
     >
       <Alert tone="warning">
-        SayQL can’t confirm this only reads data on <strong>{connectionName}</strong>. If it changes data, SayQL
-        can’t undo it. Review it before running.
+        SayQL can’t confirm this only reads data on <strong>{connectionName}</strong>. If it changes
+        data, SayQL can’t undo it. Review it before running.
       </Alert>
       <pre className={styles.sql}>{sql}</pre>
     </Dialog>

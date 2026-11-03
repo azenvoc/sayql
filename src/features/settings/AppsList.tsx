@@ -3,7 +3,9 @@ import { Badge, Button, Checkbox } from "../../components/ui";
 import styles from "./ClaudeIntegration.module.css";
 
 export function when(ms: number | null | undefined): string {
-  return ms ? new Date(ms).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "Never";
+  return ms
+    ? new Date(ms).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+    : "Never";
 }
 
 /** Whether an app is let in: blocked wins, then (only while approval is required) approved. */
@@ -38,20 +40,26 @@ export function AppsList({ list, onBlock, onApprove, onOnlyApproved }: AppsListP
       </h3>
       {list && (
         <div className={styles.name}>
-          <Checkbox label="Only allow apps I've approved" checked={onlyApproved} onChange={onOnlyApproved} />
+          <Checkbox
+            label="Only allow apps I've approved"
+            checked={onlyApproved}
+            onChange={onOnlyApproved}
+          />
           <span className={styles.detail}>
-            Turning this on approves the apps already listed that aren&apos;t blocked. Apps are recognised by the name they
-            report, so this keeps out unknown apps but isn&apos;t a security boundary against software that lies about its
-            name.
+            Turning this on approves the apps already listed that aren&apos;t blocked. Apps are
+            recognised by the name they report, so this keeps out unknown apps but isn&apos;t a
+            security boundary against software that lies about its name.
           </span>
         </div>
       )}
       <p className={styles.intro}>
-        Block an app to refuse it everything. Apps give their own name when they connect, so a block stops an app, not
-        software that pretends to be it.
+        Block an app to refuse it everything. Apps give their own name when they connect, so a block
+        stops an app, not software that pretends to be it.
       </p>
       {apps === null ? null : apps.length === 0 ? (
-        <p className={styles.empty}>No AI app has connected yet. Connect one below; it shows up here after its first request.</p>
+        <p className={styles.empty}>
+          No AI app has connected yet. Connect one below; it shows up here after its first request.
+        </p>
       ) : (
         <ul className={styles.list} aria-label="AI apps">
           {apps.map((a) => {
@@ -64,12 +72,18 @@ export function AppsList({ list, onBlock, onApprove, onOnlyApproved }: AppsListP
                     <Badge tone={BADGE[state].tone}>{BADGE[state].label}</Badge>
                   </span>
                   <span className={styles.detail}>
-                    {a.queries} {a.queries === 1 ? "request" : "requests"} in the log · last seen {when(a.lastUsed)}
+                    {a.queries} {a.queries === 1 ? "request" : "requests"} in the log · last seen{" "}
+                    {when(a.lastUsed)}
                   </span>
                 </div>
                 <div className={styles.rowActions}>
                   {state === "waiting" && (
-                    <Button size="sm" variant="secondary" aria-label={`Approve ${a.name}`} onClick={() => onApprove(a)}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      aria-label={`Approve ${a.name}`}
+                      onClick={() => onApprove(a)}
+                    >
                       Approve
                     </Button>
                   )}

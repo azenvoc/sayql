@@ -9,7 +9,8 @@ const pick = (sql: string, part: string) => {
 };
 
 describe("resolveSelection", () => {
-  const two = "-- top customers\nSELECT id, name\nFROM customers\nWHERE country = 'UK';\n\nDELETE FROM orders\nWHERE id = 7;";
+  const two =
+    "-- top customers\nSELECT id, name\nFROM customers\nWHERE country = 'UK';\n\nDELETE FROM orders\nWHERE id = 7;";
 
   it("runs whole statements as selected", () => {
     expect(pick(two, "SELECT id, name\nFROM customers\nWHERE country = 'UK';")).toMatchObject({
@@ -17,8 +18,13 @@ describe("resolveSelection", () => {
       expanded: false,
     });
     // Without the semicolon, or with the comment above it, it's still the whole statement.
-    expect(pick(two, "SELECT id, name\nFROM customers\nWHERE country = 'UK'")?.expanded).toBe(false);
-    expect(pick(two, "-- top customers\nSELECT id, name\nFROM customers\nWHERE country = 'UK';")?.expanded).toBe(false);
+    expect(pick(two, "SELECT id, name\nFROM customers\nWHERE country = 'UK'")?.expanded).toBe(
+      false,
+    );
+    expect(
+      pick(two, "-- top customers\nSELECT id, name\nFROM customers\nWHERE country = 'UK';")
+        ?.expanded,
+    ).toBe(false);
   });
 
   it("snaps a cut statement to the whole statement", () => {
@@ -29,7 +35,10 @@ describe("resolveSelection", () => {
   });
 
   it("never runs a DELETE without its WHERE", () => {
-    expect(pick(two, "DELETE FROM orders")).toMatchObject({ sql: "DELETE FROM orders\nWHERE id = 7;", expanded: true });
+    expect(pick(two, "DELETE FROM orders")).toMatchObject({
+      sql: "DELETE FROM orders\nWHERE id = 7;",
+      expanded: true,
+    });
   });
 
   it("snaps a selection across two statements to both", () => {
@@ -39,7 +48,8 @@ describe("resolveSelection", () => {
   });
 
   it("runs a bracketed subquery picked on purpose", () => {
-    const sql = "SELECT * FROM customers WHERE id IN (SELECT customer_id FROM orders WHERE total > 100);";
+    const sql =
+      "SELECT * FROM customers WHERE id IN (SELECT customer_id FROM orders WHERE total > 100);";
     expect(pick(sql, "SELECT customer_id FROM orders WHERE total > 100")).toMatchObject({
       sql: "SELECT customer_id FROM orders WHERE total > 100",
       expanded: false,

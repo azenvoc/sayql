@@ -6,7 +6,16 @@ export { Dialog } from "./Dialog";
 export { Panel } from "./Panel";
 export { SplitPane } from "./SplitPane";
 export { TreeRow } from "./TreeRow";
-export { Alert, Badge, EmptyState, Kbd, Spinner, Toolbar, ToolbarDivider, ToolbarSpacer } from "./Feedback";
+export {
+  Alert,
+  Badge,
+  EmptyState,
+  Kbd,
+  Spinner,
+  Toolbar,
+  ToolbarDivider,
+  ToolbarSpacer,
+} from "./Feedback";
 export type { Tone } from "./Feedback";
 export { TabBar } from "./TabBar";
 export type { TabItem } from "./TabBar";

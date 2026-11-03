@@ -6,7 +6,9 @@ const table = (name: string, rows: number, extra: Partial<Table> = {}): Table =>
   schema: null,
   name,
   kind: "table",
-  columns: [{ name: "id", data_type: "integer", nullable: false, primary_key: true, enum_values: null }],
+  columns: [
+    { name: "id", data_type: "integer", nullable: false, primary_key: true, enum_values: null },
+  ],
   foreign_keys: [],
   row_estimate: rows,
   ...extra,
@@ -24,8 +26,20 @@ describe("exampleQuestions", () => {
         table("regions", 12),
         table("invoices", 90_000, {
           columns: [
-            { name: "id", data_type: "integer", nullable: false, primary_key: true, enum_values: null },
-            { name: "issued_at", data_type: "timestamp", nullable: false, primary_key: false, enum_values: null },
+            {
+              name: "id",
+              data_type: "integer",
+              nullable: false,
+              primary_key: true,
+              enum_values: null,
+            },
+            {
+              name: "issued_at",
+              data_type: "timestamp",
+              nullable: false,
+              primary_key: false,
+              enum_values: null,
+            },
           ],
           foreign_keys: [{ column: "account_id", ref_table: "accounts", ref_column: "id" }],
         }),

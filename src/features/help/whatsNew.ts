@@ -70,21 +70,29 @@ export const WHATS_NEW: WhatsNewEntry[] = [
 export const WHATS_NEW_SEEN_KEY = "sayql.whatsNewSeen";
 
 /** The entry for `version`, if it has one. */
-export const whatsNewFor = (version: string) => WHATS_NEW.find((e) => e.version === version) ?? null;
+export const whatsNewFor = (version: string) =>
+  WHATS_NEW.find((e) => e.version === version) ?? null;
 
 /**
  * Whether to show What's new on start: once per version, after an update. Someone new
  * (`existingUser` false: never finished or needed the setup) doesn't get it; their version is
  * remembered so the next update shows.
  */
-export function shouldShowWhatsNew(version: string, lastSeen: string | null, existingUser: boolean): boolean {
+export function shouldShowWhatsNew(
+  version: string,
+  lastSeen: string | null,
+  existingUser: boolean,
+): boolean {
   if (lastSeen === version) return false;
   if (lastSeen === null && !existingUser) return false;
   return whatsNewFor(version) !== null;
 }
 
 /** Reads and updates the last version whose What's new was seen (or skipped, for someone new). */
-export function whatsNewOnStart(version: string, existingUser: boolean): { show: boolean; markSeen: () => void } {
+export function whatsNewOnStart(
+  version: string,
+  existingUser: boolean,
+): { show: boolean; markSeen: () => void } {
   const lastSeen = storage.get<string | null>(WHATS_NEW_SEEN_KEY, null);
   const show = shouldShowWhatsNew(version, lastSeen, existingUser);
   // Someone new starts counting from this version.

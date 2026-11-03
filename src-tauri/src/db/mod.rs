@@ -78,7 +78,10 @@ pub struct ConnConfig {
 }
 
 #[derive(Clone)]
-#[allow(clippy::large_enum_variant)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "one pool per connection, cloned rarely; boxing adds an indirection to every query"
+)]
 pub enum DbPool {
     Pg(PgPool),
     My(MySqlPool),

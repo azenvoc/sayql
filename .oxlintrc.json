@@ -11,6 +11,17 @@
     "react/no-danger": "error",
     "import/no-cycle": "error",
     "no-unused-vars": "error",
+    "no-console": "error",
+    "no-debugger": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/ban-ts-comment": "error",
+    // `typeof import("…")` stays allowed: it is how vitest types a module it mocks.
+    "typescript/consistent-type-imports": ["error", { "disallowTypeAnnotations": false }],
+    // A warning: the existing ones are counted in lint-baseline.json, and the count may only go
+    // down (scripts/lint-ratchet.mjs). New code narrows with a check instead of `!`.
+    "typescript/no-non-null-assertion": "warn",
     // `x == null` (null or undefined) is the one loose comparison allowed.
     "eqeqeq": ["error", "always", { "null": "ignore" }],
     // TypeScript already checks imports; this rule can't see Vite's `?worker` modules.

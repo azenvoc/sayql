@@ -13,8 +13,10 @@ export function dollars(usd: number): string {
 
 /** The warning for a low or empty balance; null when there's plenty left. */
 export function lowCreditText(usd: number): string | null {
-  if (usd <= 0) return "Your SayQL AI credit has run out, so AI requests stop until it's topped up. Top up at sayql.dev/#pricing with the email you bought it with.";
-  if (usd < LOW_CREDIT_USD) return `Your SayQL AI credit is running low: ${dollars(usd)} left. Top up at sayql.dev/#pricing with the email you bought it with.`;
+  if (usd <= 0)
+    return "Your SayQL AI credit has run out, so AI requests stop until it's topped up. Top up at sayql.dev/#pricing with the email you bought it with.";
+  if (usd < LOW_CREDIT_USD)
+    return `Your SayQL AI credit is running low: ${dollars(usd)} left. Top up at sayql.dev/#pricing with the email you bought it with.`;
   return null;
 }
 
@@ -32,7 +34,8 @@ export function CreditsBalance() {
   const low = lowCreditText(usd);
   return (
     <Alert tone={low ? (usd <= 0 ? "danger" : "warning") : "info"}>
-      {low ?? `Balance: ${dollars(usd)} left. Each request is charged at Anthropic's API prices plus 20%.`}
+      {low ??
+        `Balance: ${dollars(usd)} left. Each request is charged at Anthropic's API prices plus 20%.`}
     </Alert>
   );
 }

@@ -23,8 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
-# Local Claude Code tooling (preview config, worktrees)
-.claude/
+# Local Claude Code tooling (preview config, worktrees). settings.json is shared: it runs the
+# formatter and lint for every Claude Code session in this repo (AGENTS.md).
+.claude/*
+!.claude/settings.json
 
 # Vercel project link (created by the CLI when deploying site/)
 .vercel

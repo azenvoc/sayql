@@ -1,7 +1,28 @@
 import { useEffect, useId, useState } from "react";
-import { ArrowLeft, BookOpen, Bot, ExternalLink, History, Info, Keyboard, Mic, Plug, RefreshCw, ScrollText, Sparkles, Users, type LucideIcon } from "lucide-react";
+import {
+  ArrowLeft,
+  BookOpen,
+  Bot,
+  ExternalLink,
+  History,
+  Info,
+  Keyboard,
+  Mic,
+  Plug,
+  RefreshCw,
+  ScrollText,
+  Sparkles,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { commands, type AiProvider, type ConnectionConfig, type Settings, type TeamAccount } from "../../api";
+import {
+  commands,
+  type AiProvider,
+  type ConnectionConfig,
+  type Settings,
+  type TeamAccount,
+} from "../../api";
 import { Alert, Button, Field, Select, TextInput } from "../../components/ui";
 import { cx } from "../../lib/cx";
 import { errorText } from "../../lib/errors";
@@ -64,7 +85,12 @@ interface Draft {
   apiKey: string;
 }
 
-const draftOf = (p: AiProvider): Draft => ({ baseUrl: p.baseUrl, typingModel: p.typingModel, expertModel: p.expertModel, apiKey: "" });
+const draftOf = (p: AiProvider): Draft => ({
+  baseUrl: p.baseUrl,
+  typingModel: p.typingModel,
+  expertModel: p.expertModel,
+  apiKey: "",
+});
 
 /** SayQL AI credits: Claude through SayQL's service, with a prepaid credit key. */
 const SAYQL_CREDITS = "sayql";
@@ -85,10 +111,10 @@ export function privacyNote(p: Pick<AiProvider, "id" | "key" | "label" | "local"
       : p.id === CLAUDE_PLAN
         ? "Anthropic by your own Claude Code, on your Claude plan"
         : p.key === "optional"
-        ? "your server"
-        : p.local
-          ? `${p.label}, on this computer`
-          : p.label;
+          ? "your server"
+          : p.local
+            ? `${p.label}, on this computer`
+            : p.label;
   return (
     `Your question, table and column names, your database notes and the SQL you're working on (with a failed query's error, values masked) are sent to ${to}. ` +
     "Data from your tables is sent only if you turn on Investigate for a connection and allow it in its settings."
@@ -133,7 +159,10 @@ export function SettingsPage({
   const claudeModels = settings.models.map((m) => ({ value: m.id, label: m.label }));
   // Where agent mode sends results, for agent settings opened from AI apps (local connections only).
   const current = settings.providers.find((p) => p.id === settings.provider);
-  const agentProvider = { label: current?.label ?? settings.provider, local: current?.local ?? false };
+  const agentProvider = {
+    label: current?.label ?? settings.provider,
+    local: current?.local ?? false,
+  };
   const waiting = noteSuggestions.suggestions.length;
   const found = models[provider.id];
 
@@ -148,7 +177,11 @@ export function SettingsPage({
     setLoadingModels(true);
     setModelsError(null);
     try {
-      const ids = await commands.listModels(provider.id, draft.baseUrl, draft.apiKey.trim() || null);
+      const ids = await commands.listModels(
+        provider.id,
+        draft.baseUrl,
+        draft.apiKey.trim() || null,
+      );
       setModels((m) => ({ ...m, [provider.id]: ids }));
       if (!draft.typingModel && ids.length > 0) update({ typingModel: ids[0] });
     } catch (e) {
@@ -161,7 +194,8 @@ export function SettingsPage({
   // Esc closes, unless it's meant for a text field.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !(e.target as Element).closest?.("input, textarea, select")) onClose();
+      if (e.key === "Escape" && !(e.target as Element).closest?.("input, textarea, select"))
+        onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -207,7 +241,10 @@ export function SettingsPage({
           >
             <Icon size={15} /> {label}
             {id === "mcp" && waiting > 0 && (
-              <span className={styles.navCount} aria-label={`${waiting} suggested ${waiting === 1 ? "note" : "notes"} waiting`}>
+              <span
+                className={styles.navCount}
+                aria-label={`${waiting} suggested ${waiting === 1 ? "note" : "notes"} waiting`}
+              >
                 {waiting}
               </span>
             )}
@@ -215,7 +252,9 @@ export function SettingsPage({
         ))}
       </nav>
       <main className={styles.content}>
-        <div className={cx(styles.inner, (section === "mcp" || section === "activity") && styles.wide)}>
+        <div
+          className={cx(styles.inner, (section === "mcp" || section === "activity") && styles.wide)}
+        >
           {section !== "about" && (
             <button
               type="button"
@@ -235,7 +274,10 @@ export function SettingsPage({
                     id={id}
                     value={provider.id}
                     onChange={chooseProvider}
-                    options={settings.providers.map((p) => ({ value: p.id, label: p.local ? `${p.label} (on this computer)` : p.label }))}
+                    options={settings.providers.map((p) => ({
+                      value: p.id,
+                      label: p.local ? `${p.label} (on this computer)` : p.label,
+                    }))}
                   />
                 )}
               </Field>
@@ -255,7 +297,11 @@ export function SettingsPage({
                       type="password"
                       mono
                       value={draft.apiKey}
-                      placeholder={provider.hasKey ? "Saved in Keychain — paste a new key to replace it" : provider.keyPlaceholder || "Paste your API key"}
+                      placeholder={
+                        provider.hasKey
+                          ? "Saved in Keychain — paste a new key to replace it"
+                          : provider.keyPlaceholder || "Paste your API key"
+                      }
                       onChange={(e) => update({ apiKey: e.target.value })}
                     />
                   )}
@@ -272,17 +318,42 @@ export function SettingsPage({
                       optional
                       hint="Only for API keys that aren't tied to a workspace. Use the workspace's ID from the Claude Console, not its name."
                     >
-                      {(id) => <TextInput id={id} mono value={workspaceId} placeholder="wrkspc_…" onChange={(e) => setWorkspaceId(e.target.value)} />}
+                      {(id) => (
+                        <TextInput
+                          id={id}
+                          mono
+                          value={workspaceId}
+                          placeholder="wrkspc_…"
+                          onChange={(e) => setWorkspaceId(e.target.value)}
+                        />
+                      )}
                     </Field>
                   )}
-                  <Field label="Model while typing" hint="Writes SQL as you type. A fast model keeps it feeling instant.">
-                    {(id) => <Select id={id} value={draft.typingModel} onChange={(v) => update({ typingModel: v })} options={claudeModels} />}
+                  <Field
+                    label="Model while typing"
+                    hint="Writes SQL as you type. A fast model keeps it feeling instant."
+                  >
+                    {(id) => (
+                      <Select
+                        id={id}
+                        value={draft.typingModel}
+                        onChange={(v) => update({ typingModel: v })}
+                        options={claudeModels}
+                      />
+                    )}
                   </Field>
                   <Field
                     label="Model for fixes and improvements"
                     hint="Fixes a query the database rejected, and reviews a query when you click Improve. A stronger model is worth the extra seconds here."
                   >
-                    {(id) => <Select id={id} value={draft.expertModel} onChange={(v) => update({ expertModel: v })} options={claudeModels} />}
+                    {(id) => (
+                      <Select
+                        id={id}
+                        value={draft.expertModel}
+                        onChange={(v) => update({ expertModel: v })}
+                        options={claudeModels}
+                      />
+                    )}
                   </Field>
                 </>
               ) : (
@@ -301,7 +372,9 @@ export function SettingsPage({
                         id={id}
                         mono
                         value={draft.baseUrl}
-                        placeholder={provider.defaultBaseUrl || "https://your-server.example.com/v1"}
+                        placeholder={
+                          provider.defaultBaseUrl || "https://your-server.example.com/v1"
+                        }
                         onChange={(e) => update({ baseUrl: e.target.value })}
                       />
                     )}
@@ -340,7 +413,9 @@ export function SettingsPage({
                     )}
                   </Field>
                   <datalist id={listId}>
-                    {found?.map((m) => <option key={m} value={m} />)}
+                    {found?.map((m) => (
+                      <option key={m} value={m} />
+                    ))}
                   </datalist>
                   {modelsError && <Alert tone="danger">{modelsError}</Alert>}
                 </>
@@ -365,8 +440,8 @@ export function SettingsPage({
             <>
               <h2 className={styles.title}>Skills</h2>
               <p className={styles.intro}>
-                Saved instructions you add to a question by typing / and the name. They're sent to the AI with that
-                question, and saved right away.
+                Saved instructions you add to a question by typing / and the name. They're sent to
+                the AI with that question, and saved right away.
               </p>
               <SkillsSection skills={skills} startCreating={createSkill} />
             </>
@@ -383,7 +458,12 @@ export function SettingsPage({
                 <h2 className={styles.title}>AI apps</h2>
                 <p className={styles.subtitle}>Claude Code, Cursor and other MCP apps</p>
               </div>
-              <ClaudeIntegration connections={connections} provider={agentProvider} suggestions={noteSuggestions} tab={aiAppsTab} />
+              <ClaudeIntegration
+                connections={connections}
+                provider={agentProvider}
+                suggestions={noteSuggestions}
+                tab={aiAppsTab}
+              />
             </>
           )}
           {section === "activity" && (
@@ -402,8 +482,9 @@ export function SettingsPage({
             <>
               <h2 className={styles.title}>About</h2>
               <p className={styles.about}>
-                SayQL Community Edition {version}, a product of Azenvoc. Free and open source under the Apache License 2.0. The license,
-                privacy notice and third-party notices are included with the app.
+                SayQL Community Edition {version}, a product of Azenvoc. Free and open source under
+                the Apache License 2.0. The license, privacy notice and third-party notices are
+                included with the app.
               </p>
               <div className={styles.aboutActions}>
                 <Button icon={Keyboard} onClick={onShowShortcuts}>

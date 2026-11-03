@@ -1,0 +1,6 @@
+#!/bin/sh
+# The fast checks before each commit; CI runs everything (`pnpm check`). Turn on with `pnpm hooks`.
+set -e
+pnpm exec prettier --check .
+pnpm lint
+(cd src-tauri && cargo fmt --check)

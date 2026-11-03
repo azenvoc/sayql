@@ -8,7 +8,13 @@ import { AGENTS, type CodingAgent, type ConfigSetup, type SetupContext } from ".
 import styles from "./AgentSetup.module.css";
 
 /** "Your coding agent": the same list in the card and in Settings. */
-export function AgentPicker({ agent, onChoose }: { agent: CodingAgent; onChoose: (id: string) => void }) {
+export function AgentPicker({
+  agent,
+  onChoose,
+}: {
+  agent: CodingAgent;
+  onChoose: (id: string) => void;
+}) {
   return (
     <label className={styles.picker}>
       <span className={styles.pickerLabel}>Your coding agent</span>
@@ -37,7 +43,17 @@ function useCopy(onError: (e: string) => void) {
   return { copied, copy };
 }
 
-function CopyBlock({ label, text, copied, onCopy }: { label: string; text: string; copied: boolean; onCopy: () => void }) {
+function CopyBlock({
+  label,
+  text,
+  copied,
+  onCopy,
+}: {
+  label: string;
+  text: string;
+  copied: boolean;
+  onCopy: () => void;
+}) {
   return (
     <div className={styles.block}>
       <div className={styles.blockHead}>
@@ -80,7 +96,11 @@ export function AgentSetupView({ agent, context, compact = false }: AgentSetupVi
   };
   const config = setup.config;
   const merge = config?.format === "toml" ? "Add these lines." : "Merge it with what's there.";
-  const notes = [config?.file && config.open ? `Or open it with ${config.open}.` : null, setup.also, setup.after].filter(Boolean);
+  const notes = [
+    config?.file && config.open ? `Or open it with ${config.open}.` : null,
+    setup.also,
+    setup.after,
+  ].filter(Boolean);
 
   if (!compact) {
     return (
@@ -94,7 +114,12 @@ export function AgentSetupView({ agent, context, compact = false }: AgentSetupVi
           </div>
         )}
         {setup.command && (
-          <CopyBlock label="Run in a terminal" text={setup.command} copied={copied === "command"} onCopy={() => copy("command", setup.command!)} />
+          <CopyBlock
+            label="Run in a terminal"
+            text={setup.command}
+            copied={copied === "command"}
+            onCopy={() => copy("command", setup.command!)}
+          />
         )}
         {config && (
           <CopyBlock
@@ -125,7 +150,11 @@ export function AgentSetupView({ agent, context, compact = false }: AgentSetupVi
       )}
       {setup.command && (
         <div className={styles.row}>
-          {setup.link ? <span className={styles.hint}>Or run in a terminal:</span> : <span>Run in a terminal:</span>}
+          {setup.link ? (
+            <span className={styles.hint}>Or run in a terminal:</span>
+          ) : (
+            <span>Run in a terminal:</span>
+          )}
           <code className={styles.line} title={setup.command}>
             {setup.command}
           </code>
@@ -148,14 +177,25 @@ export function AgentSetupView({ agent, context, compact = false }: AgentSetupVi
               <>{config.open}:</>
             )}
           </span>
-          <Button size="sm" variant="secondary" icon={copied === "config" ? Check : Copy} onClick={() => copy("config", config.text)}>
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={copied === "config" ? Check : Copy}
+            onClick={() => copy("config", config.text)}
+          >
             {copied === "config" ? "Copied" : "Copy config"}
           </Button>
         </div>
       )}
       {config && (
         <>
-          <button type="button" className={styles.disclosure} aria-expanded={open} aria-controls={bodyId} onClick={() => setOpen(!open)}>
+          <button
+            type="button"
+            className={styles.disclosure}
+            aria-expanded={open}
+            aria-controls={bodyId}
+            onClick={() => setOpen(!open)}
+          >
             <ChevronRight size={12} className={cx(styles.chevron, open && styles.chevronOpen)} />
             {main ? "Or edit the config file" : "Show the config"}
           </button>
@@ -164,7 +204,12 @@ export function AgentSetupView({ agent, context, compact = false }: AgentSetupVi
               {main && (
                 <div className={styles.row}>
                   <span className={styles.hint}>{configLabel(config)}.</span>
-                  <Button size="sm" variant="ghost" icon={copied === "config" ? Check : Copy} onClick={() => copy("config", config.text)}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon={copied === "config" ? Check : Copy}
+                    onClick={() => copy("config", config.text)}
+                  >
                     {copied === "config" ? "Copied" : "Copy config"}
                   </Button>
                 </div>

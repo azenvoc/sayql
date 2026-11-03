@@ -6,8 +6,12 @@ const NOW = Date.UTC(2026, 9, 28, 12);
 
 it("names the connection in the command, by id when its name has spaces", () => {
   expect(auditCommand()).toBe("/mcp__sayql__audit");
-  expect(auditCommand({ connectionId: "c1", name: "Shop", database: null })).toBe("/mcp__sayql__audit Shop");
-  expect(auditCommand({ connectionId: "c1", name: "Demo store", database: "sales" })).toBe("/mcp__sayql__audit c1 sales");
+  expect(auditCommand({ connectionId: "c1", name: "Shop", database: null })).toBe(
+    "/mcp__sayql__audit Shop",
+  );
+  expect(auditCommand({ connectionId: "c1", name: "Demo store", database: "sales" })).toBe(
+    "/mcp__sayql__audit c1 sales",
+  );
 });
 
 it("says when a connection was last audited, and when to run it again", () => {

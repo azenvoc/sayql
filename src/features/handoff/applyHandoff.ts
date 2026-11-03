@@ -55,7 +55,8 @@ export function applyHandoff(h: Handoff, a: HandoffActions): void {
     return;
   }
   if (h.type === "openScript") {
-    if (!a.openScript(h.scriptId)) a.notify(`${note} asked to open a script that isn't saved here.`);
+    if (!a.openScript(h.scriptId))
+      a.notify(`${note} asked to open a script that isn't saved here.`);
     return;
   }
   const c = a.connection(h.connectionId);

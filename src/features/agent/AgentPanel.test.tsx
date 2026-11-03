@@ -8,7 +8,7 @@ const handlers = () => ({
   onSelect: vi.fn(),
   onGo: vi.fn(),
   onSend: vi.fn(),
-    onAuto: vi.fn(),
+  onAuto: vi.fn(),
   onSkip: vi.fn(),
   onAnswer: vi.fn(),
   onStop: vi.fn(),
@@ -25,7 +25,13 @@ describe("AgentPanel", () => {
 
   it("pauses on what would be sent", () => {
     const h = handlers();
-    const run: AgentRunState = { ...IDLE, runId: "r", question: "Why?", phase: "send", pending: { kind: "send", stepId: 1, payload: "Step 1: 2 rows." } };
+    const run: AgentRunState = {
+      ...IDLE,
+      runId: "r",
+      question: "Why?",
+      phase: "send",
+      pending: { kind: "send", stepId: 1, payload: "Step 1: 2 rows." },
+    };
     render(<AgentPanel run={run} selected={null} {...h} />);
     expect(screen.getByText("Step 1: 2 rows.")).toBeTruthy();
     fireEvent.click(screen.getByText("Skip (send the row count only)"));

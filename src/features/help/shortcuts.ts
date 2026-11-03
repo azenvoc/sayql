@@ -57,14 +57,19 @@ export const SHORTCUTS: ShortcutGroup[] = [
   },
 ];
 
-export const isMac = () => typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+export const isMac = () =>
+  typeof navigator !== "undefined" &&
+  /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
 /** A key as shown: `Mod` is ⌘ on macOS, Ctrl elsewhere. */
-export const keyLabel = (key: string, mac = isMac()) => (key === "Mod" ? (mac ? "⌘" : "Ctrl") : key);
+export const keyLabel = (key: string, mac = isMac()) =>
+  key === "Mod" ? (mac ? "⌘" : "Ctrl") : key;
 
 /** Whether a key press belongs to a text field (or the SQL editor), so `?` there is just a character. */
 export function isTypingTarget(target: EventTarget | null): boolean {
   const el = target as Element | null;
   if (!el || typeof el.closest !== "function") return false;
-  return !!el.closest("input, textarea, select, [contenteditable=''], [contenteditable='true'], .monaco-editor");
+  return !!el.closest(
+    "input, textarea, select, [contenteditable=''], [contenteditable='true'], .monaco-editor",
+  );
 }

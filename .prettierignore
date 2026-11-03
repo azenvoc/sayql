@@ -1,0 +1,12 @@
+# Prettier formats the app's frontend and the repo's own scripts and config (AGENTS.md).
+# Everything else has its own format or is generated.
+*
+!src/
+!src/**
+!scripts/
+!scripts/*.mjs
+!*.json
+!.prettierrc.json
+!.oxlintrc.json
+pnpm-lock.yaml
+lint-baseline.json

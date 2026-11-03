@@ -37,7 +37,8 @@ function setup() {
 }
 
 const ids = (r: ReturnType<typeof setup>) => r.current.conn.connections.map((c) => c.id);
-const tabConnections = (r: ReturnType<typeof setup>) => r.current.tabs.tabs.map((t) => t.target.connectionId);
+const tabConnections = (r: ReturnType<typeof setup>) =>
+  r.current.tabs.tabs.map((t) => t.target.connectionId);
 
 describe("useConnectionActions", () => {
   beforeEach(() => {

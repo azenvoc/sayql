@@ -42,7 +42,19 @@ function checkResult(n: DbNote): { tone: "success" | "warning" | "neutral"; text
  * Adds, edits or reviews a database note: a fact about tables, columns or codes, never values
  * from rows. A doubtful note shows why, and the fix SayQL or an AI app suggested for it.
  */
-export function NoteDialog({ note: initial, databaseName, fix, onSave, suggest, onConfirm, onCheck, onAcceptFix, onDismissFix, onDelete, onClose }: NoteDialogProps) {
+export function NoteDialog({
+  note: initial,
+  databaseName,
+  fix,
+  onSave,
+  suggest,
+  onConfirm,
+  onCheck,
+  onAcceptFix,
+  onDismissFix,
+  onDelete,
+  onClose,
+}: NoteDialogProps) {
   const [sent, setSent] = useState<string | null>(null);
   const [note, setNote] = useState(initial);
   const [text, setText] = useState(initial?.text ?? "");
@@ -52,13 +64,16 @@ export function NoteDialog({ note: initial, databaseName, fix, onSave, suggest, 
   const act = (f: () => Promise<unknown>, close = true) => {
     setBusy(true);
     setError(null);
-    f().then(
-      () => (close ? onClose() : undefined),
-      (e) => setError(String(e)),
-    ).finally(() => setBusy(false));
+    f()
+      .then(
+        () => (close ? onClose() : undefined),
+        (e) => setError(String(e)),
+      )
+      .finally(() => setBusy(false));
   };
   const result = note && checkResult(note);
-  const edited = text.trim() !== (initial?.text ?? "") || check.trim() !== (initial?.check?.sql ?? "");
+  const edited =
+    text.trim() !== (initial?.text ?? "") || check.trim() !== (initial?.check?.sql ?? "");
   const title = suggest
     ? `Suggest a note for ${databaseName}`
     : !initial
@@ -68,7 +83,16 @@ export function NoteDialog({ note: initial, databaseName, fix, onSave, suggest, 
         : "Edit database note";
   if (suggest && sent) {
     return (
-      <Dialog title={title} size="md" onClose={onClose} actions={<Button variant="primary" onClick={onClose}>Done</Button>}>
+      <Dialog
+        title={title}
+        size="md"
+        onClose={onClose}
+        actions={
+          <Button variant="primary" onClick={onClose}>
+            Done
+          </Button>
+        }
+      >
         <div className={base.body}>
           <Alert tone="success">{sent}</Alert>
         </div>
@@ -92,7 +116,9 @@ export function NoteDialog({ note: initial, databaseName, fix, onSave, suggest, 
             variant="primary"
             disabled={!text.trim() || busy || (!!initial && !edited)}
             onClick={() =>
-              suggest ? act(() => onSave(text, check).then((m) => setSent(m || "Sent.")), false) : act(() => onSave(text, check))
+              suggest
+                ? act(() => onSave(text, check).then((m) => setSent(m || "Sent.")), false)
+                : act(() => onSave(text, check))
             }
           >
             {suggest ? "Send" : "Save"}
@@ -101,7 +127,11 @@ export function NoteDialog({ note: initial, databaseName, fix, onSave, suggest, 
       }
     >
       <div className={base.body}>
-        {suggest && <p className={styles.meta}>Shared by your team. Owners approve changes on the team server.</p>}
+        {suggest && (
+          <p className={styles.meta}>
+            Shared by your team. Owners approve changes on the team server.
+          </p>
+        )}
         {note?.suspect && (
           <Alert
             tone="warning"
@@ -113,8 +143,8 @@ export function NoteDialog({ note: initial, databaseName, fix, onSave, suggest, 
               )
             }
           >
-            May be out of date: {note.suspect.reason} (since {day(note.suspect.since)}). Until it's reviewed, the AI is told to check
-            it before relying on it.
+            May be out of date: {note.suspect.reason} (since {day(note.suspect.since)}). Until it's
+            reviewed, the AI is told to check it before relying on it.
           </Alert>
         )}
         {fix && (
@@ -126,10 +156,20 @@ export function NoteDialog({ note: initial, databaseName, fix, onSave, suggest, 
             <p className={styles.fixText}>{fix.text}</p>
             {fix.evidence && <p className={styles.meta}>{fix.evidence}</p>}
             <div className={styles.fixActions}>
-              <Button size="sm" variant={fix.remove ? "danger" : "primary"} disabled={busy} onClick={() => onAcceptFix && act(() => onAcceptFix(fix.id))}>
+              <Button
+                size="sm"
+                variant={fix.remove ? "danger" : "primary"}
+                disabled={busy}
+                onClick={() => onAcceptFix && act(() => onAcceptFix(fix.id))}
+              >
                 {fix.remove ? "Remove note" : "Use this text"}
               </Button>
-              <Button size="sm" variant="ghost" disabled={busy} onClick={() => onDismissFix && act(() => onDismissFix(fix.id), false)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={busy}
+                onClick={() => onDismissFix && act(() => onDismissFix(fix.id), false)}
+              >
                 Dismiss
               </Button>
             </div>
@@ -143,7 +183,17 @@ export function NoteDialog({ note: initial, databaseName, fix, onSave, suggest, 
               : "A fact the schema can't tell, e.g. “the owner of a tenant is memberships.role = 'owner'”. The Ask box, Investigate and MCP all use it."
           }
         >
-          {(id) => <textarea id={id} className={base.textarea} rows={3} maxLength={300} value={text} onChange={(e) => setText(e.target.value)} autoFocus />}
+          {(id) => (
+            <textarea
+              id={id}
+              className={base.textarea}
+              rows={3}
+              maxLength={300}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              autoFocus
+            />
+          )}
         </Field>
         {!!note?.anchors?.length && (
           <p className={styles.meta}>
@@ -181,7 +231,12 @@ export function NoteDialog({ note: initial, databaseName, fix, onSave, suggest, 
           <div className={styles.checkRow}>
             {result && <Badge tone={result.tone}>{result.text}</Badge>}
             {onCheck && (
-              <Button size="sm" variant="ghost" disabled={busy || check.trim() !== note.check.sql} onClick={() => act(() => onCheck().then(setNote), false)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={busy || check.trim() !== note.check.sql}
+                onClick={() => act(() => onCheck().then(setNote), false)}
+              >
                 Check now
               </Button>
             )}

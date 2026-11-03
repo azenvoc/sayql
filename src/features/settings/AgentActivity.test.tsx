@@ -4,12 +4,42 @@ import { afterEach, expect, it, vi } from "vitest";
 import type { McpActivity } from "../../api";
 import { AgentActivity } from "./AgentActivity";
 
-const LONG = "SELECT c.country, COUNT(*) AS orders FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.status = 'paid' GROUP BY c.country";
+const LONG =
+  "SELECT c.country, COUNT(*) AS orders FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.status = 'paid' GROUP BY c.country";
 let log: McpActivity[] = [];
 const fresh = (): McpActivity[] => [
-  { at: 3, app: "Cursor", tool: "run_query", connectionId: "c1", connection: "Shop", sql: "SELECT email FROM customers", status: "refused", detail: "never-send column email", maySee: "counts" },
-  { at: 2, app: "Claude Code", tool: "run_query", connectionId: "c1", connection: "Shop", sql: "SELECT COUNT(*) FROM orders", status: "ok", rows: 1 },
-  { at: 1, app: "Claude Code", tool: "run_query", connectionId: "c2", connection: "Warehouse", sql: LONG, status: "ok", rows: 12, maySee: "masked" },
+  {
+    at: 3,
+    app: "Cursor",
+    tool: "run_query",
+    connectionId: "c1",
+    connection: "Shop",
+    sql: "SELECT email FROM customers",
+    status: "refused",
+    detail: "never-send column email",
+    maySee: "counts",
+  },
+  {
+    at: 2,
+    app: "Claude Code",
+    tool: "run_query",
+    connectionId: "c1",
+    connection: "Shop",
+    sql: "SELECT COUNT(*) FROM orders",
+    status: "ok",
+    rows: 1,
+  },
+  {
+    at: 1,
+    app: "Claude Code",
+    tool: "run_query",
+    connectionId: "c2",
+    connection: "Warehouse",
+    sql: LONG,
+    status: "ok",
+    rows: 12,
+    maySee: "masked",
+  },
 ];
 const mcpActivity = vi.fn(() => Promise.resolve(log));
 const clearMcpActivity = vi.fn(() => {
@@ -39,7 +69,9 @@ it("lists what AI apps ran, refusals included, and says rows are never kept", as
   expect(await screen.findByText("SELECT email FROM customers")).toBeTruthy();
   expect(screen.getByText(/never-send column email/)).toBeTruthy();
   expect(screen.getByText(/· 1 row\b/)).toBeTruthy();
-  expect(screen.getByText(/the SQL and how many rows it returned, not the rows themselves/)).toBeTruthy();
+  expect(
+    screen.getByText(/the SQL and how many rows it returned, not the rows themselves/),
+  ).toBeTruthy();
 });
 
 it("filters by app, connection and refused only", async () => {

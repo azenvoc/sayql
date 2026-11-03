@@ -48,11 +48,41 @@ export function useGetStarted(state: GetStartedState, actions: GetStartedActions
   }, [hidden]);
 
   const items: ChecklistItem[] = [
-    { id: "ai", title: "Choose how to use AI", done: state.aiReady, action: "Set up", onAction: actions.setUpAi },
-    { id: "ask", title: "Ask your first question", done: askedOnce || state.askedNow, action: "Try it", onAction: actions.tryIt },
-    { id: "database", title: "Connect your own database", done: state.ownDatabase, action: "Connect", onAction: actions.connectDatabase },
-    { id: "app", title: "Let an AI app in safely", done: appConnected, action: "Connect", onAction: actions.connectApp },
-    { id: "teach", title: "Teach SayQL a database", done: state.taught, action: "Teach", onAction: actions.teach },
+    {
+      id: "ai",
+      title: "Choose how to use AI",
+      done: state.aiReady,
+      action: "Set up",
+      onAction: actions.setUpAi,
+    },
+    {
+      id: "ask",
+      title: "Ask your first question",
+      done: askedOnce || state.askedNow,
+      action: "Try it",
+      onAction: actions.tryIt,
+    },
+    {
+      id: "database",
+      title: "Connect your own database",
+      done: state.ownDatabase,
+      action: "Connect",
+      onAction: actions.connectDatabase,
+    },
+    {
+      id: "app",
+      title: "Let an AI app in safely",
+      done: appConnected,
+      action: "Connect",
+      onAction: actions.connectApp,
+    },
+    {
+      id: "teach",
+      title: "Teach SayQL a database",
+      done: state.taught,
+      action: "Teach",
+      onAction: actions.teach,
+    },
   ];
   return { items, hidden, hide: () => setHidden(true) };
 }

@@ -11,7 +11,8 @@ export function formatCell(v: Cell): string {
 export function toCsv(r: QueryResult): string {
   const escape = (s: string) => (/[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
   const lines = [r.columns.map(escape).join(",")];
-  for (const row of r.rows) lines.push(row.map((v) => (v === null ? "" : escape(formatCell(v)))).join(","));
+  for (const row of r.rows)
+    lines.push(row.map((v) => (v === null ? "" : escape(formatCell(v)))).join(","));
   return lines.join("\n");
 }
 
@@ -32,6 +33,12 @@ export function plural(n: number, word: string): string {
 export function statementLabel(sql: string): string {
   const s = sql.replace(/--[^\n]*/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ");
   const name = s.match(/\b(?:from|into|update|table)\s+([\w."`[\]]+)/i)?.[1];
-  if (name) return name.replace(/["`[\]]/g, "").split(".").pop() || name;
+  if (name)
+    return (
+      name
+        .replace(/["`[\]]/g, "")
+        .split(".")
+        .pop() || name
+    );
   return (s.trim().split(/\s+/)[0] ?? "").toLowerCase();
 }

@@ -127,18 +127,26 @@ export function promptArgs(target?: AuditTarget | null): string {
 }
 
 /** A file path per OS. */
-const byOs = (os: Os, paths: Partial<Record<Os, string>>, fallback: string | null = null) => paths[os] ?? fallback;
+const byOs = (os: Os, paths: Partial<Record<Os, string>>, fallback: string | null = null) =>
+  paths[os] ?? fallback;
 
 /** The usual `mcpServers` JSON, which most apps read. */
-const mcpServers = (path: string, extra: Record<string, unknown> = {}) => json({ mcpServers: { sayql: { command: path, args: [], ...extra } } });
+const mcpServers = (path: string, extra: Record<string, unknown> = {}) =>
+  json({ mcpServers: { sayql: { command: path, args: [], ...extra } } });
 
 export const AGENTS: CodingAgent[] = [
   {
     id: "claude-code",
     name: "Claude Code",
     short: "Claude Code",
-    setup: ({ path, os }) => ({ command: `claude mcp add --scope user sayql -- ${shellQuote(path, os)}` }),
-    audit: { kind: "run", where: "Claude Code", command: (t) => `/mcp__sayql__audit${promptArgs(t)}` },
+    setup: ({ path, os }) => ({
+      command: `claude mcp add --scope user sayql -- ${shellQuote(path, os)}`,
+    }),
+    audit: {
+      kind: "run",
+      where: "Claude Code",
+      command: (t) => `/mcp__sayql__audit${promptArgs(t)}`,
+    },
     runnable: true,
     clients: /claude[ -]code/i,
   },
@@ -162,7 +170,9 @@ export const AGENTS: CodingAgent[] = [
     setup: ({ path, os }) => ({
       link: vscodeLink(path),
       command:
-        os === "windows" ? undefined : `code --add-mcp ${shellQuote(JSON.stringify({ name: "sayql", type: "stdio", command: path }), os)}`,
+        os === "windows"
+          ? undefined
+          : `code --add-mcp ${shellQuote(JSON.stringify({ name: "sayql", type: "stdio", command: path }), os)}`,
       config: {
         file: null,
         open: "Run MCP: Open User Configuration from the Command Palette",
@@ -171,7 +181,11 @@ export const AGENTS: CodingAgent[] = [
       },
       also: "Or .vscode/mcp.json in your project.",
     }),
-    audit: { kind: "prompt", where: "Copilot Chat, in agent mode", command: () => "/mcp.sayql.audit" },
+    audit: {
+      kind: "prompt",
+      where: "Copilot Chat, in agent mode",
+      command: () => "/mcp.sayql.audit",
+    },
     runnable: false,
     clients: /visual studio code|vs ?code/i,
   },
@@ -181,7 +195,11 @@ export const AGENTS: CodingAgent[] = [
     short: "Codex",
     setup: ({ path, os }) => ({
       command: `codex mcp add sayql -- ${shellQuote(path, os)}`,
-      config: { file: "~/.codex/config.toml", format: "toml", text: `[mcp_servers.sayql]\ncommand = ${JSON.stringify(path)}\nargs = []` },
+      config: {
+        file: "~/.codex/config.toml",
+        format: "toml",
+        text: `[mcp_servers.sayql]\ncommand = ${JSON.stringify(path)}\nargs = []`,
+      },
     }),
     audit: { kind: "paste", where: "Codex, started in your project" },
     runnable: false,
@@ -195,7 +213,11 @@ export const AGENTS: CodingAgent[] = [
       command: `gemini mcp add -s user sayql ${shellQuote(path, os)}`,
       config: { file: "~/.gemini/settings.json", format: "json", text: mcpServers(path) },
     }),
-    audit: { kind: "prompt", where: "Gemini CLI, in your project", command: (t) => `/audit${promptArgs(t)}` },
+    audit: {
+      kind: "prompt",
+      where: "Gemini CLI, in your project",
+      command: (t) => `/audit${promptArgs(t)}`,
+    },
     runnable: false,
     clients: /gemini/i,
   },
@@ -208,7 +230,9 @@ export const AGENTS: CodingAgent[] = [
       config: {
         file: "~/.copilot/mcp-config.json",
         format: "json",
-        text: json({ mcpServers: { sayql: { type: "local", command: path, args: [], tools: ["*"] } } }),
+        text: json({
+          mcpServers: { sayql: { type: "local", command: path, args: [], tools: ["*"] } },
+        }),
       },
     }),
     audit: { kind: "paste", where: "Copilot CLI, started in your project" },
@@ -223,11 +247,18 @@ export const AGENTS: CodingAgent[] = [
       config: {
         file: "~/.config/opencode/opencode.json",
         format: "json",
-        text: json({ $schema: "https://opencode.ai/config.json", mcp: { sayql: { type: "local", command: [path], enabled: true } } }),
+        text: json({
+          $schema: "https://opencode.ai/config.json",
+          mcp: { sayql: { type: "local", command: [path], enabled: true } },
+        }),
       },
       also: "Or opencode.json in your project.",
     }),
-    audit: { kind: "prompt", where: "opencode, in your project", command: (t) => `/sayql:audit${promptArgs(t)}` },
+    audit: {
+      kind: "prompt",
+      where: "opencode, in your project",
+      command: (t) => `/sayql:audit${promptArgs(t)}`,
+    },
     runnable: false,
     clients: /opencode/i,
   },
@@ -237,7 +268,11 @@ export const AGENTS: CodingAgent[] = [
     short: "Devin Desktop",
     setup: ({ path, os }) => ({
       config: {
-        file: byOs(os, { windows: "%APPDATA%\\devin\\mcp_config.json" }, "~/.config/devin/mcp_config.json"),
+        file: byOs(
+          os,
+          { windows: "%APPDATA%\\devin\\mcp_config.json" },
+          "~/.config/devin/mcp_config.json",
+        ),
         format: "json",
         text: mcpServers(path),
       },
@@ -301,7 +336,11 @@ export const AGENTS: CodingAgent[] = [
     name: "Continue",
     short: "Continue",
     setup: ({ path }) => ({
-      config: { file: ".continue/mcpServers/sayql.json (in your project)", format: "json", text: mcpServers(path) },
+      config: {
+        file: ".continue/mcpServers/sayql.json (in your project)",
+        format: "json",
+        text: mcpServers(path),
+      },
     }),
     audit: { kind: "menu", text: "In Continue's chat, type / and pick SayQL's audit." },
     runnable: false,
@@ -314,7 +353,11 @@ export const AGENTS: CodingAgent[] = [
     setup: ({ path, os }) => ({
       command: `amp mcp add sayql -- ${shellQuote(path, os)}`,
       config: {
-        file: byOs(os, { windows: "%USERPROFILE%\\.config\\amp\\settings.json" }, "~/.config/amp/settings.json"),
+        file: byOs(
+          os,
+          { windows: "%USERPROFILE%\\.config\\amp\\settings.json" },
+          "~/.config/amp/settings.json",
+        ),
         format: "json",
         text: json({ "amp.mcpServers": { sayql: { command: path, args: [] } } }),
       },
@@ -355,17 +398,26 @@ export const AGENTS: CodingAgent[] = [
       },
       after: "Quit Claude Desktop fully and open it again.",
     }),
-    audit: { kind: "menu", text: "In a chat, pick SayQL's audit from the menu that lists your connectors." },
+    audit: {
+      kind: "menu",
+      text: "In a chat, pick SayQL's audit from the menu that lists your connectors.",
+    },
     runnable: false,
     clients: /^claude$|claude-ai/i,
-    caveat: "Claude Desktop can't read your project's code on its own, so a coding agent audits better.",
+    caveat:
+      "Claude Desktop can't read your project's code on its own, so a coding agent audits better.",
   },
   {
     id: "other",
     name: "Other (any MCP app)",
     short: "your app",
     setup: ({ path }) => ({
-      config: { file: null, open: "Add a stdio server to your app's MCP settings", format: "json", text: mcpServers(path) },
+      config: {
+        file: null,
+        open: "Add a stdio server to your app's MCP settings",
+        format: "json",
+        text: mcpServers(path),
+      },
     }),
     audit: { kind: "paste", where: "your app's chat" },
     runnable: false,

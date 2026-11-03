@@ -15,7 +15,8 @@ const MAX_TEXT = 1800;
 
 /** The label used by the issue templates' operating-system dropdown. */
 export function osLabel(info: AppInfo): string {
-  if (info.os === "macos") return info.arch === "aarch64" ? "macOS (Apple silicon)" : "macOS (Intel)";
+  if (info.os === "macos")
+    return info.arch === "aarch64" ? "macOS (Apple silicon)" : "macOS (Intel)";
   if (info.os === "windows") return "Windows";
   if (info.os === "linux") return "Linux";
   return info.os;

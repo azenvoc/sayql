@@ -251,7 +251,10 @@ pub async fn add_knowledge_folder(
 /// an optional read-only token, kept in the keychain; `token_user`: the user name sent with
 /// it, needed for hosts SayQL doesn't know.
 #[tauri::command]
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "a Tauri command takes each webview argument by name"
+)]
 pub async fn add_knowledge_repo(
     state: State<'_, AppState>,
     id: String,

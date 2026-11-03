@@ -32,7 +32,15 @@ export interface TabBarProps {
 }
 
 /** Editor tabs: click to switch, × or middle-click to close, right-click for more. */
-export function TabBar({ items, activeId, onSelect, onClose, onAdd, addLabel = "New tab", menu }: TabBarProps) {
+export function TabBar({
+  items,
+  activeId,
+  onSelect,
+  onClose,
+  onAdd,
+  addLabel = "New tab",
+  menu,
+}: TabBarProps) {
   const context = useContextMenu();
   return (
     <div className={styles.bar}>
@@ -68,8 +76,12 @@ export function TabBar({ items, activeId, onSelect, onClose, onAdd, addLabel = "
           </div>
         ))}
       </div>
-      {onAdd && <IconButton icon={Plus} label={addLabel} size="sm" className={styles.add} onClick={onAdd} />}
-      {context.menu && <ContextMenu at={context.menu.at} items={context.menu.items} onClose={context.close} />}
+      {onAdd && (
+        <IconButton icon={Plus} label={addLabel} size="sm" className={styles.add} onClick={onAdd} />
+      )}
+      {context.menu && (
+        <ContextMenu at={context.menu.at} items={context.menu.items} onClose={context.close} />
+      )}
     </div>
   );
 }

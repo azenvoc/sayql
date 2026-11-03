@@ -39,7 +39,13 @@ export function voiceReducer(phase: VoicePhase, action: VoiceAction): VoicePhase
     case "failed":
       return { kind: "message", text: action.message, tone: "error" };
     case "downloaded":
-      return phase.kind === "offer" ? { kind: "message", text: `Voice is ready. Click the mic or press ${SHORTCUT}.`, tone: "info" } : phase;
+      return phase.kind === "offer"
+        ? {
+            kind: "message",
+            text: `Voice is ready. Click the mic or press ${SHORTCUT}.`,
+            tone: "info",
+          }
+        : phase;
     case "cancel":
       return { kind: "idle" };
   }

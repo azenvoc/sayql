@@ -57,7 +57,11 @@ export function auditButtonLabel(_agents?: AuditAgent[] | null): string {
 export function auditButtonTitle(agents: AuditAgent[] | null): string {
   // The dialog starts with the first ready one: Claude Code, else SayQL's built-in OpenCode.
   const first = (agents ?? []).find((a) => a.ready);
-  const what = !first ? "your coding agent" : first.builtIn ? first.label : `your installed ${first.label}`;
+  const what = !first
+    ? "your coding agent"
+    : first.builtIn
+      ? first.label
+      : `your installed ${first.label}`;
   return `Runs ${what}, read-only, over this database's code`;
 }
 
@@ -79,7 +83,13 @@ export interface AuditButtonProps {
 }
 
 /** Runs the audit with the person's coding agent, read-only, over the connection's knowledge sources. */
-export function AuditButton({ target, connections, onReview, onOpen, variant = "secondary" }: AuditButtonProps) {
+export function AuditButton({
+  target,
+  connections,
+  onReview,
+  onOpen,
+  variant = "secondary",
+}: AuditButtonProps) {
   const { agents } = useAuditAgents();
   const [open, setOpen] = useState(false);
   const name = target?.name;
@@ -95,7 +105,14 @@ export function AuditButton({ target, connections, onReview, onOpen, variant = "
       >
         {auditButtonLabel(agents)}
       </Button>
-      {open && <AuditDialog target={target} connections={connections} onReview={onReview} onClose={() => setOpen(false)} />}
+      {open && (
+        <AuditDialog
+          target={target}
+          connections={connections}
+          onReview={onReview}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </>
   );
 }
@@ -130,7 +147,10 @@ export function AuditDialog({ target, connections = [], onReview, onClose }: Aud
   const agent = ready.find((a) => a.id === agentId) ?? ready[0] ?? null;
   const [connectionId, setConnectionId] = useState(target?.connectionId ?? local[0]?.id ?? "");
   const database = target && target.connectionId === connectionId ? target.database : null;
-  const connectionName = target?.connectionId === connectionId ? target.name : (local.find((c) => c.id === connectionId)?.name ?? "");
+  const connectionName =
+    target?.connectionId === connectionId
+      ? target.name
+      : (local.find((c) => c.id === connectionId)?.name ?? "");
   const [sources, setSources] = useState<KnowledgeSource[]>([]);
   const [model, setModel] = useState<AuditModel>("sonnet");
   const [phase, setPhase] = useState<"setup" | "running" | "done">("setup");
@@ -195,7 +215,8 @@ export function AuditDialog({ target, connections = [], onReview, onClose }: Aud
   }, [lines]);
 
   const close = () => {
-    if (phase === "running" && runId.current) void commands.cancelAudit(runId.current).catch(() => undefined);
+    if (phase === "running" && runId.current)
+      void commands.cancelAudit(runId.current).catch(() => undefined);
     if (suggested.current) window.dispatchEvent(new Event(SUGGESTIONS_CHANGED));
     window.dispatchEvent(new Event(AUDITS_CHANGED));
     onClose();
@@ -224,7 +245,9 @@ export function AuditDialog({ target, connections = [], onReview, onClose }: Aud
   const openTerminal = () => {
     if (!agent || sources.length === 0 || !connectionId) return;
     setError(null);
-    commands.openAuditInTerminal(agent.id, connectionId, database).catch((e) => setError(errorText(e)));
+    commands
+      .openAuditInTerminal(agent.id, connectionId, database)
+      .catch((e) => setError(errorText(e)));
   };
 
   const copyPrompt = () => {
@@ -248,7 +271,13 @@ export function AuditDialog({ target, connections = [], onReview, onClose }: Aud
   const labels = sources.map((s) => s.label).join(", ");
   const actions =
     phase === "running" ? (
-      <Button onClick={() => runId.current && void commands.cancelAudit(runId.current).catch(() => undefined)}>Cancel</Button>
+      <Button
+        onClick={() =>
+          runId.current && void commands.cancelAudit(runId.current).catch(() => undefined)
+        }
+      >
+        Cancel
+      </Button>
     ) : phase === "done" ? (
       <>
         <Button
@@ -305,22 +334,26 @@ export function AuditDialog({ target, connections = [], onReview, onClose }: Aud
               <>
                 {agent.builtIn ? (
                   <p className={styles.lead}>
-                    Runs OpenCode {agent.version}, built into SayQL, read-only, over this database&apos;s knowledge sources:
-                    code, files and web pages. It reads them and SayQL&apos;s schema and suggests notes for you to approve. It talks to
-                    the AI you chose in Settings → AI provider{agent.detail ? ` (${agent.detail})` : ""}, which sees what it reads.
+                    Runs OpenCode {agent.version}, built into SayQL, read-only, over this
+                    database&apos;s knowledge sources: code, files and web pages. It reads them and
+                    SayQL&apos;s schema and suggests notes for you to approve. It talks to the AI
+                    you chose in Settings → AI provider{agent.detail ? ` (${agent.detail})` : ""},
+                    which sees what it reads.
                   </p>
                 ) : (
                   <p className={styles.lead}>
-                    Runs your installed {agent.label}, read-only, over this database&apos;s knowledge sources: code,
-                    files and web pages. It reads them and SayQL&apos;s schema and suggests notes for you to approve. It uses your own{" "}
-                    {agent.label} sign-in, however you&apos;ve set it up: SayQL never reads your {agent.label} credentials and sends no
-                    code anywhere.
+                    Runs your installed {agent.label}, read-only, over this database&apos;s
+                    knowledge sources: code, files and web pages. It reads them and SayQL&apos;s
+                    schema and suggests notes for you to approve. It uses your own {agent.label}{" "}
+                    sign-in, however you&apos;ve set it up: SayQL never reads your {agent.label}{" "}
+                    credentials and sends no code anywhere.
                   </p>
                 )}
                 {agent.builtIn && agent.downloadBytes ? (
                   <p className={styles.hint}>
-                    Downloads OpenCode {agent.version} and ripgrep, {megabytes(agent.downloadBytes)}, once, from GitHub. SayQL checks
-                    them against pinned checksums before running them.
+                    Downloads OpenCode {agent.version} and ripgrep, {megabytes(agent.downloadBytes)}
+                    , once, from GitHub. SayQL checks them against pinned checksums before running
+                    them.
                   </p>
                 ) : null}
                 <div className={styles.fields}>
@@ -351,14 +384,24 @@ export function AuditDialog({ target, connections = [], onReview, onClose }: Aud
                   {ready.length > 1 && (
                     <label className={styles.field}>
                       <span className={styles.label}>Audit with</span>
-                      <Select aria-label="Audit with" value={agent.id} options={ready.map((a) => ({ value: a.id, label: a.label }))} onChange={setAgentId} />
+                      <Select
+                        aria-label="Audit with"
+                        value={agent.id}
+                        options={ready.map((a) => ({ value: a.id, label: a.label }))}
+                        onChange={setAgentId}
+                      />
                     </label>
                   )}
                   {agent.id === "claude" && (
                     <>
                       <div className={styles.field}>
                         <span className={styles.label}>Model</span>
-                        <Select aria-label="Model for the audit" value={model} options={MODELS} onChange={chooseModel} />
+                        <Select
+                          aria-label="Model for the audit"
+                          value={model}
+                          options={MODELS}
+                          onChange={chooseModel}
+                        />
                       </div>
                       <p className={styles.hint}>
                         {model === "sonnet"
@@ -366,7 +409,8 @@ export function AuditDialog({ target, connections = [], onReview, onClose }: Aud
                           : model === "opus"
                             ? "Opus is slower and uses more of your plan. "
                             : "Whatever model your Claude Code uses by default. "}
-                        The run counts against your own Claude plan or however Claude Code is set up.
+                        The run counts against your own Claude plan or however Claude Code is set
+                        up.
                       </p>
                     </>
                   )}
@@ -381,17 +425,20 @@ export function AuditDialog({ target, connections = [], onReview, onClose }: Aud
                 </div>
                 <ul className={styles.rules} aria-label="What the agent may do">
                   <li>
-                    <Check size={13} /> Read, search and list files in these sources, and use SayQL&apos;s tools.
+                    <Check size={13} /> Read, search and list files in these sources, and use
+                    SayQL&apos;s tools.
                   </li>
                   <li>
-                    <Check size={13} /> Repositories are fetched first with your own git, to this computer only.
+                    <Check size={13} /> Repositories are fetched first with your own git, to this
+                    computer only.
                   </li>
                   <li>
-                    <Check size={13} /> No commands, no file changes, no web{agent.builtIn ? ", no .env files" : ""}. SayQL starts it
-                    with these limits.
+                    <Check size={13} /> No commands, no file changes, no web
+                    {agent.builtIn ? ", no .env files" : ""}. SayQL starts it with these limits.
                   </li>
                   <li>
-                    <Check size={13} /> Queries go through SayQL: it gets back only what this connection allows AI apps.
+                    <Check size={13} /> Queries go through SayQL: it gets back only what this
+                    connection allows AI apps.
                   </li>
                 </ul>
               </>
@@ -403,7 +450,9 @@ export function AuditDialog({ target, connections = [], onReview, onClose }: Aud
                 <Button size="sm" variant="ghost" icon={copied ? Check : Copy} onClick={copyPrompt}>
                   {copied ? "Copied" : "Copy audit prompt"}
                 </Button>
-                <span className={styles.muted}>to paste into another AI app connected to SayQL.</span>
+                <span className={styles.muted}>
+                  to paste into another AI app connected to SayQL.
+                </span>
               </div>
             )}
           </>
@@ -413,7 +462,8 @@ export function AuditDialog({ target, connections = [], onReview, onClose }: Aud
             <div className={styles.status}>
               {phase === "running" ? (
                 <>
-                  <Spinner /> Auditing {connectionName} in <code className={styles.path}>{labels}</code>
+                  <Spinner /> Auditing {connectionName} in{" "}
+                  <code className={styles.path}>{labels}</code>
                   <span className={styles.time}>{elapsed(Math.max(0, now - started))}</span>
                 </>
               ) : (
@@ -422,16 +472,31 @@ export function AuditDialog({ target, connections = [], onReview, onClose }: Aud
                 </span>
               )}
             </div>
-            <ol className={styles.log} ref={logRef} role="log" aria-live="polite" aria-label="Audit progress">
-              {lines.length === 0 && phase === "running" && <li className={styles.muted}>Starting {agent?.label ?? "the agent"}…</li>}
+            <ol
+              className={styles.log}
+              ref={logRef}
+              role="log"
+              aria-live="polite"
+              aria-label="Audit progress"
+            >
+              {lines.length === 0 && phase === "running" && (
+                <li className={styles.muted}>Starting {agent?.label ?? "the agent"}…</li>
+              )}
               {download && phase === "running" && (
                 <li className={styles.muted}>
-                  <Spinner /> Downloading OpenCode: {Math.round(download.received / 1_000_000)} of {Math.round(download.total / 1_000_000)} MB
+                  <Spinner /> Downloading OpenCode: {Math.round(download.received / 1_000_000)} of{" "}
+                  {Math.round(download.total / 1_000_000)} MB
                 </li>
               )}
               {lines.map((l, i) => (
                 <li key={i} className={cx(styles.line, styles[l.kind])}>
-                  {l.kind === "note" ? <Lightbulb size={13} /> : l.kind === "warn" ? <AlertTriangle size={13} /> : <span className={styles.dot} />}
+                  {l.kind === "note" ? (
+                    <Lightbulb size={13} />
+                  ) : l.kind === "warn" ? (
+                    <AlertTriangle size={13} />
+                  ) : (
+                    <span className={styles.dot} />
+                  )}
                   <span>{l.text}</span>
                 </li>
               ))}
@@ -450,7 +515,9 @@ function noteCount(n: number): string {
 }
 
 function Result({ done, onReview }: { done: Done; onReview?: () => void }) {
-  const where = onReview ? null : " They wait under Notes in the navigator and in Settings → AI apps → Suggestions.";
+  const where = onReview
+    ? null
+    : " They wait under Notes in the navigator and in Settings → AI apps → Suggestions.";
   const link =
     onReview && done.suggested > 0 ? (
       <>
@@ -475,12 +542,20 @@ function Result({ done, onReview }: { done: Done; onReview?: () => void }) {
             "Done: no notes suggested."
           )}
         </Alert>
-        {done.summary && <Markdown className={styles.summary} text={done.summary} onLink={(u) => void openUrl(u)} />}
+        {done.summary && (
+          <Markdown
+            className={styles.summary}
+            text={done.summary}
+            onLink={(u) => void openUrl(u)}
+          />
+        )}
       </>
     );
   }
-  const tone = done.outcome === "error" ? "danger" : done.outcome === "timeout" ? "warning" : "info";
-  const text = done.outcome === "cancelled" ? "Audit cancelled." : (done.error ?? "The audit stopped.");
+  const tone =
+    done.outcome === "error" ? "danger" : done.outcome === "timeout" ? "warning" : "info";
+  const text =
+    done.outcome === "cancelled" ? "Audit cancelled." : (done.error ?? "The audit stopped.");
   return (
     <Alert tone={tone}>
       {text}
@@ -502,14 +577,16 @@ function NoAgent({ agents, onCheckAgain }: { agents: AuditAgent[]; onCheckAgain:
     <div className={styles.none}>
       <p className={styles.lead}>
         SayQL runs the audit with a coding agent on this computer, read-only. It can keep{" "}
-        {supported.map((a) => a.label).join(", ")} read-only, or run its own built-in OpenCode with your AI provider; neither
-        can run yet.
+        {supported.map((a) => a.label).join(", ")} read-only, or run its own built-in OpenCode with
+        your AI provider; neither can run yet.
       </p>
       {found.length > 0 && (
         <ul className={styles.found}>
           {found.map((a) => (
             <li key={a.id}>
-              <strong>{a.label}</strong> {a.path && !a.builtIn && <span className={styles.muted}>({a.path})</span>}: {a.problem}
+              <strong>{a.label}</strong>{" "}
+              {a.path && !a.builtIn && <span className={styles.muted}>({a.path})</span>}:{" "}
+              {a.problem}
             </li>
           ))}
         </ul>
@@ -518,7 +595,12 @@ function NoAgent({ agents, onCheckAgain }: { agents: AuditAgent[]; onCheckAgain:
         {supported
           .filter((a) => !a.path)
           .map((a) => (
-            <Button key={a.id} size="sm" variant="primary" onClick={() => void openUrl(a.installUrl)}>
+            <Button
+              key={a.id}
+              size="sm"
+              variant="primary"
+              onClick={() => void openUrl(a.installUrl)}
+            >
               Install {a.label}
             </Button>
           ))}
@@ -527,8 +609,8 @@ function NoAgent({ agents, onCheckAgain }: { agents: AuditAgent[]; onCheckAgain:
         </Button>
       </div>
       <p className={styles.muted}>
-        Using Codex, Cursor or another app? Connect it to SayQL (Settings → AI apps → Access) and paste the audit prompt
-        into it.
+        Using Codex, Cursor or another app? Connect it to SayQL (Settings → AI apps → Access) and
+        paste the audit prompt into it.
       </p>
     </div>
   );

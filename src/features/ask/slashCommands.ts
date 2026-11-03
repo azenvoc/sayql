@@ -16,12 +16,36 @@ export interface Builtin {
 
 /** One entry per BUILTIN_SLUGS from skills (checked in slashCommands.test.ts). */
 export const BUILTINS: Builtin[] = [
-  { slug: "investigate", description: "Investigate in several read-only steps (beta)", placeholder: "What should SayQL find out?" },
-  { slug: "followup", description: "Change the current query", placeholder: "What to change — e.g. only active ones" },
-  { slug: "new", description: "Start fresh, ignore the last query", placeholder: "Ask in plain English" },
-  { slug: "explain", description: "Explain the current query", placeholder: "Anything to focus on? (optional)" },
-  { slug: "fix", description: "Fix the current query or its error", placeholder: "What's wrong? (optional)" },
-  { slug: "improve", description: "Review and improve the current query", placeholder: "Anything to focus on? (optional)" },
+  {
+    slug: "investigate",
+    description: "Investigate in several read-only steps (beta)",
+    placeholder: "What should SayQL find out?",
+  },
+  {
+    slug: "followup",
+    description: "Change the current query",
+    placeholder: "What to change — e.g. only active ones",
+  },
+  {
+    slug: "new",
+    description: "Start fresh, ignore the last query",
+    placeholder: "Ask in plain English",
+  },
+  {
+    slug: "explain",
+    description: "Explain the current query",
+    placeholder: "Anything to focus on? (optional)",
+  },
+  {
+    slug: "fix",
+    description: "Fix the current query or its error",
+    placeholder: "What's wrong? (optional)",
+  },
+  {
+    slug: "improve",
+    description: "Review and improve the current query",
+    placeholder: "Anything to focus on? (optional)",
+  },
 ];
 
 const ACTIONS: readonly string[] = ["explain", "fix", "improve"] satisfies ActionCommand[];
@@ -30,7 +54,9 @@ export type Command = { kind: "builtin"; builtin: Builtin } | { kind: "skill"; s
 
 export const commandSlug = (c: Command) => (c.kind === "builtin" ? c.builtin.slug : c.skill.slug);
 
-export const isAction = (c: Command | null): c is { kind: "builtin"; builtin: Builtin & { slug: ActionCommand } } =>
+export const isAction = (
+  c: Command | null,
+): c is { kind: "builtin"; builtin: Builtin & { slug: ActionCommand } } =>
   c?.kind === "builtin" && ACTIONS.includes(c.builtin.slug);
 
 export interface Parsed {
@@ -50,7 +76,11 @@ export function parseCommand(text: string, skills: Skill[]): Parsed {
   const slug = m[1] === "agent" ? "investigate" : m[1];
   const builtin = BUILTINS.find((b) => b.slug === slug);
   const skill = builtin ? undefined : skills.find((s) => s.slug === slug);
-  const command: Command | null = builtin ? { kind: "builtin", builtin } : skill ? { kind: "skill", skill } : null;
+  const command: Command | null = builtin
+    ? { kind: "builtin", builtin }
+    : skill
+      ? { kind: "skill", skill }
+      : null;
   return command ? { command, rest: text.slice(m[0].length) } : { command: null, rest: text };
 }
 
@@ -69,7 +99,8 @@ export function buildsOnLast(slug: string | null, rest: string, lastQuestion: st
   return q !== "" && q !== lastQuestion.trim();
 }
 
-export type MenuItem = { kind: "builtin" | "skill"; slug: string; description: string } | { kind: "create" };
+export type MenuItem =
+  { kind: "builtin" | "skill"; slug: string; description: string } | { kind: "create" };
 
 /** The text after "/" while the menu should show, else null: "/" at the start and no space yet. */
 export function menuQuery(text: string): string | null {
@@ -83,12 +114,22 @@ export function menuQuery(text: string): string | null {
  */
 export function menuItems(query: string, skills: Skill[]): MenuItem[] {
   const all = [
-    ...BUILTINS.map((b) => ({ kind: "builtin" as const, slug: b.slug, description: b.description })),
-    ...skills.map((s) => ({ kind: "skill" as const, slug: s.slug, description: s.description || s.instruction })),
+    ...BUILTINS.map((b) => ({
+      kind: "builtin" as const,
+      slug: b.slug,
+      description: b.description,
+    })),
+    ...skills.map((s) => ({
+      kind: "skill" as const,
+      slug: s.slug,
+      description: s.description || s.instruction,
+    })),
   ];
   const q = query.toLowerCase();
   const prefix = all.filter((i) => i.slug.startsWith(q));
-  const contains = all.filter((i) => !prefix.includes(i) && (i.slug.includes(q) || i.description.toLowerCase().includes(q)));
+  const contains = all.filter(
+    (i) => !prefix.includes(i) && (i.slug.includes(q) || i.description.toLowerCase().includes(q)),
+  );
   return [...prefix, ...contains, { kind: "create" }];
 }
 
@@ -116,13 +157,17 @@ export interface PlanContext {
 /** Turns the question text into the request to send. */
 export function planRequest(text: string, skills: Skill[], ctx: PlanContext): Plan {
   const { command, rest } = parseCommand(text, skills);
-  if (isAction(command)) return { kind: "action", command: command.builtin.slug, question: rest, skill: null };
+  if (isAction(command))
+    return { kind: "action", command: command.builtin.slug, question: rest, skill: null };
   if (command?.kind === "builtin" && command.builtin.slug === "investigate") {
     const inner = parseCommand(rest, skills);
     const skill = inner.command?.kind === "skill" ? inner.command.skill.slug : null;
     return { kind: "agent", question: skill ? inner.rest : rest, skill };
   }
-  const draft = (task: Extract<GenerationTask, { kind: "draft" }>, skill: string | null = null) => ({
+  const draft = (
+    task: Extract<GenerationTask, { kind: "draft" }>,
+    skill: string | null = null,
+  ) => ({
     kind: "draft" as const,
     question: rest,
     task,
@@ -131,7 +176,8 @@ export function planRequest(text: string, skills: Skill[], ctx: PlanContext): Pl
     instant: !skill && !task.forceFollowUp,
   });
   if (!command) return draft({ kind: "draft", previous: ctx.previous });
-  if (command.kind === "skill") return draft({ kind: "draft", previous: ctx.previous }, command.skill.slug);
+  if (command.kind === "skill")
+    return draft({ kind: "draft", previous: ctx.previous }, command.skill.slug);
   if (command.builtin.slug === "new") return draft({ kind: "draft", previous: null });
   // /followup: the last run query, else whatever is in the editor.
   const previous = ctx.previous ?? (ctx.sql.trim() ? { question: "", sql: ctx.sql } : null);
@@ -139,7 +185,11 @@ export function planRequest(text: string, skills: Skill[], ctx: PlanContext): Pl
 }
 
 /** The task for an action command, run on the editor's SQL and the last database error. */
-export function actionTask(command: ActionCommand, sql: string, error: string | null): GenerationTask {
+export function actionTask(
+  command: ActionCommand,
+  sql: string,
+  error: string | null,
+): GenerationTask {
   switch (command) {
     case "explain":
       return { kind: "explain", sql };

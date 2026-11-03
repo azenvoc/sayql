@@ -33,7 +33,8 @@ export function NoteSuggestions({ suggestions, place, onAccept, onDismiss }: Not
       },
     );
   };
-  if (suggestions.length === 0) return <p className={styles.empty}>No suggested notes are waiting.</p>;
+  if (suggestions.length === 0)
+    return <p className={styles.empty}>No suggested notes are waiting.</p>;
   return (
     <div className={styles.wrap}>
       <ul className={styles.list} aria-label="Suggested notes">
@@ -49,7 +50,9 @@ export function NoteSuggestions({ suggestions, place, onAccept, onDismiss }: Not
                 <>
                   <p className={styles.change}>
                     <span className={styles.label}>Remove note:</span>{" "}
-                    <span className={styles.old}>{s.replacedText ?? "a note that was since deleted"}</span>
+                    <span className={styles.old}>
+                      {s.replacedText ?? "a note that was since deleted"}
+                    </span>
                   </p>
                   <p className={styles.text}>
                     <span className={styles.label}>Why:</span> {s.text}
@@ -60,7 +63,9 @@ export function NoteSuggestions({ suggestions, place, onAccept, onDismiss }: Not
                   {s.replaces && (
                     <p className={styles.change}>
                       <span className={styles.label}>Replaces:</span>{" "}
-                      <span className={styles.old}>{s.replacedText ?? "a note that was since deleted"}</span>
+                      <span className={styles.old}>
+                        {s.replacedText ?? "a note that was since deleted"}
+                      </span>
                     </p>
                   )}
                   <p className={styles.text}>{s.text}</p>
@@ -77,7 +82,13 @@ export function NoteSuggestions({ suggestions, place, onAccept, onDismiss }: Not
                 </p>
               )}
               <div className={styles.actions}>
-                <Button size="sm" variant="ghost" icon={X} disabled={busy === s.id} onClick={() => act(s.id, onDismiss)}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon={X}
+                  disabled={busy === s.id}
+                  onClick={() => act(s.id, onDismiss)}
+                >
                   Dismiss
                 </Button>
                 <Button
