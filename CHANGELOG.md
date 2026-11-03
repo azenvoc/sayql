@@ -3,16 +3,6 @@
 All notable changes to SayQL are listed here. Downloads are on the
 [releases page](https://github.com/dithzz/sayql-releases/releases).
 
-## Unreleased
-
-### Update dialog
-
-- **See what's new before you update.** When there's a newer version, SayQL shows its version, date and release
-  notes, the changes from this changelog. **Upgrade…** downloads and installs it with a progress bar, then
-  restarts; **Details…** opens the release page.
-- **Don't show for version X** keeps the dialog away until the next version. The status bar's update button
-  still opens it.
-
 ## 0.5.5 (2026-11-03)
 
 ### Security fixes from a code audit
