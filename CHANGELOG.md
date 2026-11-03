@@ -13,8 +13,8 @@ All notable changes to SayQL are listed here. Downloads are on the
 - The navigator and the top bar show each connection's database logo.
 - **AI providers and models have logos too:** in the "How do you want to use AI?" setup, Settings → AI provider
   (now a tile per provider), the Ask box's model menu (each provider, and each model by its maker, such as Claude,
-  Gemini, Mistral, Llama or Qwen through OpenRouter or Ollama) and the status bar. OpenAI, Groq and
-  OpenAI-compatible servers use a neutral icon; SayQL AI credits uses the SayQL logo.
+  Gemini, Mistral, Llama or Qwen through OpenRouter or Ollama) and the status bar. OpenAI and LM Studio use
+  their own logos, as their brand guidelines allow; Groq and OpenAI-compatible servers use a neutral icon; SayQL AI credits uses the SayQL logo.
 - Logos come from Simple Icons (CC0) and are bundled with the app, so nothing is downloaded. SQL Server and
   Azure SQL use a neutral icon. Sources and usage guidelines are in THIRD-PARTY-NOTICES.txt.
 

@@ -48198,10 +48198,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ==============================================================================
-Logos (src/assets/logos), from Simple Icons 16.36.0 (CC0-1.0) https://simpleicons.org
+Logos (src/assets/logos)
 Each logo is a trademark of its owner, shown only to identify that product; its use
-doesn't mean the owner endorses SayQL. Original source and usage guidelines:
+doesn't mean the owner endorses SayQL.
 ------------------------------------------------------------------------------
+The brands' own logos, used as their brand guidelines allow:
+LM Studio: https://lmstudio.ai/assets/marketing/brand/download/logos/lm-studio-icon-color.svg
+  guidelines: https://lmstudio.ai/brand
+OpenAI: https://openai.com/brand/ (Blossom, black and white versions, unchanged apart from cropping the clear space)
+  guidelines: https://openai.com/brand/
+
+From Simple Icons 16.36.0 (CC0-1.0) https://simpleicons.org; original source and
+usage guidelines:
 PostgreSQL: https://wiki.postgresql.org/wiki/Logo
   guidelines: https://www.postgresql.org/about/policies/trademarks/
 MySQL: https://www.mysql.com/about/legal/logos.html
@@ -48218,7 +48226,6 @@ OpenRouter: https://openrouter.ai
 Mistral AI: https://chat.mistral.ai
 DeepSeek: https://www.deepseek.com
 Ollama: https://github.com/ollama/ollama/issues/2152#issuecomment-1905286922
-LM Studio: https://files.lmstudio.ai/lmstudio_icon2.svg
 Meta: https://www.meta.com
   guidelines: https://www.facebook.com/brand/resources/meta/company-brand
 QWen: https://qwen.ai

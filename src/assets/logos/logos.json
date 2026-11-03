@@ -67,7 +67,9 @@
     "title": "LM Studio",
     "color": "#000000",
     "dark": true,
-    "source": "https://files.lmstudio.ai/lmstudio_icon2.svg"
+    "artwork": "official",
+    "source": "https://lmstudio.ai/assets/marketing/brand/download/logos/lm-studio-icon-color.svg",
+    "guidelines": "https://lmstudio.ai/brand"
   },
   "meta": {
     "title": "Meta",
@@ -79,5 +81,12 @@
     "title": "QWen",
     "color": "#6950EF",
     "source": "https://qwen.ai"
+  },
+  "openai": {
+    "title": "OpenAI",
+    "color": "#000000",
+    "artwork": "official",
+    "source": "https://openai.com/brand/ (Blossom, black and white versions, unchanged apart from cropping the clear space)",
+    "guidelines": "https://openai.com/brand/"
   }
 }

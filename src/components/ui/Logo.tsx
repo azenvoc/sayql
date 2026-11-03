@@ -1,4 +1,4 @@
-import { BrainCircuit, Cloud, Database, Plug, Zap, type LucideIcon } from "lucide-react";
+import { Cloud, Database, Plug, Zap, type LucideIcon } from "lucide-react";
 import { BrandMark } from "./BrandMark";
 import { cx } from "../../lib/cx";
 import LOGOS from "../../assets/logos/logos.json";
@@ -38,7 +38,6 @@ interface LogoInfo {
 const NEUTRAL = {
   sqlserver: { title: "SQL Server", icon: Database, color: "var(--color-kind-mssql)" },
   azuresql: { title: "Azure SQL", icon: Cloud, color: "var(--color-kind-mssql)" },
-  openai: { title: "OpenAI", icon: BrainCircuit, color: "var(--color-text)" },
   groq: { title: "Groq", icon: Zap, color: "var(--color-text)" },
   /** Any server that speaks OpenAI's API. */
   compatible: { title: "OpenAI-compatible", icon: Plug, color: "var(--color-text-muted)" },

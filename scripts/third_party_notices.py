@@ -65,16 +65,23 @@ def npm_packages() -> list[dict]:
 
 
 def logo_notices() -> list[str]:
-    """The database and AI provider logos in src/assets/logos, from Simple Icons (CC0 1.0)."""
+    """The database and AI provider logos in src/assets/logos: Simple Icons (CC0 1.0), and a few
+    brands' own logos used under their published brand terms."""
     logos = json.loads((ROOT / "src" / "assets" / "logos" / "logos.json").read_text())
+    official = [l for l in logos.values() if l.get("artwork") == "official"]
+    simple = [l for l in logos.values() if l.get("artwork") != "official"]
     lines = [
         "=" * 78,
-        "Logos (src/assets/logos), from Simple Icons 16.36.0 (CC0-1.0) https://simpleicons.org",
+        "Logos (src/assets/logos)",
         "Each logo is a trademark of its owner, shown only to identify that product; its use",
-        "doesn't mean the owner endorses SayQL. Original source and usage guidelines:",
+        "doesn't mean the owner endorses SayQL.",
         "-" * 78,
+        "The brands' own logos, used as their brand guidelines allow:",
     ]
-    for logo in logos.values():
+    for logo in official:
+        lines += [f"{logo['title']}: {logo['source']}", f"  guidelines: {logo['guidelines']}"]
+    lines += ["", "From Simple Icons 16.36.0 (CC0-1.0) https://simpleicons.org; original source and", "usage guidelines:"]
+    for logo in simple:
         lines.append(f"{logo['title']}: {logo['source']}")
         if logo.get("guidelines"):
             lines.append(f"  guidelines: {logo['guidelines']}")
