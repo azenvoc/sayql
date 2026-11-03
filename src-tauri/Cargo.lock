@@ -4580,6 +4580,7 @@ dependencies = [
  "chrono",
  "cpal",
  "dirs",
+ "dunce",
  "flate2",
  "futures-util",
  "html2text",

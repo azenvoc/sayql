@@ -181,7 +181,8 @@ pub fn secret_paths(sources: &[PathBuf]) -> Vec<Hidden> {
                 let rel = format!("{prefix}{name}");
                 let path = e.path();
                 if kind.is_symlink() {
-                    let target = path.canonicalize().ok();
+                    // dunce, not std: Windows' `\\?\` form would never match OpenCode's rules.
+                    let target = dunce::canonicalize(&path).ok();
                     let target_name = target
                         .as_deref()
                         .and_then(Path::file_name)
@@ -201,12 +202,12 @@ pub fn secret_paths(sources: &[PathBuf]) -> Vec<Hidden> {
                     }
                 } else if kind.is_dir() {
                     if is_secret_folder(&name) {
-                        found.push((source, format!("{rel}/"), path.canonicalize().ok()));
+                        found.push((source, format!("{rel}/"), dunce::canonicalize(&path).ok()));
                     } else {
                         stack.push((path, format!("{rel}/")));
                     }
                 } else if is_secret_file(&rel) {
-                    found.push((source, rel, path.canonicalize().ok()));
+                    found.push((source, rel, dunce::canonicalize(&path).ok()));
                 }
             }
         }

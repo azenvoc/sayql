@@ -95,6 +95,9 @@ tar = "0.4"
 specta = { version = "=2.0.0-rc.26", features = ["derive", "serde_json"] }
 specta-typescript = "=0.0.13"
 tauri-specta = { version = "=2.0.0-rc.26", features = ["derive", "typescript"] }
+# canonicalize without Windows' `\\?\` prefix, which OpenCode's path rules don't match. The same as
+# std on macOS and Linux. Already in the tree through tauri.
+dunce = "1.0.5"
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]
