@@ -224,8 +224,13 @@ pub struct CheckRun {
     /// `None` when the check couldn't run (`error` says why).
     pub ok: Option<bool>,
     pub at: u64,
+    /// Why it couldn't run, for the person: the database's own message (it can quote values).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+    /// The same, as an AI may see it (`safety::redact::safe_error`). Not saved: only the run
+    /// that just happened hands it to agent mode.
+    #[serde(skip)]
+    pub ai_error: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
