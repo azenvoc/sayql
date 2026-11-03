@@ -49,6 +49,9 @@ use shape::{mark_never_send, mask_literals, refused};
 
 /// The Tauri app identifier: where the app keeps its config and data.
 const APP_ID: &str = "com.sayql.app";
+/// Set by the app when it starts this server (audits): its own identifier, so a build with
+/// another one (a test build) gets its own files and keychain item, never the app's.
+pub(crate) const APP_ID_VAR: &str = "SAYQL_APP_ID";
 /// How long a query may run before SayQL stops it. An AI app has no way to cancel one, and
 /// a forgotten query would keep the database busy.
 const QUERY_TIMEOUT: Duration = Duration::from_secs(120);
@@ -797,13 +800,33 @@ fn app_dirs() -> Result<(PathBuf, PathBuf), String> {
         let dir = PathBuf::from(dir);
         return Ok((dir.clone(), dir));
     }
+    let id = app_id(std::env::var(APP_ID_VAR).ok());
     let config = dirs::config_dir()
         .ok_or("Could not find the user's config directory")?
-        .join(APP_ID);
+        .join(&id);
     let data = dirs::data_dir()
         .ok_or("Could not find the user's data directory")?
-        .join(APP_ID);
+        .join(&id);
     Ok((config, data))
+}
+
+/// The identifier of the app this server serves: `from_env` ([`APP_ID_VAR`]) when it's a plain
+/// identifier (it names folders), else the app's.
+fn app_id(from_env: Option<String>) -> String {
+    from_env
+        .filter(|id| {
+            !id.is_empty()
+                && !id.starts_with('.')
+                && id
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
+        })
+        .unwrap_or_else(|| APP_ID.to_string())
+}
+
+/// What a process that starts this server passes it: this app's identifier ([`APP_ID_VAR`]).
+pub(crate) fn launch_env() -> (&'static str, &'static str) {
+    (APP_ID_VAR, crate::store::secrets::service())
 }
 
 /// Where the `sayql-mcp` binary is: next to the app's own executable.
@@ -820,6 +843,8 @@ pub(crate) fn binary_path() -> crate::error::AppResult<PathBuf> {
 /// Runs the server on stdin/stdout until the client disconnects.
 pub async fn serve_stdio() -> Result<(), Box<dyn std::error::Error>> {
     let (config_dir, data_dir) = app_dirs()?;
+    // The same app's keychain item as its files.
+    crate::store::secrets::set_service(&app_id(std::env::var(APP_ID_VAR).ok()));
     let mut state = AppState::new(config_dir, data_dir)?;
     // The app owns its files: this process never moves or replaces one it can't read.
     state.store = state.store.without_repair();

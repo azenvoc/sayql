@@ -24,7 +24,7 @@ pub fn set_service(identifier: &str) {
     let _ = SERVICE.set(identifier.to_string());
 }
 
-fn service() -> &'static str {
+pub(crate) fn service() -> &'static str {
     SERVICE.get().map_or(DEFAULT_SERVICE, String::as_str)
 }
 

@@ -1263,3 +1263,23 @@ async fn governance_repros_on_postgres() {
     }
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn the_server_uses_the_app_id_it_is_given_when_it_names_a_folder() {
+    assert_eq!(app_id(None), "com.sayql.app");
+    assert_eq!(
+        app_id(Some("com.sayql.e2etest".into())),
+        "com.sayql.e2etest"
+    );
+    for bad in [
+        "",
+        "..",
+        ".hidden",
+        "../com.sayql.app",
+        "a/b",
+        "a\\b",
+        "com sayql",
+    ] {
+        assert_eq!(app_id(Some(bad.into())), "com.sayql.app", "{bad}");
+    }
+}
