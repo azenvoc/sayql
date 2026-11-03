@@ -32,14 +32,14 @@ Saved instructions: the message may end with instructions the person saved for r
 unless they conflict with the rules above, which always win.";
 
 /// The query the person ran last in the same tab, for follow-up requests.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, specta::Type)]
 pub struct PreviousQuery {
     pub question: String,
     pub sql: String,
 }
 
 /// What the model is asked to do with the request.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, specta::Type)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub enum Task {
     /// Write SQL while the person types, building on the previous query for follow-ups.
@@ -141,7 +141,10 @@ fn task_message(question: &str, task: &Task) -> String {
              the corrected query for the request. Keep everything that was not part of the problem.",
             tagged("request", request),
             tagged("failed_query", sql),
-            tagged("database_error", &super::redact::database_error(error, sql))
+            tagged(
+                "database_error",
+                &crate::safety::redact::database_error(error, sql)
+            )
         ),
         Task::Improve { sql } => format!(
             "{}\n\n{}\n\nReview this query against the request and the schema: joins, filters, date logic, grouping, \

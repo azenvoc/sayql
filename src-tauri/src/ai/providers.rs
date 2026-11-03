@@ -5,7 +5,7 @@
 use serde::Serialize;
 
 /// Which wire protocol a provider speaks.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum Api {
     Anthropic,
@@ -15,7 +15,7 @@ pub enum Api {
 }
 
 /// Whether a provider needs an API key.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum KeyNeed {
     Required,

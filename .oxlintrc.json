@@ -35,5 +35,12 @@
     "react/incompatible-library": "off",
     "react/globals": "off"
   },
-  "ignorePatterns": ["dist", "src-tauri", "site", "node_modules"]
+  "ignorePatterns": [
+    "dist",
+    "src-tauri",
+    "site",
+    "node_modules",
+    // Generated from the Rust types by `pnpm gen:types`.
+    "src/api/bindings.ts"
+  ]
 }

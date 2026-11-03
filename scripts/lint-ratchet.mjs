@@ -5,12 +5,17 @@
 //
 //   node scripts/lint-ratchet.mjs           # check (CI: the `clippy` and `consistency` jobs)
 //   node scripts/lint-ratchet.mjs --update  # after fixing warnings: write the lower counts
+//   node scripts/lint-ratchet.mjs --update --moved  # after moving files: carry counts to new paths
 //   node scripts/lint-ratchet.mjs --only=clippy|oxlint
 //   node scripts/lint-ratchet.mjs --init    # only when a pull request adds a lint rule
 //
 // `--update` refuses to raise a count: fix the new warning, or put
 // `#[expect(lint, reason = "...")]` (Rust) / `// oxlint-disable-next-line rule -- reason` (TS)
 // on the line if it is truly right there.
+//
+// Moving or renaming a file renames its keys. `--update --moved` accepts a count under a key the
+// baseline doesn't have yet, as long as no rule's total across all files rises; a key the
+// baseline already has still may not rise. Use it only in a commit that moves code.
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -21,6 +26,8 @@ const args = process.argv.slice(2);
 // `--init` records the counts as they are; only for adding a new lint rule, in its own commit.
 const init = args.includes("--init");
 const update = init || args.includes("--update");
+// `--moved` (with `--update`): new keys are allowed when every rule's total stays the same or lower.
+const moved = args.includes("--moved");
 const only = args.find((a) => a.startsWith("--only="))?.slice("--only=".length);
 
 /** `file::rule` → count, from clippy's JSON messages (each site once, across targets). */
@@ -83,21 +90,38 @@ function oxlint() {
 }
 
 const tools = { clippy, oxlint };
+
+/** Rule → total count across all files, for one tool's `file::rule` → count map. */
+function totals(counts) {
+  const out = {};
+  for (const [key, n] of Object.entries(counts)) {
+    const rule = key.split("::").slice(1).join("::");
+    out[rule] = (out[rule] ?? 0) + n;
+  }
+  return out;
+}
 const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
 let failed = false;
 
 // `--against=<main's lint-baseline.json>` (CI, on pull requests): the baseline itself may only
-// shrink. A count may rise only for a rule main's baseline doesn't have yet (a newly added rule).
+// shrink. A key main already has may never rise. A key main doesn't have (a moved or renamed file)
+// is allowed only while its rule's total across all files doesn't rise above main's. A rule main
+// doesn't track at all (a newly added rule) may have any count.
 const against = args.find((a) => a.startsWith("--against="))?.slice("--against=".length);
 if (against) {
   const main = JSON.parse(readFileSync(against, "utf8"));
   const raised = [];
   for (const tool of Object.keys(tools)) {
     const old = main[tool] ?? {};
-    const rules = new Set(Object.keys(old).map((k) => k.split("::").pop()));
-    for (const [key, n] of Object.entries(baseline[tool] ?? {})) {
-      if (rules.has(key.split("::").pop()) && n > (old[key] ?? 0)) {
-        raised.push(`  ${tool} ${key}: ${n} (main has ${old[key] ?? 0})`);
+    const now = baseline[tool] ?? {};
+    const oldTotals = totals(old);
+    const nowTotals = totals(now);
+    for (const [key, n] of Object.entries(now)) {
+      if (key in old && n > old[key]) raised.push(`  ${tool} ${key}: ${n} (main has ${old[key]})`);
+    }
+    for (const [rule, n] of Object.entries(nowTotals)) {
+      if (rule in oldTotals && n > oldTotals[rule]) {
+        raised.push(`  ${tool} ${rule} in all files: ${n} (main has ${oldTotals[rule]})`);
       }
     }
   }
@@ -124,6 +148,23 @@ for (const [tool, run] of Object.entries(tools)) {
     if (n < b) fewer.push(`  ${key}: ${n} (baseline ${b})`);
   }
   const total = Object.values(now).reduce((a, b) => a + b, 0);
+  // With `--moved`, a rise under a key the baseline doesn't have is a moved file's warnings, as
+  // long as no rule's total rises. Keys the baseline has may still only go down.
+  let carried = [];
+  if (moved && update && !init && more.length) {
+    const nowTotals = totals(now);
+    const beforeTotals = totals(before);
+    const ruleRose = Object.entries(nowTotals).filter(([r, n]) => n > (beforeTotals[r] ?? 0));
+    const keyRose = Object.keys(now).filter((k) => k in before && now[k] > before[k]);
+    if (!ruleRose.length && !keyRose.length) {
+      carried = [...more];
+      more.length = 0;
+    } else {
+      for (const [r, n] of ruleRose) {
+        more.push(`  ${r} in all files: ${n} (allowed ${beforeTotals[r] ?? 0})`);
+      }
+    }
+  }
   if (more.length && !init) {
     failed = true;
     console.error(
@@ -131,6 +172,8 @@ for (const [tool, run] of Object.entries(tools)) {
     );
   } else if (update) {
     baseline[tool] = Object.fromEntries(Object.entries(now).sort(([a], [b]) => a.localeCompare(b)));
+    if (carried.length)
+      console.log(`${tool}: counts carried to moved files:\n${carried.join("\n")}`);
     console.log(`${tool}: baseline written (${total} warnings left to fix).`);
   } else if (fewer.length) {
     failed = true;

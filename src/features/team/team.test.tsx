@@ -45,6 +45,7 @@ const info = {
   expires: "2027-04-30",
   users: 3,
   userLimit: 10,
+  features: [] as string[],
 };
 
 const ai: TeamAiStatus = {
@@ -69,6 +70,7 @@ const conn = (id: string, name: string, team?: ConnectionConfig["team"]): Connec
   file: "",
   ssl: false,
   trustCert: false,
+  production: false,
   team,
 });
 

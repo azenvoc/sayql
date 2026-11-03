@@ -49,7 +49,7 @@ pub async fn run_limited_with(
 }
 
 /// Why a query failed: the database's full message, and the form an AI that may not see
-/// row values gets (see `ai::redact::safe_error`).
+/// row values gets (see `safety::redact::safe_error`).
 #[derive(Debug, Clone)]
 pub struct QueryFailure {
     pub full: String,
@@ -93,7 +93,7 @@ pub async fn run_limited_checked(
             limit.as_secs()
         )),
         m => QueryFailure {
-            safe: crate::ai::redact::safe_error(&e, sql),
+            safe: crate::safety::redact::safe_error(&e, sql),
             full: m,
         },
     })

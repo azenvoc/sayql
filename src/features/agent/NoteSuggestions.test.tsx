@@ -21,6 +21,9 @@ vi.mock("../../api", async (orig) => ({
         database: s.database,
         text: s.text,
         updatedAt: 1,
+        createdAt: 0,
+        source: "",
+        anchors: [],
       };
       saved.push(note);
       return Promise.resolve(note);
@@ -48,6 +51,9 @@ const suggestion = (id: string, text: string, app = "Claude Code"): NoteSuggesti
   evidence: "no references in api/ since commit a1b2c3",
   app,
   createdAt: 1,
+  replaces: null,
+  replacedText: null,
+  remove: false,
 });
 
 it("shows the app, note and evidence, and accepts or dismisses", async () => {

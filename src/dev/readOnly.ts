@@ -1,6 +1,6 @@
 // Development only: a copy of the backend's read-only check, so the browser preview asks
 // for write confirmation on the same statements the app does. The source of truth is
-// `is_read_only` in src-tauri/src/db/classify.rs; keep this in step with it (readOnly.test.ts
+// `is_read_only` in src-tauri/src/safety/classify.rs; keep this in step with it (readOnly.test.ts
 // repeats its test cases).
 
 import type { DatabaseKind } from "../api";
@@ -80,6 +80,9 @@ const WRITE_KEYWORDS = new Set([
   "PG_FILE_WRITE",
   "PG_FILE_RENAME",
   "PG_FILE_UNLINK",
+  "SETUSER",
+  "WRITETEXT",
+  "UPDATETEXT",
 ]);
 
 /** Same list as `WRITE_PREFIXES` in classify.rs. */

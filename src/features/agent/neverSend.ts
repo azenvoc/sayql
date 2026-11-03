@@ -2,7 +2,7 @@ import type { Schema, Table } from "../../api";
 
 /**
  * Never-send entries are stored as written: `column` (every table) or `table.column`.
- * SayQL matches them by the column name alone (src-tauri/src/ai/agent/mask.rs `Masker::new`
+ * SayQL matches them by the column name alone (src-tauri/src/safety/mask/mod.rs `Masker::new`
  * keeps the part after the last dot), so `customers.email` also keeps out `email` elsewhere.
  */
 export interface NeverSendEntry {
@@ -50,7 +50,7 @@ export function addEntries(list: string[], add: string[]): string[] {
 export const splitTyped = (text: string) => addEntries([], text.split(/[\n,]/));
 
 // --- Likely personal or sensitive columns, by name -------------------------------------------
-// Mirrors `column_kind` in src-tauri/src/ai/agent/mask.rs, plus pay and health, which aren't
+// Mirrors `column_kind` in src-tauri/src/safety/mask/mod.rs, plus pay and health, which aren't
 // masked by shape but are worth keeping out entirely.
 
 /** `PatientEmail`, `patient_email`, `patient email` → `patient`, `email`; `line1` → `line`, `1`. */

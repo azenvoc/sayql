@@ -2,7 +2,7 @@
 //! files the person picked, and web pages. Only where each is and how its last fetch went is
 //! kept here; a repository's token, if it needs one, is in the keychain
 //! ([`crate::store::secrets::repo_token`]), and its copy (or the text of its files and pages)
-//! is in `repos/<source id>` next to this file (see [`crate::repos`], [`crate::knowledge`]).
+//! is in `repos/<source id>` next to this file (see [`crate::audit::repos`], [`crate::audit::knowledge`]).
 //! The file keeps its first name, `code-sources.json`.
 //!
 //! Replaces `audit-folders.json` (one folder per connection), whose folders become local
@@ -25,7 +25,7 @@ pub const MAX_SOURCES_FREE: usize = 3;
 pub const CAP_MESSAGE: &str = "SayQL for teams keeps unlimited sources in sync for everyone.";
 
 /// Where a source's knowledge is.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -83,7 +83,7 @@ impl SourceKind {
 }
 
 /// One knowledge source of a connection (named for its first kind, code).
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct KnowledgeSource {
     /// `src_` and 12 hex digits: also the name of its copy's folder.
@@ -178,9 +178,19 @@ fn valid_id(id: &str) -> bool {
 impl Store {
     fn all_sources(&self) -> AppResult<BTreeMap<String, Vec<KnowledgeSource>>> {
         if !self.dir.join(FILE).exists() {
-            return self.migrate_audit_folders();
+            // Saves the first sources, so their ids stay the same from now on.
+            return self.update_sources(|all| Ok(all.clone()));
         }
         self.read(FILE)
+    }
+
+    /// Changes the sources under the file's lock (see [`Store::update`]), starting from the
+    /// old audit folders the first time.
+    fn update_sources<R>(
+        &self,
+        change: impl FnOnce(&mut BTreeMap<String, Vec<KnowledgeSource>>) -> AppResult<R>,
+    ) -> AppResult<R> {
+        self.update_or(FILE, || self.migrate_audit_folders(), change)
     }
 
     /// The first read: each connection's audit folder becomes its first source. The old file
@@ -199,7 +209,6 @@ impl Store {
                 (conn, vec![source])
             })
             .collect();
-        self.write(FILE, &all)?;
         Ok(all)
     }
 
@@ -233,43 +242,43 @@ impl Store {
         kind: SourceKind,
         label: &str,
     ) -> AppResult<KnowledgeSource> {
-        let mut all = self.all_sources()?;
-        let list = all.entry(connection_id.to_string()).or_default();
-        let same = |a: &SourceKind, b: &SourceKind| match (a, b) {
-            (SourceKind::Local { path: x }, SourceKind::Local { path: y }) => x == y,
-            (
-                SourceKind::Git {
-                    url: u1,
-                    branch: b1,
-                    subdir: s1,
-                    ..
-                },
-                SourceKind::Git {
-                    url: u2,
-                    branch: b2,
-                    subdir: s2,
-                    ..
-                },
-            ) => u1 == u2 && b1 == b2 && s1 == s2,
-            (SourceKind::Files { paths: x }, SourceKind::Files { paths: y }) => {
-                let (mut x, mut y) = (x.clone(), y.clone());
-                x.sort();
-                y.sort();
-                x == y
+        self.update_sources(|all| {
+            let list = all.entry(connection_id.to_string()).or_default();
+            let same = |a: &SourceKind, b: &SourceKind| match (a, b) {
+                (SourceKind::Local { path: x }, SourceKind::Local { path: y }) => x == y,
+                (
+                    SourceKind::Git {
+                        url: u1,
+                        branch: b1,
+                        subdir: s1,
+                        ..
+                    },
+                    SourceKind::Git {
+                        url: u2,
+                        branch: b2,
+                        subdir: s2,
+                        ..
+                    },
+                ) => u1 == u2 && b1 == b2 && s1 == s2,
+                (SourceKind::Files { paths: x }, SourceKind::Files { paths: y }) => {
+                    let (mut x, mut y) = (x.clone(), y.clone());
+                    x.sort();
+                    y.sort();
+                    x == y
+                }
+                (SourceKind::Url { url: x, .. }, SourceKind::Url { url: y, .. }) => x == y,
+                _ => false,
+            };
+            if list.iter().any(|s| same(&s.kind, &kind)) {
+                return Err("This connection already has that source.".into());
             }
-            (SourceKind::Url { url: x, .. }, SourceKind::Url { url: y, .. }) => x == y,
-            _ => false,
-        };
-        if list.iter().any(|s| same(&s.kind, &kind)) {
-            return Err("This connection already has that source.".into());
-        }
-        if list.len() >= MAX_SOURCES_FREE {
-            return Err(CAP_MESSAGE.into());
-        }
-        let source = KnowledgeSource::new(kind, label, list);
-        list.push(source.clone());
-        self.write(FILE, &all)?;
-        Ok(source)
+            if list.len() >= MAX_SOURCES_FREE {
+                return Err(CAP_MESSAGE.into());
+            }
+            let source = KnowledgeSource::new(kind, label, list);
+            list.push(source.clone());
+            Ok(source)
+        })
     }
 
     /// Changes one source in place (its status after a fetch); a removed one is left alone.
@@ -279,34 +288,38 @@ impl Store {
         source_id: &str,
         change: impl FnOnce(&mut KnowledgeSource),
     ) -> AppResult<Option<KnowledgeSource>> {
-        let mut all = self.all_sources()?;
-        let Some(source) = all
-            .get_mut(connection_id)
-            .and_then(|l| l.iter_mut().find(|s| s.id == source_id))
-        else {
-            return Ok(None);
-        };
-        change(source);
-        let out = source.clone();
-        self.write(FILE, &all)?;
-        Ok(Some(out))
+        self.update_sources(|all| {
+            let Some(source) = all
+                .get_mut(connection_id)
+                .and_then(|l| l.iter_mut().find(|s| s.id == source_id))
+            else {
+                return Ok(None);
+            };
+            change(source);
+            Ok(Some(source.clone()))
+        })
     }
 
     /// Removes a source with its token and its copy.
     pub fn remove_knowledge_source(&self, connection_id: &str, source_id: &str) -> AppResult<()> {
-        let mut all = self.all_sources()?;
-        let Some(list) = all.get_mut(connection_id) else {
-            return Ok(());
-        };
-        let Some(i) = list.iter().position(|s| s.id == source_id) else {
-            return Ok(());
-        };
-        let gone = list.remove(i);
-        if list.is_empty() {
-            all.remove(connection_id);
+        let gone = self.update_sources(|all| {
+            let Some(list) = all.get_mut(connection_id) else {
+                return Ok(None);
+            };
+            let Some(i) = list.iter().position(|s| s.id == source_id) else {
+                return Ok(None);
+            };
+            let gone = list.remove(i);
+            if list.is_empty() {
+                all.remove(connection_id);
+            }
+            Ok(Some(gone))
+        })?;
+        // The token and the copy go after the file is saved and its lock is released.
+        match gone {
+            Some(gone) => self.drop_source_files(&gone),
+            None => Ok(()),
         }
-        self.write(FILE, &all)?;
-        self.drop_source_files(&gone)
     }
 
     /// Where a source's copy is kept: `repos/<source id>`.
@@ -336,11 +349,9 @@ impl Store {
 
     /// Forgets a deleted connection's sources, their tokens and copies.
     pub(super) fn forget_knowledge_sources(&self, connection_id: &str) -> AppResult<()> {
-        let mut all = self.all_sources()?;
-        let Some(gone) = all.remove(connection_id) else {
-            return Ok(());
-        };
-        self.write(FILE, &all)?;
+        let gone = self
+            .update_sources(|all| Ok(all.remove(connection_id)))?
+            .unwrap_or_default();
         gone.iter()
             .map(|s| self.drop_source_files(s))
             .fold(Ok(()), AppResult::and)

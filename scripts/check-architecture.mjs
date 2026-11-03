@@ -89,34 +89,72 @@ for (const path of ts) {
   }
 }
 
+// --- Types shared with the backend -----------------------------------------------------------
+// src/api/bindings.ts, generated from the Rust types (`pnpm gen:types`), is the only source of
+// the backend's types and the only caller of `invoke`. src/api/types.ts renames its types for
+// the UI and declares only these frontend-only helpers: a backend shape written by hand drifts.
+const API_TYPE_HELPERS = new Set([
+  "ConnectionConfig",
+  "Target",
+  "Dialect",
+  "Commands",
+  "Camel",
+  "CommandName",
+  "Wrapper",
+  "CommandArgs",
+  "CommandResult",
+]);
+const API_TYPES = "src/api/types.ts";
+for (const m of readFileSync(join(root, API_TYPES), "utf8").matchAll(
+  /^(?:export\s+)?(?:declare\s+)?(?:interface|type)\s+(\w+)/gm,
+)) {
+  if (!API_TYPE_HELPERS.has(m[1])) {
+    fail(
+      API_TYPES,
+      `declares the type ${m[1]} (re-export it from ./bindings, or list a frontend-only helper in API_TYPE_HELPERS)`,
+      "Types shared with the backend",
+    );
+  }
+}
+for (const path of ts) {
+  const file = rel(path);
+  const text = readFileSync(path, "utf8");
+  const api = file.startsWith("src/api/");
+  if (api && file !== "src/api/bindings.ts" && text.includes('"@tauri-apps/api/core"')) {
+    fail(
+      file,
+      "calls invoke itself (use the generated commands in ./bindings)",
+      "Types shared with the backend",
+    );
+  }
+  if (!api && /(?:from|import)\s*\(?\s*"[^"]*\/bindings"/.test(text)) {
+    fail(
+      file,
+      "imports the generated bindings (use api/types.ts and api/commands.ts)",
+      "Types shared with the backend",
+    );
+  }
+}
+
 // --- Backend ---------------------------------------------------------------------------------
 const rustRoot = join(root, "src-tauri", "src");
 
 // New top-level modules are a design decision: add them here and to AGENTS.md's map.
 const TOP_LEVEL = new Set([
-  "agent_process",
   "ai",
   "app_menu",
   "audit",
-  "audit_opencode",
-  "audit_runner",
   "bin",
-  "coding_agents",
   "commands",
   "db",
   "error",
   "handoff",
-  "knowledge",
   "lib",
   "main",
   "mcp",
-  "never_send",
   "notes",
-  "pii",
-  "readonly",
-  "repos",
+  "safety",
   "schema",
-  "sql_lex",
   "state",
   "store",
   "team",
@@ -137,15 +175,12 @@ for (const e of readdirSync(rustRoot, { withFileTypes: true })) {
 // AppState's shared client, so timeouts and redirect rules apply everywhere.
 const OWN_HTTP_CLIENT = new Set([
   "src-tauri/src/state.rs", // the shared client
-  "src-tauri/src/knowledge.rs", // the crawler: pinned DNS, no redirects followed
+  "src-tauri/src/audit/knowledge.rs", // the crawler: pinned DNS, no redirects followed
 ]);
-// The only places that check SQL for an AI (never-send and forbidden functions). A new path
-// that runs SQL for an AI must go through one of them.
-const AI_QUERY_GATES = new Set([
-  "src-tauri/src/mcp.rs",
-  "src-tauri/src/ai/agent/run.rs",
-  "src-tauri/src/notes.rs",
-]);
+// The only place that checks SQL for an AI (never-send and forbidden functions): the AI query
+// gate. The MCP server, agent mode and note checks call it; a new path that runs SQL for an AI
+// must too.
+const AI_QUERY_GATES = new Set(["src-tauri/src/safety/gate.rs"]);
 
 for (const path of files(rustRoot, /\.rs$/)) {
   const file = rel(path);
@@ -160,7 +195,7 @@ for (const path of files(rustRoot, /\.rs$/)) {
   }
   if (
     /never_send::check\(/.test(text) &&
-    file !== "src-tauri/src/never_send.rs" &&
+    file !== "src-tauri/src/safety/never_send.rs" &&
     !AI_QUERY_GATES.has(file)
   ) {
     fail(file, "a new place that checks SQL for an AI", "The AI query gate");

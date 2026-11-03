@@ -28,20 +28,18 @@ impl Store {
         database: Option<&str>,
         snapshot: Snapshot,
     ) -> AppResult<()> {
-        let mut all: BTreeMap<String, Snapshot> = self.read(FILE)?;
-        all.insert(key(connection_id, database), snapshot);
-        self.write(FILE, &all)
+        self.update(FILE, |all: &mut BTreeMap<String, Snapshot>| {
+            all.insert(key(connection_id, database), snapshot);
+            Ok(())
+        })
     }
 
     /// Forgets a deleted connection's snapshots.
     pub fn forget_schema_snapshots(&self, connection_id: &str) -> AppResult<()> {
-        let mut all: BTreeMap<String, Snapshot> = self.read(FILE)?;
         let prefix = format!("{connection_id}\u{1f}");
-        let before = all.len();
-        all.retain(|k, _| !k.starts_with(&prefix));
-        if all.len() != before {
-            self.write(FILE, &all)?;
-        }
-        Ok(())
+        self.update(FILE, |all: &mut BTreeMap<String, Snapshot>| {
+            all.retain(|k, _| !k.starts_with(&prefix));
+            Ok(())
+        })
     }
 }

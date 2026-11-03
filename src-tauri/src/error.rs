@@ -5,7 +5,7 @@ use serde::{Serialize, Serializer};
 use std::fmt;
 
 /// Sent instead of a message when a statement needs the user's confirmation.
-/// Must match `WRITE_CONFIRM` in src/api/types.ts.
+/// The UI gets it as `WRITE_CONFIRM` from the generated src/api/bindings.ts.
 pub const WRITE_CONFIRM: &str = "WRITE_CONFIRM";
 
 #[derive(Debug)]
@@ -43,7 +43,7 @@ impl fmt::Display for AppError {
 /// The database's own message, without sqlx's "error returned from database:" prefix or the
 /// line in the Postgres source code that raised it (which reads like a line of the query).
 /// Postgres' DETAIL and HINT lines are kept: they name the key or value at fault and the fix.
-/// Values in them are masked before an error goes to the AI (see ai/redact.rs).
+/// Values in them are masked before an error goes to the AI (see safety/redact.rs).
 fn database_error(e: &sqlx::Error) -> String {
     match e {
         sqlx::Error::Database(db) => match db.try_downcast_ref::<sqlx::postgres::PgDatabaseError>()
@@ -101,6 +101,29 @@ impl Serialize for AppError {
     }
 }
 
+// The JSON `AppError` serializes to (the impl above), described for the generated TypeScript
+// (`AppError` in src/api/bindings.ts). Only its type is used; `error_json_matches_the_serializer`
+// checks the two agree.
+/// Why a command failed: a message for the person, or a team server's refusal
+/// (`isTeamRefusal` in src/lib/errors.ts).
+#[derive(Serialize, specta::Type)]
+#[serde(untagged, rename = "AppError")]
+#[allow(dead_code, reason = "only its type is exported, it is never built")]
+enum AppErrorJson {
+    Message(String),
+    #[serde(rename_all = "camelCase")]
+    TeamRefused {
+        message: String,
+        team_refused: bool,
+    },
+}
+
+impl specta::Type for AppError {
+    fn definition(types: &mut specta::Types) -> specta::datatype::DataType {
+        AppErrorJson::definition(types)
+    }
+}
+
 impl From<String> for AppError {
     fn from(msg: String) -> Self {
         AppError::User(msg)
@@ -140,5 +163,32 @@ impl From<keyring::Error> for AppError {
 impl From<serde_json::Error> for AppError {
     fn from(e: serde_json::Error) -> Self {
         AppError::Json(e)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::to_value;
+
+    #[test]
+    fn error_json_matches_the_serializer() {
+        let message = "Could not find the Downloads folder.";
+        assert_eq!(
+            to_value(AppError::User(message.into())).unwrap(),
+            to_value(AppErrorJson::Message(message.into())).unwrap()
+        );
+        assert_eq!(
+            to_value(AppError::NeedsWriteConfirmation).unwrap(),
+            to_value(AppErrorJson::Message(WRITE_CONFIRM.into())).unwrap()
+        );
+        assert_eq!(
+            to_value(AppError::TeamRefused("Read-only.".into())).unwrap(),
+            to_value(AppErrorJson::TeamRefused {
+                message: "Read-only.".into(),
+                team_refused: true,
+            })
+            .unwrap()
+        );
     }
 }

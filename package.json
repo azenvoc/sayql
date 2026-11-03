@@ -12,6 +12,7 @@
     "lint:ratchet": "node scripts/lint-ratchet.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "gen:types": "cd src-tauri && cargo test --lib write_typescript_bindings -- --ignored",
     "test": "vitest run && cd src-tauri && cargo test --lib",
     "check": "pnpm format:check && pnpm lint && pnpm build && cd src-tauri && cargo fmt --check && cd .. && pnpm lint:ratchet && pnpm test",
     "hooks": "git config core.hooksPath .githooks",

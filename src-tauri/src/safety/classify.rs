@@ -1,5 +1,5 @@
-use super::Kind;
-use crate::sql_lex::{Tok, lex};
+use crate::db::Kind;
+use crate::safety::sql_lex::{Tok, lex};
 
 /// Keywords that can change data, structure, permissions, session or transaction state.
 /// `INTO` covers `SELECT ... INTO new_table` and `INSERT INTO`; `USE` and `SET` change
@@ -82,6 +82,11 @@ const WRITE_KEYWORDS: &[&str] = &[
     "PG_FILE_WRITE",
     "PG_FILE_RENAME",
     "PG_FILE_UNLINK",
+    // SQL Server: `SETUSER` changes who the session acts as; `WRITETEXT` and `UPDATETEXT`
+    // change text/image columns.
+    "SETUSER",
+    "WRITETEXT",
+    "UPDATETEXT",
 ];
 
 /// Function families with the same kind of lasting effect: `pg_stat_reset_shared`,
@@ -109,7 +114,7 @@ const WRITE_PREFIXES: &[&str] = &[
 pub fn is_read_only(sql: &str, kind: Kind) -> bool {
     // Some settings change where strings end (MySQL's NO_BACKSLASH_ESCAPES, Postgres'
     // standard_conforming_strings), so the statement must read as read-only every way.
-    lex(sql, crate::never_send::dialect(kind))
+    lex(sql, crate::safety::never_send::dialect(kind))
         .iter()
         .all(|l| reads_only(sql, &l.toks))
 }
@@ -373,6 +378,19 @@ mod tests {
             "/* outer /* inner */ still a comment */ SELECT [a]]b] FROM t",
             Kind::Mssql
         ));
+    }
+
+    #[test]
+    fn tsql_setuser_and_text_writes_need_confirmation() {
+        for sql in [
+            "SELECT 1; SETUSER 'dbo'",
+            "SELECT 1\nSETUSER",
+            "SELECT 1; WRITETEXT t.notes @ptr 'x'",
+            "SELECT 1; UPDATETEXT t.notes @ptr 0 NULL 'x'",
+        ] {
+            assert!(rw_everywhere(sql), "{sql}");
+        }
+        assert!(is_read_only("SELECT setuser_id FROM t", Kind::Mssql));
     }
 
     #[test]

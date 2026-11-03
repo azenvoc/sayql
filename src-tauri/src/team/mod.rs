@@ -38,7 +38,7 @@ pub const WRITE_REFUSED: &str =
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Who is signed in, and where. Saved in settings; the token is in the keychain.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TeamAccount {
     pub server: String,
@@ -60,7 +60,7 @@ pub struct TeamUser {
 }
 
 /// `/info`, also inside `/me`: the server and its licence.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all(serialize = "camelCase", deserialize = "snake_case"))]
 pub struct ServerInfo {
     #[serde(default)]
@@ -105,7 +105,7 @@ pub struct SsoInfo {
 }
 
 /// The signed-in account with the server's licence, for Settings.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TeamStatus {
     pub account: TeamAccount,
@@ -161,7 +161,7 @@ impl TeamConnection {
 }
 
 /// What the team admin set for agent mode on a connection. The person can't loosen it.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TeamRules {
     pub max_results: Results,
@@ -662,7 +662,7 @@ impl TeamClient {
             })?,
             _ = cancel.cancelled() => return Err(CANCELLED.into()),
         };
-        Ok(r.into())
+        r.try_into()
     }
 }
 
@@ -671,12 +671,10 @@ pub fn forget_sign_in(store: &Store) {
     if let Err(e) = secrets::delete_team_token() {
         eprintln!("sayql: couldn't remove the team sign-in from the keychain: {e}");
     }
-    if let Ok(mut s) = store.settings()
-        && s.team.is_some()
-    {
+    let _ = store.update_settings(|s| {
         s.team = None;
-        let _ = store.save_settings(&s);
-    }
+        Ok(())
+    });
 }
 
 #[derive(Deserialize)]
@@ -763,27 +761,36 @@ struct ReplyColumn {
     name: String,
 }
 
-impl From<QueryReply> for QueryResult {
-    fn from(r: QueryReply) -> Self {
+/// What a reply whose rows don't line up with its columns says. Code downstream reads cells by
+/// position, so such a reply is refused rather than passed on.
+const MISSHAPEN: &str = "Your team's SayQL server sent rows that don't match their columns. Try again, or ask your team admin.";
+
+impl TryFrom<QueryReply> for QueryResult {
+    type Error = AppError;
+
+    fn try_from(r: QueryReply) -> AppResult<Self> {
         let mut columns: Vec<String> = r.columns.into_iter().map(|c| c.name).collect();
         // Withheld columns are left out of the rows; drop them from the header too if the server kept them there.
         let width = r.rows.first().map(Vec::len);
         if width.is_some_and(|w| w < columns.len()) {
             columns.retain(|c| !r.withheld.iter().any(|w| w.eq_ignore_ascii_case(c)));
         }
-        QueryResult {
+        if r.rows.iter().any(|row| row.len() != columns.len()) {
+            return Err(MISSHAPEN.into());
+        }
+        Ok(QueryResult {
             columns,
             rows: r.rows,
             rows_affected: None,
             truncated: r.truncated,
             elapsed_ms: r.elapsed_ms as u128,
             withheld: r.withheld,
-        }
+        })
     }
 }
 
 /// Where a query on a team connection came from, for the server's audit log.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum Source {
     Ask,

@@ -37,6 +37,11 @@ in a feature pull request.
 - **The ratchet (`lint-baseline.json`):** code written before a rule existed is counted per file
   and rule. `pnpm lint:ratchet` fails when a count goes up, and also when it goes down without
   the baseline being lowered (`pnpm lint:ratchet --update`). Counts never go back up.
+- **Moving a file** renames its keys in the baseline. In a commit that only moves code, run
+  `pnpm lint:ratchet --update --moved`: it accepts counts under new keys as long as no rule's
+  total across all files rises, and a key the baseline already has still may not rise. On pull
+  requests CI compares the baseline with main's the same way: a key main has may never rise, and
+  a new key is allowed only while its rule's total doesn't rise above main's.
 - **An exception** is written on the line, with its reason:
   `#[expect(clippy::indexing_slicing, reason = "i < len checked above")]`, or
   `// oxlint-disable-next-line no-console -- why`. A reviewer must agree with the reason.
@@ -45,7 +50,8 @@ in a feature pull request.
 
 Dependencies point inward: `app → features → components/ui, hooks, lib, api`.
 
-- Only `src/api/` calls the backend (`invoke`); everything else goes through `api/commands.ts`.
+- Only `src/api/` calls the backend; everything else goes through `api/commands.ts`. Inside
+  `src/api/`, only the generated `bindings.ts` calls `invoke`.
 - `components/ui`, `lib`, `hooks` and `api` never import from `features/` or `app/`;
   `components/` never imports from `api/` (it takes data as props).
 - A feature uses another feature only through its `index.ts`, or through a pure helper module
@@ -54,6 +60,25 @@ Dependencies point inward: `app → features → components/ui, hooks, lib, api`
   component, using only tokens from `styles/tokens.css` (`scripts/check-tokens.mjs`).
 - Naming: components `PascalCase.tsx`, hooks `useCamelCase.ts`, helpers `camelCase.ts`, tests
   `*.test.ts(x)` next to the code.
+
+## Types shared with the backend
+
+`src/api/bindings.ts` is generated from the Rust types with tauri-specta: every command's typed
+wrapper, the types of command arguments, results and event payloads, and the shared constants
+(`WRITE_CONFIRM`, `QUERY_CANCELLED`, event names, …). It is the only source of the backend's types.
+
+- Never edit `bindings.ts`, and never write a backend shape by hand. Change the Rust type, then
+  run `pnpm gen:types` and commit the result. CI fails when the committed file is stale.
+- A type that crosses the boundary (a command argument or result, an event payload) derives
+  `specta::Type`, and every command has `#[specta::specta]` under `#[tauri::command]` and is listed
+  once, in `with_commands!` in `src-tauri/src/lib.rs`. An event payload or shared constant is
+  added to the builder in `src-tauri/src/commands/bindings.rs`.
+- `src/api/types.ts` only renames the generated types for the UI (`Note_Serialize as DbNote`) and
+  holds the few frontend-only helpers listed in `API_TYPE_HELPERS` in
+  `scripts/check-architecture.mjs`. Only `src/api/` imports `bindings.ts`.
+- `X_Serialize` is the JSON the backend sends, `X_Deserialize` what a command accepts. Fixtures and
+  the browser preview's mock (`src/dev/mockBackend.ts`, typed per command by `CommandArgs` and
+  `CommandResult`) use the real shapes, with the fields the backend always sends.
 
 ## Backend map
 
@@ -68,9 +93,9 @@ Where new code goes:
 |---|---|
 | Tauri commands | `commands/<area>.rs`, thin: check input, call a module, map the result |
 | Database access, decoding, introspection | `db/` (no Tauri types) |
-| SQL lexing, read-only and never-send checks, personal-data detection, error redaction | `sql_lex`, `db/classify`, `never_send`, `pii`, `ai/redact`, `ai/agent/mask` |
+| SQL lexing, read-only and never-send checks, personal-data detection, masking, error redaction, the AI query gate | `safety/` (`sql_lex`, `classify`, `never_send`, `pii`, `mask`, `redact`, `readonly`, `gate`) |
 | AI providers, prompts, agent mode | `ai/` |
-| The audit and its runners, knowledge sources | `audit*`, `knowledge`, `repos` |
+| The audit, its runners and child processes, knowledge and code sources | `audit/` (`runner`, `opencode`, `process`, `coding_agents`, `knowledge`, `repos`) |
 | Saved files and secrets | `store/` (secrets only through `store::secrets`) |
 | Team server client | `team/` |
 
@@ -78,17 +103,20 @@ Where new code goes:
 
 - `#[tauri::command]` only in `commands/`. Commands hold no business logic.
 - Every HTTP request uses `AppState`'s shared `reqwest::Client`. Only `state.rs` (the shared
-  client) and `knowledge.rs` (the crawler, which pins DNS and checks every redirect) build their
+  client) and `audit/knowledge.rs` (the crawler, which pins DNS and checks every redirect) build their
   own client.
 - JSON sent to the UI is camelCase (`#[serde(rename_all = "camelCase")]`). The exception is
   explained in docs/ARCHITECTURE.md.
 
 ## The AI query gate
 
-SQL that runs for an AI (the MCP server, agent mode, and checks on notes) goes through
-`never_send::check` and `db::is_read_only` before it runs, and through `ai::redact::safe_error`
-when it fails. Only `mcp.rs`, `ai/agent/run.rs` and `notes.rs` call the check. A new place that
-runs SQL for an AI calls one of them, never the database directly.
+SQL that runs for an AI (the MCP server, agent mode, and checks on notes) goes through the AI
+query gate, `safety/gate.rs`: `gate::prepare` checks it (`db::is_read_only`, then
+`never_send::check` with its forbidden functions) and `gate::run` runs it with a time limit,
+keeping `safety::redact::safe_error`'s form of a failure. Only the gate calls `never_send::check`.
+The callers' differences are its `Options` (`gate::MCP`, `gate::AGENT`, `gate::NOTE_CHECK`),
+documented there. A new place that runs SQL for an AI goes through the gate, never the database
+directly.
 
 These rules are the product's promise ("Let agents into your database. Not your data."):
 
@@ -111,7 +139,8 @@ These rules are the product's promise ("Let agents into your database. Not your 
 
 - Doc comments (`///`, `/** */`) say what a thing is for and why, in plain sentences. Don't
   restate the code.
-- A constant shared with the other side says where its twin is: `Must match X in src/api/types.ts`.
+- A constant the UI needs is exported through `src/api/bindings.ts` (see "Types shared with the
+  backend"), not copied. One that can't be says where its twin is: `Must match X in src/...`.
 - Tests are named for the behaviour they check, as a sentence:
   `fn never_send_columns_are_refused_in_where()`.
 

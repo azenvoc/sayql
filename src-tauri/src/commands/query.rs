@@ -10,6 +10,7 @@ use tauri::State;
 /// On a team connection the query goes to the team server, tagged with `source` (`ask` or
 /// `editor`) and the `question` it answers, and only read-only statements are sent.
 #[tauri::command]
+#[specta::specta]
 #[allow(
     clippy::too_many_arguments,
     reason = "a Tauri command takes each webview argument by name"
@@ -105,6 +106,7 @@ async fn run(
 /// Stops the query started with `run_id`, if it's still running; it then fails with
 /// `QUERY_CANCELLED`.
 #[tauri::command]
+#[specta::specta]
 pub fn cancel_query(state: State<'_, AppState>, run_id: String) {
     state.cancel_query(&run_id);
 }

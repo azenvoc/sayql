@@ -369,7 +369,7 @@ async fn writes_go_to_the_server_to_be_refused_and_audited() {
     assert_eq!(seen.last().unwrap().body["sql"], "delete from patients");
     // Agent mode's read-only runner sends it too.
     let agent = p.with_context(Source::Agent, None);
-    let e = crate::readonly::run_limited(
+    let e = crate::safety::readonly::run_limited(
         &agent,
         "update patients set ssn = null",
         10,
@@ -685,11 +685,56 @@ async fn signed_out_nothing_is_sent_anywhere() {
     // Settings saved by a signed-out app have no team entry at all.
     state
         .store
-        .save_settings(&state.store.settings().unwrap())
+        .update_settings(|s| {
+            s.onboarded = true;
+            Ok(())
+        })
         .unwrap();
     let saved = std::fs::read_to_string(dir.join("config/settings.json")).unwrap();
     assert!(!saved.contains("team"), "{saved}");
     let _ = std::fs::remove_dir_all(dir);
+}
+
+/// Answers every query with rows that don't line up with their one column.
+fn misshapen(_: &str, path: &str, _: &Value) -> (u16, Value) {
+    match path {
+        "/api/v1/connections/c_short/query" => {
+            (200, json!({ "columns": [{ "name": "x" }], "rows": [[]] }))
+        }
+        "/api/v1/connections/c_long/query" => (
+            200,
+            json!({ "columns": [{ "name": "x" }], "rows": [[true, 1]] }),
+        ),
+        "/api/v1/connections/c_mixed/query" => (
+            200,
+            json!({ "columns": [{ "name": "a" }, { "name": "b" }], "rows": [[1, 2], [3]] }),
+        ),
+        _ => err(404, "not_found"),
+    }
+}
+
+/// Code downstream reads cells by position (a note's check reads `rows[0][0]`), so a reply
+/// whose rows are wider or narrower than its columns used to abort the app.
+#[tokio::test]
+async fn replies_whose_rows_dont_match_their_columns_are_refused() {
+    let f = fake(misshapen).await;
+    for id in ["c_short", "c_long", "c_mixed"] {
+        let e = pool(&f.url, id)
+            .query("select x", 10, &CancellationToken::new())
+            .await
+            .unwrap_err();
+        assert_eq!(e.to_string(), MISSHAPEN, "{id}");
+    }
+    let check = crate::notes::run_check(
+        &crate::db::DbPool::Team(pool(&f.url, "c_short")),
+        "select true",
+        &[],
+    )
+    .await;
+    assert!(
+        check.ok.is_none() && check.error.as_deref() == Some(MISSHAPEN),
+        "{check:?}"
+    );
 }
 
 /// Against a real SayQL server: `SAYQL_TEST_TEAM_URL=http://localhost:8080 SAYQL_TEST_TEAM_CODE=…
@@ -795,7 +840,7 @@ async fn real_server() {
     let agent = pool
         .clone()
         .with_context(Source::Agent, Some("How many patients?".into()));
-    let r = crate::readonly::run_limited(
+    let r = crate::safety::readonly::run_limited(
         &agent,
         "select count(*) as n from patients",
         10,

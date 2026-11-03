@@ -2,8 +2,9 @@
 //!
 //! Unlike the rest of the app's JSON, these structs serialize with their snake_case field names
 //! (`foreign_keys`, `data_type`, `primary_key`, `ref_table`, …). The UI is the only JSON consumer
-//! (MCP clients and the AI get rendered text), nothing is persisted, and `src/api/types.ts` plus the
-//! code reading it use these names, so they stay as they are. See docs/ARCHITECTURE.md.
+//! (MCP clients and the AI get rendered text), nothing is persisted, and the generated
+//! `src/api/bindings.ts` plus the code reading it use these names, so they stay as they are. See
+//! docs/ARCHITECTURE.md.
 
 pub mod anchors;
 mod render;
@@ -15,13 +16,13 @@ pub use render::{
 
 use serde::Serialize;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 pub struct Schema {
     pub dialect: String,
     pub tables: Vec<Table>,
 }
 
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, specta::Type)]
 pub struct Table {
     /// Postgres schema / MySQL database. `None` for SQLite.
     pub schema: Option<String>,
@@ -37,7 +38,7 @@ pub struct Table {
     pub checks: Vec<String>,
 }
 
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, specta::Type)]
 pub struct Column {
     pub name: String,
     pub data_type: String,
@@ -49,7 +50,7 @@ pub struct Column {
     pub comment: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 pub struct ForeignKey {
     pub column: String,
     /// Qualified like the referencing table (e.g. `public.customers`).

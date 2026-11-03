@@ -40,7 +40,7 @@ pub async fn read(pool: &DbPool) -> Option<String> {
 }
 
 async fn run(pool: &DbPool, sql: &str) -> Option<String> {
-    let r = crate::readonly::run_limited(pool, sql, 1, TIMEOUT)
+    let r = crate::safety::readonly::run_limited(pool, sql, 1, TIMEOUT)
         .await
         .ok()?;
     let v = r.rows.first()?.first()?;

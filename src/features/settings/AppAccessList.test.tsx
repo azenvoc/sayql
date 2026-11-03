@@ -10,7 +10,10 @@ const saved: AgentAccess = {
   apps: "counts",
   askBeforeSend: false,
   neverSend: ["notes"],
+  team: null,
 };
+// What the list saves: the choices, without the team admin's rules.
+const { team: _team, ...choices } = saved;
 const agentAccess = vi.fn((_id: string) => Promise.resolve(saved));
 const saveAgentAccess = vi.fn((_id: string, a: AgentAccess) => Promise.resolve(a));
 const schema: Schema = {
@@ -22,9 +25,25 @@ const schema: Schema = {
       kind: "table",
       foreign_keys: [],
       row_estimate: 10,
+      comment: null,
+      checks: [],
       columns: [
-        { name: "id", data_type: "integer", nullable: false, primary_key: true, enum_values: null },
-        { name: "email", data_type: "text", nullable: true, primary_key: false, enum_values: null },
+        {
+          name: "id",
+          data_type: "integer",
+          nullable: false,
+          primary_key: true,
+          enum_values: null,
+          comment: null,
+        },
+        {
+          name: "email",
+          data_type: "text",
+          nullable: true,
+          primary_key: false,
+          enum_values: null,
+          comment: null,
+        },
       ],
     },
   ],
@@ -50,6 +69,7 @@ const conn = (id: string, name: string): ConnectionConfig => ({
   file: "",
   ssl: false,
   trustCert: false,
+  production: false,
 });
 const provider = { label: "Anthropic", local: false };
 
@@ -75,7 +95,7 @@ it("shows counts by default and saves a new choice without touching agent mode",
 
   fireEvent.change(select, { target: { value: "all" } });
   await waitFor(() => expect(saveAgentAccess).toHaveBeenCalled());
-  expect(saveAgentAccess).toHaveBeenCalledWith("c1", { ...saved, apps: "all" });
+  expect(saveAgentAccess).toHaveBeenCalledWith("c1", { ...choices, apps: "all" });
 });
 
 it("explains each level once, above the table, not per row", async () => {
@@ -105,7 +125,7 @@ it("shows never-send columns as chips and edits them without turning agent mode 
   fireEvent.click(screen.getByRole("button", { name: "Save" }));
   await waitFor(() => expect(saveAgentAccess).toHaveBeenCalled());
   expect(saveAgentAccess).toHaveBeenCalledWith("c1", {
-    ...saved,
+    ...choices,
     neverSend: ["notes", "customers.email"],
   });
   expect(await screen.findByText("customers.email")).toBeTruthy();

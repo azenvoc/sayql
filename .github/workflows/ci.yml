@@ -57,6 +57,13 @@ jobs:
         working-directory: src-tauri
         run: cargo test --lib
 
+      # src/api/bindings.ts is generated from the Rust types and committed (AGENTS.md, "Types
+      # shared with the backend"). Regenerate it and fail if the committed copy is stale.
+      - name: Generated TypeScript bindings are up to date
+        run: |
+          pnpm gen:types
+          git diff --exit-code -- src/api/bindings.ts
+
       # The MCP server is a second binary in the crate; `cargo test --lib` doesn't build it.
       - name: Build the MCP server
         working-directory: src-tauri

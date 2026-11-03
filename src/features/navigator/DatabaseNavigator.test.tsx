@@ -15,6 +15,7 @@ const conn: ConnectionConfig = {
   file: "/shop.sqlite",
   ssl: false,
   trustCert: false,
+  production: false,
 };
 
 const table = (name: string, kind: Table["kind"]): Table => ({
@@ -24,6 +25,8 @@ const table = (name: string, kind: Table["kind"]): Table => ({
   columns: [],
   foreign_keys: [],
   row_estimate: null,
+  comment: null,
+  checks: [],
 });
 
 describe("DatabaseNavigator", () => {
@@ -65,6 +68,9 @@ describe("DatabaseNavigator", () => {
             database: null,
             text: "status 3 = cancelled",
             updatedAt: 0,
+            createdAt: 0,
+            source: "",
+            anchors: [],
           },
         ]}
         onEditNote={vi.fn()}
@@ -90,6 +96,9 @@ describe("DatabaseNavigator", () => {
       database: null,
       text: "users.last_login_at is set on sign-in",
       updatedAt: 0,
+      createdAt: 0,
+      source: "",
+      anchors: [],
       suspect: { reason: "the column users.last_login_at no longer exists", since: 0 },
     };
     render(
@@ -102,6 +111,9 @@ describe("DatabaseNavigator", () => {
             database: null,
             text: "status 3 = cancelled",
             updatedAt: 0,
+            createdAt: 0,
+            source: "",
+            anchors: [],
             verifiedAt: Date.now(),
           },
           doubtful,
@@ -134,6 +146,9 @@ describe("DatabaseNavigator", () => {
       database: null,
       text: "users.last_login_at is set on sign-in",
       updatedAt: 0,
+      createdAt: 0,
+      source: "",
+      anchors: [],
       suspect: { reason: "the column users.last_login_at no longer exists", since: 0 },
     };
     render(
@@ -154,6 +169,9 @@ describe("DatabaseNavigator", () => {
             database: null,
             text: "orders.status 3 means refunded",
             updatedAt: 0,
+            createdAt: 0,
+            source: "",
+            anchors: [],
             verifiedAt: Date.now(),
           },
           doubtful,

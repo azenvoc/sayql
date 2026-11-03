@@ -83,10 +83,21 @@ base64 = "0.22"
 tauri-plugin-dialog = "2"
 html2text = "0.17"
 pdf-extract = "0.12"
-zip = { version = "4", default-features = false, features = ["deflate"] }
+# 9.0.5+ fixes GHSA-m665-v7pm-7grj and the extract() advisories. SayQL only reads entries by
+# name (DOCX text, the pinned OpenCode archive), so deflate through the flate2 already used here.
+zip = { version = "9.0.5", default-features = false, features = ["deflate-flate2"] }
 # Unpacking the built-in OpenCode and ripgrep on Linux and macOS (.tar.gz).
 flate2 = "1"
 tar = "0.4"
+# TypeScript types and typed command wrappers for the UI (src/api/bindings.ts), generated from
+# the Rust types by `pnpm gen:types` (a test in src/bindings.rs), never at app startup.
+# Pinned exactly: specta 2 is still a release candidate and tauri-specta needs this specta.
+specta = { version = "=2.0.0-rc.26", features = ["derive", "serde_json"] }
+specta-typescript = "=0.0.13"
+tauri-specta = { version = "=2.0.0-rc.26", features = ["derive", "typescript"] }
+# canonicalize without Windows' `\\?\` prefix, which OpenCode's path rules don't match. The same as
+# std on macOS and Linux. Already in the tree through tauri.
+dunce = "1.0.5"
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]
@@ -95,6 +106,11 @@ lto = true
 opt-level = 3
 panic = "abort"
 strip = true
+
+[target.'cfg(unix)'.dependencies]
+# setrlimit without unsafe code, to cap the PDF reader's memory (audit/knowledge/pdf.rs). Already in
+# the tree through tempfile.
+rustix = { version = "1", features = ["process"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # tauri-plugin-deep-link 2.6.2 doesn't compile with rust-ini 0.21.2+ (new ParseOption fields).

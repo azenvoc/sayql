@@ -3,7 +3,7 @@ use serde::Serialize;
 use tauri::AppHandle;
 use tauri_plugin_updater::UpdaterExt;
 
-#[derive(Serialize)]
+#[derive(Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateInfo {
     version: String,
@@ -13,6 +13,7 @@ pub struct UpdateInfo {
 /// A newer release on the update feed, if there is one. Being offline or a feed with no
 /// release yet reads as "no update". Development builds never check.
 #[tauri::command]
+#[specta::specta]
 pub async fn check_update(app: AppHandle) -> Option<UpdateInfo> {
     if cfg!(debug_assertions) {
         return None;
@@ -27,6 +28,7 @@ pub async fn check_update(app: AppHandle) -> Option<UpdateInfo> {
 /// Downloads the newer release, installs it once its signature checks out against the
 /// updater key in tauri.conf.json, and restarts into it.
 #[tauri::command]
+#[specta::specta]
 pub async fn install_update(app: AppHandle) -> AppResult<()> {
     let update = app
         .updater()

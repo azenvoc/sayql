@@ -2,11 +2,12 @@
 //! masks or summarizes the result per the connection's setting, and reports every step to
 //! the tab. Ends with a cited answer, an error, or Stop.
 
-use super::mask::{Masker, ResultSummary};
 use super::model::{Block, Llm, Msg, Role, ToolMode, Turn, Usage};
 use super::{checks, prompt, tools};
 use crate::db::{self, DbPool, Kind, QueryResult};
-use crate::readonly;
+use crate::safety::gate::{self, Refusal};
+use crate::safety::mask::{Masker, ResultSummary};
+use crate::safety::readonly;
 use crate::schema::{self, Schema, Table};
 use crate::store::Store;
 use crate::store::agent::{AgentAccess, AgentSettings, Note, Results, clean_note, note_ref};
@@ -83,7 +84,7 @@ pub struct Io {
     pub stop: CancellationToken,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -128,7 +129,7 @@ pub enum Event {
     },
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, specta::Type)]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -146,7 +147,7 @@ pub enum Reply {
     },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum StepStatus {
     Running,
@@ -156,7 +157,7 @@ pub enum StepStatus {
 
 /// One step as the person sees it. `sql`, `columns` and `rows` are real values: they stay
 /// on this computer. `sent` is exactly what went to the AI.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Step {
     pub id: u32,
@@ -176,7 +177,7 @@ pub struct Step {
     pub error: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Answer {
     /// With real values filled back in.
@@ -202,7 +203,7 @@ pub struct Answer {
     pub usage: Usage,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Sentence {
     pub text: String,
@@ -863,7 +864,12 @@ impl Run<'_> {
         {
             self.input.notes[at] = updated;
         }
-        match (run.ok, run.error) {
+        // The model gets the error's safe form: the database's own message can quote values.
+        let ai_error = run
+            .ai_error
+            .map(|e| self.masker.remask_text(&e))
+            .unwrap_or_else(|| "the database refused it.".into());
+        match (run.ok, ai_error) {
             (Some(true), _) => self.end_step(i, Ok("The check passed: the note holds.".into()), "sent the result"),
             (Some(false), _) => self.end_step(
                 i,
@@ -872,7 +878,7 @@ impl Run<'_> {
             ),
             (None, e) => self.end_step(
                 i,
-                Err(format!("The check couldn't run: {}", e.unwrap_or_default())),
+                Err(format!("The check couldn't run: {e}")),
                 "sent the error",
             ),
         }
@@ -886,9 +892,16 @@ impl Run<'_> {
         }
         self.reread = true;
         let fresh = db::introspect(self.pool, self.input.kind).await.ok()?;
+        // The run's schema is the one the AI may read (see `never_send::schema_for_ai`); the
+        // notes are reviewed against the whole one.
+        let shown = crate::safety::never_send::schema_for_ai(
+            &fresh,
+            &crate::safety::never_send::entries(&self.input.access.never_send),
+        )
+        .into_owned();
         let before = crate::schema::anchors::Snapshot::of(&self.input.schema);
         let changes =
-            crate::schema::anchors::diff(&before, &crate::schema::anchors::Snapshot::of(&fresh));
+            crate::schema::anchors::diff(&before, &crate::schema::anchors::Snapshot::of(&shown));
         // The team server reviews shared notes on its own schema reads.
         if let Some(home) = self.input.notes_home.as_ref().filter(|h| h.team.is_none()) {
             let _ = crate::notes::review(
@@ -904,7 +917,7 @@ impl Run<'_> {
                 self.input.notes = notes;
             }
         }
-        self.input.schema = fresh;
+        self.input.schema = shown;
         if changes.is_empty() {
             return Some("SayQL read the schema again: it hasn't changed.".into());
         }
@@ -922,35 +935,26 @@ impl Run<'_> {
     /// The SQL with real values in place of tokens, if it may run: one read-only statement
     /// that names no never-send column.
     async fn real_sql(&mut self, sql: &str) -> Result<String, String> {
-        let real = self.real_sql_text(sql)?;
-        // Never-send columns in any form (whole rows, renames, views on Postgres), and functions
-        // that read server files: see never_send.rs.
-        let guard = crate::never_send::check(self.pool, &real, &self.input.access.never_send)
+        let real = self.masker.unmask_sql(sql, self.input.kind)?;
+        // The AI query gate with agent mode's options (see safety/gate.rs): one statement, no
+        // writes (a team server refuses writes itself and audits the attempt, so it gets to see
+        // them), and never-send columns in any form and functions that read server files.
+        let guard = gate::prepare(self.pool, &real, &self.input.access.never_send, gate::AGENT)
             .await
-            .map_err(|f| self.masker.remask_text(&f.safe))?;
+            .map_err(|r| match r {
+                Refusal::Statements => "Run one statement at a time.".to_string(),
+                Refusal::Write => readonly::AGENT_WRITE_REFUSED.to_string(),
+                Refusal::NeverSend(f) => self.masker.remask_text(&f.safe),
+            })?;
         self.withheld = guard.withheld;
-        Ok(real)
-    }
-
-    fn real_sql_text(&self, sql: &str) -> Result<String, String> {
-        let kind = self.input.kind;
-        let real = self.masker.unmask_sql(sql, kind)?;
-        if checks::statements(&real) > 1 {
-            return Err("Run one statement at a time.".into());
-        }
-        // A team server refuses writes itself and audits the attempt, so it gets to see them.
-        let team = matches!(self.pool, DbPool::Team(_));
-        if !team && !db::is_read_only(&real, kind) {
-            return Err(readonly::AGENT_WRITE_REFUSED.into());
-        }
         Ok(real)
     }
 
     async fn run_sql(&mut self, sql: &str) -> Result<QueryResult, String> {
         let secs = Duration::from_secs(self.input.limits.query_seconds);
-        let r = readonly::run_limited_checked(self.pool, sql, ROWS_READ, secs, &self.io.stop).await;
+        let r = gate::run(self.pool, sql, ROWS_READ, secs, &self.io.stop).await;
         // Database messages can quote values; the model gets a fixed message for the kind of
-        // error (see ai/redact.rs).
+        // error (see safety/redact.rs).
         let e = match r {
             Ok(v) => return Ok(v),
             Err(e) => e,
@@ -1080,9 +1084,9 @@ impl Run<'_> {
              MIN({c}) AS min_value, MAX({c}) AS max_value FROM {t}"
         );
         // A never-send column isn't profiled at all.
-        let never = crate::never_send::entries(&self.input.access.never_send);
-        let dialect = crate::never_send::dialect(self.input.kind);
-        if let Err(e) = crate::never_send::check_text(&stats, &never, dialect, false) {
+        let never = crate::safety::never_send::entries(&self.input.access.never_send);
+        let dialect = crate::safety::never_send::dialect(self.input.kind);
+        if let Err(e) = crate::safety::never_send::check_text(&stats, &never, dialect, false) {
             let i = self.new_step(tools::PROFILE, text, None);
             return Ok(self.end_step(i, Err(e), "sent the refusal"));
         }
@@ -1101,12 +1105,13 @@ impl Run<'_> {
             || [get(3), get(4)]
                 .iter()
                 .chain(top_r.rows.iter().filter_map(|r| r.first()))
-                .any(|v| super::mask::value_kind(v).is_some());
+                .any(|v| crate::safety::mask::value_kind(v).is_some());
         let numeric_or_date = [get(3), get(4)].iter().all(|v| {
             v.is_null()
                 || v.is_number()
-                || v.as_str()
-                    .is_some_and(|s| s.parse::<f64>().is_ok() || crate::pii::starts_with_date(s))
+                || v.as_str().is_some_and(|s| {
+                    s.parse::<f64>().is_ok() || crate::safety::pii::starts_with_date(s)
+                })
         });
         let mut out = json!({ "rows": get(0), "nulls": get(1), "distinct": get(2) });
         let summary;
@@ -1128,7 +1133,13 @@ impl Run<'_> {
                 let top: Vec<Value> = top_r
                     .rows
                     .iter()
-                    .map(|r| json!([self.masker.mask_value(&col_name, &r[0]), r.get(1)]))
+                    .map(|r| {
+                        json!([
+                            self.masker
+                                .mask_value(&col_name, r.first().unwrap_or(&Value::Null)),
+                            r.get(1)
+                        ])
+                    })
                     .collect();
                 out["top_values"] = Value::Array(top);
                 summary = if personal {
@@ -1148,7 +1159,7 @@ impl Run<'_> {
                     .map(|r| {
                         format!(
                             "{} ({})",
-                            plain(&r[0]),
+                            plain(r.first().unwrap_or(&Value::Null)),
                             plain(r.get(1).unwrap_or(&Value::Null))
                         )
                     })
@@ -1248,7 +1259,7 @@ impl Run<'_> {
             Value::String(s) if s.contains('‹') => Value::String(self.masker.unmask_text(s)),
             other => other.clone(),
         };
-        let literal = match super::mask::literal(&key, self.input.kind) {
+        let literal = match crate::safety::mask::literal(&key, self.input.kind) {
             Ok(l) if !key.is_null() && !key.is_array() && !key.is_object() => l,
             _ => {
                 let i = self.new_step(tools::SHOW, text, None);

@@ -32,7 +32,7 @@ describe("ConnectionDialog delete", () => {
   });
 
   it("deletes after a second click", async () => {
-    deleteConnection.mockResolvedValue(undefined);
+    deleteConnection.mockResolvedValue(null);
     const onDeleted = renderDialog();
     fireEvent.click(screen.getByRole("button", { name: /^Delete$/ }));
     fireEvent.click(await screen.findByRole("button", { name: /Click again to delete/ }));

@@ -153,11 +153,11 @@ pub fn check_subdir(subdir: &str) -> Result<Option<String>, String> {
 
 /// The system `git`, or why there's none.
 fn git_bin() -> AppResult<PathBuf> {
-    let dirs = crate::audit_runner::search_dirs(
+    let dirs = crate::audit::runner::search_dirs(
         std::env::var_os("PATH").as_deref(),
         dirs::home_dir().as_deref(),
     );
-    crate::audit_runner::find_in(&["git"], &dirs, |p| p.is_file()).ok_or_else(|| {
+    crate::audit::runner::find_in(&["git"], &dirs, |p| p.is_file()).ok_or_else(|| {
         AppError::User(
             "SayQL needs git to read repositories and couldn't find it. Install git (on a Mac, run `xcode-select --install` in a terminal), then try again."
                 .into(),
@@ -228,7 +228,7 @@ fn command(git: &Path, token: Option<&Token>) -> tokio::process::Command {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .kill_on_drop(true);
-    crate::agent_process::no_window(&mut cmd);
+    crate::audit::process::no_window(&mut cmd);
     cmd
 }
 

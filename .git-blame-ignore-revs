@@ -1,5 +1,6 @@
-# Formatting-only commits, skipped by `git blame` (GitHub reads this file; locally run
+# Commits git blame skips (GitHub reads this file; locally run
 # `git config blame.ignoreRevsFile .git-blame-ignore-revs`).
 
-# Format the frontend and scripts with Prettier
-e25b68a9b2333e17def906b779b500ecdb555d47
+# Strict code consistency (#135): the one-time Prettier reformat of the frontend, squashed
+# together with the new lint and CI tooling (mostly new files).
+a1d8936ffb64c181def4e1b092dc5d2b2086c420

@@ -5,7 +5,7 @@ use crate::error::AppResult;
 use serde::Serialize;
 use sqlx::Row;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 pub struct DatabaseList {
     /// Databases this login can open, sorted by name.
     pub databases: Vec<String>,

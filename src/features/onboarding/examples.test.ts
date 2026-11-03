@@ -7,10 +7,19 @@ const table = (name: string, rows: number, extra: Partial<Table> = {}): Table =>
   name,
   kind: "table",
   columns: [
-    { name: "id", data_type: "integer", nullable: false, primary_key: true, enum_values: null },
+    {
+      name: "id",
+      data_type: "integer",
+      nullable: false,
+      primary_key: true,
+      enum_values: null,
+      comment: null,
+    },
   ],
   foreign_keys: [],
   row_estimate: rows,
+  comment: null,
+  checks: [],
   ...extra,
 });
 
@@ -32,6 +41,7 @@ describe("exampleQuestions", () => {
               nullable: false,
               primary_key: true,
               enum_values: null,
+              comment: null,
             },
             {
               name: "issued_at",
@@ -39,6 +49,7 @@ describe("exampleQuestions", () => {
               nullable: false,
               primary_key: false,
               enum_values: null,
+              comment: null,
             },
           ],
           foreign_keys: [{ column: "account_id", ref_table: "accounts", ref_column: "id" }],

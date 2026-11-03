@@ -1,5 +1,7 @@
 use super::*;
 use crate::ai::find_provider;
+use crate::store::digest::hex;
+use sha2::{Digest, Sha256};
 
 fn temp(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("sayql-oc-{name}-{}", uuid::Uuid::new_v4()));
@@ -113,16 +115,93 @@ fn targz_with(path: &str, body: &[u8]) -> Vec<u8> {
     out
 }
 
-fn asset_for(bytes: &[u8], archive: Archive, entry: &'static str) -> Asset {
+fn sha_of(bytes: &[u8]) -> &'static str {
     let mut h = Sha256::new();
     h.update(bytes);
+    Box::leak(hex(&h.finalize()).into_boxed_str())
+}
+
+/// An asset pinned to the archive `bytes`, whose `entry` unpacks to `exe`.
+fn asset_for(bytes: &[u8], archive: Archive, entry: &'static str, exe: &[u8]) -> Asset {
     Asset {
         url: "https://example.invalid/x",
         bytes: bytes.len() as u64,
-        sha256: Box::leak(hex(&h.finalize()).into_boxed_str()),
+        sha256: sha_of(bytes),
         archive,
         entry,
+        exe_sha256: sha_of(exe),
     }
+}
+
+/// A server on 127.0.0.1 that answers each connection with `reply`, then waits `hold` before
+/// closing.
+fn serve(reply: Vec<u8>, hold: std::time::Duration) -> String {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    std::thread::spawn(move || {
+        for conn in listener.incoming() {
+            let Ok(mut conn) = conn else { continue };
+            let reply = reply.clone();
+            std::thread::spawn(move || {
+                let mut buf = [0u8; 4096];
+                let _ = std::io::Read::read(&mut conn, &mut buf);
+                let _ = conn.write_all(&reply);
+                let _ = conn.flush();
+                std::thread::sleep(hold);
+            });
+        }
+    });
+    format!("http://{addr}/file")
+}
+
+fn http_reply(length: usize, body: &[u8]) -> Vec<u8> {
+    let mut r = format!("HTTP/1.1 200 OK\r\nContent-Length: {length}\r\n\r\n").into_bytes();
+    r.extend_from_slice(body);
+    r
+}
+
+/// A download that stops coming, or a server that never answers, fails instead of hanging the
+/// audit's start forever.
+#[tokio::test]
+async fn a_stalled_download_fails_instead_of_waiting_forever() {
+    let http = reqwest::Client::builder().no_proxy().build().unwrap();
+    let dir = temp("fetch");
+    let to = dir.join("file.download");
+    let stop = CancellationToken::new();
+    let short = (
+        std::time::Duration::from_millis(300),
+        std::time::Duration::from_millis(300),
+    );
+    let hold = std::time::Duration::from_secs(5);
+    // Complete.
+    let url = serve(http_reply(5, b"hello"), hold);
+    let mut seen = 0;
+    fetch(&http, &url, 5, &to, &stop, short, |n| seen += n)
+        .await
+        .unwrap();
+    assert_eq!(seen, 5);
+    assert_eq!(std::fs::read(&to).unwrap(), b"hello");
+    // Larger than the pinned size.
+    let url = serve(http_reply(5, b"hello"), hold);
+    let e = fetch(&http, &url, 4, &to, &stop, short, |_| {})
+        .await
+        .unwrap_err();
+    assert!(e.contains("larger than expected"), "{e}");
+    // Stops halfway.
+    let started = std::time::Instant::now();
+    let url = serve(http_reply(1000, b"part"), hold);
+    let e = fetch(&http, &url, 1000, &to, &stop, short, |_| {})
+        .await
+        .unwrap_err();
+    assert_eq!(e, FAILED);
+    // Never answers.
+    let url = serve(Vec::new(), hold);
+    let e = fetch(&http, &url, 1000, &to, &stop, short, |_| {})
+        .await
+        .unwrap_err();
+    assert_eq!(e, FAILED);
+    assert!(started.elapsed() < std::time::Duration::from_secs(4));
+    let _ = std::fs::remove_dir_all(dir);
 }
 
 #[test]
@@ -143,7 +222,8 @@ fn a_download_is_unpacked_only_when_its_checksum_matches() {
         let file = dir.join("download");
         std::fs::write(&file, &data).unwrap();
         let dest = dir.join(entry);
-        let good = asset_for(&data, archive, entry);
+        let body: &[u8] = b"#!/bin/sh\necho hi\n";
+        let good = asset_for(&data, archive, entry, body);
         let sha = install_from_archive(&file, &good, &dest).unwrap();
         assert_eq!(std::fs::read(&dest).unwrap(), b"#!/bin/sh\necho hi\n");
         assert_eq!(sha, sha256_file(&dest).unwrap());
@@ -167,17 +247,42 @@ fn a_download_is_unpacked_only_when_its_checksum_matches() {
         std::fs::write(&file, &data).unwrap();
         let wrong = Asset {
             sha256: "0000000000000000000000000000000000000000000000000000000000000000",
-            ..asset_for(&data, archive, entry)
+            ..asset_for(&data, archive, entry, body)
         };
         assert!(install_from_archive(&file, &wrong, &dest).is_err());
         assert!(!dest.exists());
+        // The archive as pinned, but its program isn't the one pinned: not kept.
+        let other_program = asset_for(&data, archive, entry, b"another program");
+        let e = install_from_archive(&file, &other_program, &dest).unwrap_err();
+        assert!(e.contains("program didn't match"), "{e}");
+        assert!(!dest.exists());
         // An archive without the executable.
-        let other = asset_for(&data, archive, "nothere");
+        let other = asset_for(&data, archive, "nothere", body);
         assert!(
             install_from_archive(&file, &other, &dest)
                 .unwrap_err()
                 .contains("has no")
         );
+    }
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+/// Every platform's pinned archive and executable hashes, against the release files in
+/// `SAYQL_OPENCODE_ARCHIVES` (all eight, by their download names). Run when the pins change.
+#[test]
+#[ignore = "needs the release archives in SAYQL_OPENCODE_ARCHIVES"]
+fn the_pinned_hashes_match_the_release_files() {
+    let archives = PathBuf::from(std::env::var_os("SAYQL_OPENCODE_ARCHIVES").unwrap());
+    let dir = temp("pins");
+    for p in &PLATFORMS {
+        for asset in [&p.opencode, &p.ripgrep] {
+            let file = archives.join(asset.url.rsplit('/').next().unwrap());
+            let dest = dir.join(format!("{}-{}-{}", p.os, p.arch, asset.entry));
+            let sha = install_from_archive(&file, asset, &dest)
+                .unwrap_or_else(|e| panic!("{}: {e}", asset.url));
+            assert_eq!(sha, asset.exe_sha256, "{}", asset.url);
+            std::fs::remove_file(&dest).unwrap();
+        }
     }
     let _ = std::fs::remove_dir_all(dir);
 }
@@ -189,19 +294,32 @@ fn an_install_is_used_only_while_it_matches_its_hashes() {
     std::fs::create_dir_all(&bin).unwrap();
     std::fs::write(bin.join(exe("opencode")), b"oc").unwrap();
     std::fs::write(bin.join(exe("rg")), b"rg").unwrap();
-    assert_eq!(installed(&dir), None, "no hashes yet");
+    let platform = Platform {
+        os: "test",
+        arch: "test",
+        opencode: asset_for(b"", Archive::Zip, "opencode", b"oc"),
+        ripgrep: asset_for(b"", Archive::TarGz, "rg", b"rg"),
+    };
+    assert_eq!(installed_for(&dir, &platform), None, "not finished yet");
     assert_eq!(present(&dir), None);
+    std::fs::write(dir.join(HASHES), "{}").unwrap();
+    let got = installed_for(&dir, &platform).unwrap();
+    assert_eq!(got.opencode, bin.join(exe("opencode")));
+    assert_eq!(got.bin_dir, bin);
+    assert!(present(&dir).is_some());
+    std::fs::write(bin.join(exe("rg")), b"changed").unwrap();
+    assert_eq!(
+        installed_for(&dir, &platform),
+        None,
+        "a changed file isn't run"
+    );
+    // A matching hash file in the install folder doesn't make a changed file trusted.
     let hashes = json!({
         "opencode": sha256_file(&bin.join(exe("opencode"))).unwrap(),
         "rg": sha256_file(&bin.join(exe("rg"))).unwrap(),
     });
     std::fs::write(dir.join(HASHES), hashes.to_string()).unwrap();
-    let got = installed(&dir).unwrap();
-    assert_eq!(got.opencode, bin.join(exe("opencode")));
-    assert_eq!(got.bin_dir, bin);
-    assert!(present(&dir).is_some());
-    std::fs::write(bin.join(exe("rg")), b"changed").unwrap();
-    assert_eq!(installed(&dir), None, "a changed file isn't run");
+    assert_eq!(installed_for(&dir, &platform), None);
     let _ = std::fs::remove_dir_all(dir);
 }
 
@@ -232,7 +350,7 @@ fn an_administrators_policy_stops_the_run() {
 #[test]
 fn the_agent_may_only_read_search_and_use_sayqls_tools() {
     let src2 = PathBuf::from("/data/repos/src_1");
-    let rules = rules(&[PathBuf::from("/Users/me/shop"), src2.clone()]);
+    let rules = rules(&[PathBuf::from("/Users/me/shop"), src2.clone()], &[]);
     // Everything is denied first, so anything not allowed after is denied.
     assert_eq!(rules[0], ("*".to_string(), vec![("*".to_string(), "deny")]));
     for tool in [
@@ -299,7 +417,7 @@ fn the_agent_may_only_read_search_and_use_sayqls_tools() {
         "deny"
     );
     // Both names of a macOS /private folder.
-    let mac = super::rules(&[PathBuf::from("/private/var/folders/x/src")]);
+    let mac = super::rules(&[PathBuf::from("/private/var/folders/x/src")], &[]);
     assert_eq!(
         evaluate(&mac, "external_directory", "/var/folders/x/src/a/*"),
         "allow"
@@ -312,7 +430,7 @@ fn the_agent_may_only_read_search_and_use_sayqls_tools() {
 
 #[test]
 fn the_config_writes_the_rules_in_order() {
-    let perm = permission(&[PathBuf::from("/Users/me/shop")]);
+    let perm = permission(&[PathBuf::from("/Users/me/shop")], &[]);
     assert!(
         perm.starts_with(r#"{"*":"deny","read":{"*":"allow","*.env":"deny","*.env.*":"deny""#),
         "{perm}"
@@ -336,6 +454,7 @@ fn run_config(model: &Model) -> String {
             PathBuf::from("/Users/me/shop"),
             PathBuf::from("/data/src_1"),
         ],
+        hidden: &[],
     })
     .unwrap()
 }
@@ -407,6 +526,7 @@ fn the_config_has_one_read_only_agent_one_provider_and_sayql_only() {
         sayql_mcp: Path::new("/x/sayql-mcp"),
         mcp_env: &[],
         sources: &[PathBuf::from("/Users/me/{file:~/.ssh/id_rsa}")],
+        hidden: &[],
     })
     .unwrap_err();
     assert!(e.contains("has a {"), "{e}");
@@ -663,7 +783,7 @@ fn turns_opencode_events_into_progress_lines() {
     assert_eq!(lines[6].kind, "note");
     assert_eq!(s.suggested, 2, "the refused one doesn't count");
     assert!(s.succeeded());
-    use crate::audit_runner::RunStream;
+    use crate::audit::runner::RunStream;
     assert_eq!(
         RunStream::summary(&s).as_deref(),
         Some("I suggested 2 notes.")
@@ -723,13 +843,265 @@ fn explains_why_an_opencode_run_failed() {
 
 #[test]
 fn every_secret_file_is_kept_out_of_searches() {
-    for p in SECRET_FILES {
-        if p.contains(".git") {
-            continue;
-        }
-        assert!(RG_SECRET_GLOBS.contains(&p), "{p} isn't excluded from grep");
+    // One list makes both: an exclude per secret, and read rules for each.
+    let globs = rg_secret_globs();
+    assert_eq!(globs.len(), secrets::SECRETS.len());
+    for g in [
+        "*.env",
+        "*.pem",
+        "*id_rsa*",
+        ".envrc",
+        "*.tfstate",
+        "kubeconfig",
+    ] {
+        assert!(globs.iter().any(|x| x == g), "{g} isn't excluded from grep");
     }
-    assert!(RG_SECRET_GLOBS.contains(&"**/.git/**"));
+    assert!(globs.iter().any(|x| x == "**/.git/**"));
+    assert!(globs.iter().any(|x| x == "**/.docker/config.json"));
+    assert!(secret_files().len() >= secrets::SECRETS.len());
+}
+
+/// Common secret files, denied whether OpenCode's worktree is the working folder or `/`
+/// (as it is for plain folders), and ordinary code beside them still readable.
+#[test]
+fn common_secret_files_are_denied_and_code_is_not() {
+    let rules = rules(&[PathBuf::from("/Users/me/shop")], &[]);
+    for (path, want) in [
+        (".envrc", "deny"),
+        ("api/.dev.vars", "deny"),
+        ("infra/terraform.tfstate", "deny"),
+        ("infra/terraform.tfstate.backup", "deny"),
+        ("infra/prod.tfvars", "deny"),
+        ("infra/prod.tfvars.json", "deny"),
+        (".pgpass", "deny"),
+        ("ops/.my.cnf", "deny"),
+        ("keys/id_ecdsa", "deny"),
+        ("keys/id_dsa.pub", "deny"),
+        ("putty.ppk", "deny"),
+        ("android/release.jks", "deny"),
+        ("android/debug.keystore", "deny"),
+        ("vault.kdbx", "deny"),
+        ("kubeconfig", "deny"),
+        ("ops/staging.kubeconfig", "deny"),
+        (".docker/config.json", "deny"),
+        ("ci/.docker/config.json", "deny"),
+        (".pypirc", "deny"),
+        ("gcp/my-service-account-key.json", "deny"),
+        ("config/secrets.yml", "deny"),
+        ("config/secrets.json", "deny"),
+        ("src/secrets.ts", "allow"),
+        ("src/store/secrets.rs", "allow"),
+        ("src/keys.py", "allow"),
+        ("docker/config.json", "allow"),
+        ("deploy/kube.yaml", "allow"),
+        ("config.json", "allow"),
+        (".env.example", "allow"),
+    ] {
+        assert_eq!(evaluate(&rules, "read", path), want, "{path}");
+        let from_root = format!("Users/me/shop/{path}");
+        assert_eq!(evaluate(&rules, "read", &from_root), want, "{from_root}");
+    }
+}
+
+#[test]
+fn secret_names_match_in_any_case() {
+    for rel in [
+        ".ENV",
+        "api/.Env.Local",
+        "ID_RSA",
+        "keys/Id_Ed25519.PUB",
+        "server.PEM",
+        "CREDENTIALS.json",
+        "Kubeconfig",
+        "ci/.DOCKER/Config.json",
+        // The Kelvin sign is `k` to a case-insensitive disk.
+        "tls.\u{212A}EY",
+    ] {
+        assert!(secrets::is_secret_file(rel), "{rel}");
+    }
+    for rel in [
+        "src/app.ts",
+        ".ENV.EXAMPLE",
+        "docker/config.json",
+        "secrets.ts",
+    ] {
+        assert!(!secrets::is_secret_file(rel), "{rel}");
+    }
+    assert!(secrets::is_secret_folder(".GIT"));
+    assert!(!secrets::is_secret_folder("git"));
+}
+
+#[test]
+fn a_shape_matches_every_spelling_of_one_path() {
+    assert_eq!(secrets::shape(".env"), ".???");
+    assert_eq!(secrets::shape("config/.git/"), "??????/.???/*");
+    assert_eq!(secrets::shape("v2/id_rsa"), "?2/??_???");
+    // Outside ASCII any run; `{` never reaches the config, where it would be substituted.
+    assert_eq!(secrets::shape("é.key"), "*.???");
+    assert_eq!(secrets::shape("{env:X}"), "???????");
+}
+
+/// On a case-insensitive disk OpenCode reads `.env` when asked for `.ENV`, and on any disk a file
+/// named `.ENV` misses `*.env`: the scan finds both, and each is denied in every spelling.
+#[test]
+fn secret_files_in_any_case_are_found_and_denied_in_every_spelling() {
+    let dir = temp("cases").canonicalize().unwrap();
+    let src = dir.join("shop");
+    for d in ["config", "src", ".git", "keys"] {
+        std::fs::create_dir_all(src.join(d)).unwrap();
+    }
+    for f in [
+        ".ENV",
+        "config/.env",
+        "keys/ID_RSA",
+        "server.PEM",
+        "CREDENTIALS.json",
+        ".Envrc",
+        ".env.example",
+        "src/app.ts",
+        ".git/config",
+    ] {
+        std::fs::write(src.join(f), "x").unwrap();
+    }
+    let sources = [src.clone()];
+    let hidden = secret_paths(&sources);
+    let mut found: Vec<&str> = hidden.iter().map(|h| h.rel.as_str()).collect();
+    found.sort_unstable();
+    assert_eq!(
+        found,
+        [
+            ".ENV",
+            ".Envrc",
+            ".git/",
+            "CREDENTIALS.json",
+            "config/.env",
+            "keys/ID_RSA",
+            "server.PEM"
+        ]
+    );
+    assert!(hidden.iter().all(|h| h.source == 0));
+    let rules = rules(&sources, &hidden);
+    let root = src.to_string_lossy().trim_start_matches('/').to_string();
+    for (path, want) in [
+        (".ENV", "deny"),
+        (".env", "deny"),
+        (".Env", "deny"),
+        ("config/.ENV", "deny"),
+        ("CONFIG/.eNv", "deny"),
+        ("keys/ID_RSA", "deny"),
+        ("KEYS/id_rsa", "deny"),
+        ("server.PEM", "deny"),
+        ("Server.pem", "deny"),
+        ("CREDENTIALS.json", "deny"),
+        ("credentials.JSON", "deny"),
+        (".ENVRC", "deny"),
+        (".git/config", "deny"),
+        (".GIT/config", "deny"),
+        (".Git/HEAD", "deny"),
+        ("src/app.ts", "allow"),
+        (".env.example", "allow"),
+    ] {
+        assert_eq!(evaluate(&rules, "read", path), want, "{path}");
+        // OpenCode's worktree for plain folders is `/`.
+        let from_root = format!("{root}/{path}");
+        assert_eq!(evaluate(&rules, "read", &from_root), want, "{from_root}");
+    }
+    // macOS also names the folder without `/private`.
+    if let Some(bare) = root.strip_prefix("private/") {
+        assert_eq!(
+            evaluate(&rules, "read", &format!("{bare}/CONFIG/.ENV")),
+            "deny"
+        );
+    }
+    // A second source is reached from the first as `../<path>`: denied there too.
+    let other = dir.join("backend");
+    std::fs::create_dir_all(&other).unwrap();
+    std::fs::write(other.join("Prod.ENV"), "x").unwrap();
+    let both = [src.clone(), other.clone()];
+    let hidden = secret_paths(&both);
+    assert!(hidden.contains(&Hidden {
+        source: 1,
+        rel: "Prod.ENV".into()
+    }));
+    let rules = super::rules(&both, &hidden);
+    let other_root = other.to_string_lossy().trim_start_matches('/').to_string();
+    for p in [
+        "../backend/prod.env".to_string(),
+        "../backend/PROD.ENV".to_string(),
+        format!("{other_root}/pROD.eNV"),
+    ] {
+        assert_eq!(evaluate(&rules, "read", &p), "deny", "{p}");
+    }
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+/// A link reads what it leads to: a link to a secret, or a secret under a linked folder, is
+/// denied by the link's own path too.
+#[cfg(unix)]
+#[test]
+fn links_to_secret_files_are_denied_by_their_own_path() {
+    let dir = temp("secret-links").canonicalize().unwrap();
+    let src = dir.join("shop");
+    std::fs::create_dir_all(src.join("lib")).unwrap();
+    std::fs::write(src.join(".env"), "x").unwrap();
+    std::fs::write(src.join("lib/ID_RSA"), "x").unwrap();
+    std::os::unix::fs::symlink(src.join(".env"), src.join("notes.txt")).unwrap();
+    std::os::unix::fs::symlink(src.join("lib"), src.join("vendor")).unwrap();
+    let sources = [src.clone()];
+    let hidden = secret_paths(&sources);
+    let rels: Vec<&str> = hidden.iter().map(|h| h.rel.as_str()).collect();
+    assert!(rels.contains(&"notes.txt"), "{rels:?}");
+    assert!(rels.contains(&"vendor/ID_RSA"), "{rels:?}");
+    let rules = rules(&sources, &hidden);
+    for p in ["notes.txt", "Notes.TXT", "vendor/id_rsa", "VENDOR/ID_RSA"] {
+        assert_eq!(evaluate(&rules, "read", p), "deny", "{p}");
+    }
+    assert_eq!(evaluate(&rules, "read", "lib/app.ts"), "allow");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_source_with_a_wildcard_in_its_name_is_refused() {
+    let model = credits_model();
+    for name in ["/Users/me/shop*", "/Users/me/sh?p"] {
+        let e = config_json(&RunConfig {
+            model: &model,
+            sayql_mcp: Path::new("/x/sayql-mcp"),
+            mcp_env: &[],
+            sources: &[PathBuf::from(name)],
+            hidden: &[],
+        })
+        .unwrap_err();
+        assert!(e.contains("* or ?"), "{e}");
+    }
+}
+
+#[test]
+fn more_secret_files_than_the_config_can_hold_are_refused() {
+    let model = credits_model();
+    let hidden: Vec<Hidden> = (0..2000)
+        .map(|i| Hidden {
+            source: 0,
+            rel: format!("node_modules/some-package-{i}/test/fixtures/server.pem"),
+        })
+        .collect();
+    let config = |hidden: &[Hidden]| {
+        config_json(&RunConfig {
+            model: &model,
+            sayql_mcp: Path::new("/x/sayql-mcp"),
+            mcp_env: &[],
+            sources: &[PathBuf::from("/Users/me/shop")],
+            hidden,
+        })
+    };
+    let e = config(&hidden).unwrap_err();
+    assert!(e.contains("2000 files that look like secrets"), "{e}");
+    // A few are written into the read rules, after the allow for example files.
+    let some = hidden.get(..3).unwrap();
+    let text = config(some).unwrap();
+    let example = text.find(r#""*.env.example":"allow""#).unwrap();
+    let shaped = text.find(r#"/????/????????/??????.???":"deny""#).unwrap();
+    assert!(example < shaped, "{text}");
 }
 
 /// Runs SayQL's `rg` script over a stand-in ripgrep that prints its arguments, one per line.
@@ -757,9 +1129,9 @@ fn the_rg_script_adds_the_excludes_after_opencodes_globs() {
             .map(String::from)
             .collect()
     };
-    let excludes: Vec<String> = RG_SECRET_GLOBS
+    let excludes: Vec<String> = rg_secret_globs()
         .iter()
-        .map(|g| format!("--glob=!{g}"))
+        .map(|g| format!("--iglob=!{g}"))
         .collect();
     // grep: the excludes come after the model's include and before `--`, so they win and the
     // pattern and path stay where they were.
@@ -912,6 +1284,7 @@ fn run_opencode(
             config_dir.to_string_lossy().into_owned(),
         )],
         sources,
+        hidden: &secret_paths(sources),
     })
     .unwrap();
     let mut child = std::process::Command::new(&oc.opencode)

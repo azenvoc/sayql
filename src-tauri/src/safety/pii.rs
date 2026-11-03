@@ -1,6 +1,6 @@
 //! Recognising values that are likely personal data or secrets: emails, US social security
 //! numbers, card numbers (Luhn-checked), phone numbers and long opaque ids. Shared by the
-//! masker (`ai::agent::mask`) and the check on note text (`store::note_values`); it depends on
+//! masker (`safety::mask`) and the check on note text (`store::note_values`); it depends on
 //! nothing else in SayQL.
 
 pub fn is_email(s: &str) -> bool {

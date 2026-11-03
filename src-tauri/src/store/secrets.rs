@@ -293,7 +293,7 @@ fn repo_account(source_id: &str) -> String {
     format!("repo:{source_id}")
 }
 
-/// A git code source's read-only token (see crate::repos).
+/// A git code source's read-only token (see crate::audit::repos).
 pub fn repo_token(source_id: &str) -> Option<String> {
     get(&repo_account(source_id))
 }

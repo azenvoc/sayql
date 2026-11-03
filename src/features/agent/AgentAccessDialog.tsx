@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import type { AgentAccess, AgentResults, Target } from "../../api";
+import type { AgentAccess, AgentAccessSettings, AgentResults, Target } from "../../api";
 import { Alert, Button, Checkbox, Dialog } from "../../components/ui";
 import { cx } from "../../lib/cx";
 import styles from "./AgentAccessDialog.module.css";
@@ -13,7 +13,7 @@ export interface AgentAccessDialogProps {
   provider: { label: string; local: boolean };
   access: AgentAccess;
   /** Saves and closes; rejects with a message to show. */
-  onSave: (access: AgentAccess) => Promise<void>;
+  onSave: (access: AgentAccessSettings) => Promise<void>;
   onClose: () => void;
   /**
    * Only the never-send columns (Settings → AI apps): agent mode stays as it is, on or off.

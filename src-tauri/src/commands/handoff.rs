@@ -64,6 +64,7 @@ pub fn focus_main(app: &AppHandle) {
 
 /// The handoffs waiting for the window, oldest first.
 #[tauri::command]
+#[specta::specta]
 pub fn take_handoffs(pending: State<'_, PendingHandoffs>) -> Vec<Handoff> {
     std::mem::take(&mut *crate::state::lock(&pending.0))
 }

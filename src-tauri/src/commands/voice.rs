@@ -6,7 +6,7 @@ use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager, State};
 
-#[derive(Serialize)]
+#[derive(Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VoiceStatus {
     /// The model is downloaded and voice input can be used.
@@ -16,14 +16,15 @@ pub struct VoiceStatus {
     model_bytes: u64,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-struct Progress {
+pub(crate) struct Progress {
     received: u64,
     total: u64,
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn voice_status(state: State<'_, AppState>) -> VoiceStatus {
     VoiceStatus {
         ready: model::is_downloaded(&state.voice.model_path),
@@ -35,6 +36,7 @@ pub fn voice_status(state: State<'_, AppState>) -> VoiceStatus {
 /// Downloads the Whisper model once, from Hugging Face, checking its pinned SHA-256.
 /// Progress arrives as `voice://progress` events.
 #[tauri::command]
+#[specta::specta]
 pub async fn voice_download(app: AppHandle, state: State<'_, AppState>) -> AppResult<()> {
     let voice = &state.voice;
     if voice.downloading.swap(true, Ordering::SeqCst) {
@@ -62,11 +64,13 @@ pub async fn voice_download(app: AppHandle, state: State<'_, AppState>) -> AppRe
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn voice_cancel_download(state: State<'_, AppState>) {
     state.voice.cancel_download.store(true, Ordering::SeqCst);
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn voice_delete_model(state: State<'_, AppState>) -> AppResult<()> {
     state.voice.remove_model()
 }
@@ -74,6 +78,7 @@ pub fn voice_delete_model(state: State<'_, AppState>) -> AppResult<()> {
 /// Starts recording from the default microphone. While it runs, `voice://level` events
 /// carry the loudness (0–1); `voice://blocked` means the system is withholding the audio.
 #[tauri::command]
+#[specta::specta]
 pub fn voice_start(app: AppHandle, state: State<'_, AppState>) -> AppResult<()> {
     let emitter = app.clone();
     state.voice.start(move |event| {
@@ -93,6 +98,7 @@ pub fn voice_start(app: AppHandle, state: State<'_, AppState>) -> AppResult<()> 
 /// Stops recording and returns what was said. `prompt` lists table and column names to
 /// help Whisper spell them. Runs on a worker thread; the audio is dropped afterwards.
 #[tauri::command]
+#[specta::specta]
 pub async fn voice_stop(app: AppHandle, prompt: Option<String>) -> AppResult<String> {
     tauri::async_runtime::spawn_blocking(move || {
         let voice = &app.state::<AppState>().voice;
@@ -107,6 +113,7 @@ pub async fn voice_stop(app: AppHandle, prompt: Option<String>) -> AppResult<Str
 
 /// Stops recording and throws the audio away.
 #[tauri::command]
+#[specta::specta]
 pub fn voice_cancel(state: State<'_, AppState>) {
     drop(state.voice.stop());
 }

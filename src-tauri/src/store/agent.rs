@@ -13,7 +13,7 @@ pub const MAX_NOTE: usize = 300;
 pub const MAX_NEVER_SEND: usize = 200;
 
 /// What the AI may see of query results on one connection.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum Results {
     /// Only how many rows a query returned, and its column names.
@@ -28,7 +28,7 @@ pub enum Results {
 /// What AI apps using SayQL over MCP (Claude Code, Cursor, ...) may see of query results on
 /// one connection. Separate from agent mode's setting; counts and summaries until the person
 /// chooses otherwise.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum AppResults {
     /// Only how many rows a query returned, and its column names.
@@ -44,7 +44,7 @@ pub enum AppResults {
 
 /// Agent mode's access to one connection, which is off until the person turns it on, and
 /// what AI apps may see of it.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AgentAccess {
     #[serde(default)]
@@ -67,7 +67,7 @@ fn yes() -> bool {
 }
 
 /// Run limits and agent preferences, in Settings.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AgentSettings {
     #[serde(default = "default_steps")]
@@ -154,7 +154,7 @@ impl AgentSettings {
 ///
 /// Besides its text, a note knows what it's about (its anchors), where it came from, whether
 /// something has made it doubtful since, and optionally how to check it against the data.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Note {
     pub id: String,
@@ -201,7 +201,7 @@ impl From<&str> for Note {
 }
 
 /// Why a note may no longer be true.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Suspect {
     pub reason: String,
@@ -210,7 +210,7 @@ pub struct Suspect {
 
 /// A read-only query that answers whether a note still holds: it returns one row with one
 /// column, true or false (1 or 0). Only that answer is kept, never data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct NoteCheck {
     pub sql: String,
@@ -218,17 +218,22 @@ pub struct NoteCheck {
     pub last: Option<CheckRun>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct CheckRun {
     /// `None` when the check couldn't run (`error` says why).
     pub ok: Option<bool>,
     pub at: u64,
+    /// Why it couldn't run, for the person: the database's own message (it can quote values).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+    /// The same, as an AI may see it (`safety::redact::safe_error`). Not saved: only the run
+    /// that just happened hands it to agent mode.
+    #[serde(skip)]
+    pub ai_error: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Revision {
     pub text: String,
@@ -255,23 +260,23 @@ impl Store {
     }
 
     pub fn save_agent_access(&self, connection_id: &str, access: AgentAccess) -> AppResult<()> {
-        let mut all: BTreeMap<String, AgentAccess> = self.read(ACCESS_FILE)?;
-        all.insert(connection_id.to_string(), clean_access(access)?);
-        self.write(ACCESS_FILE, &all)
+        let access = clean_access(access)?;
+        self.update(ACCESS_FILE, |all: &mut BTreeMap<String, AgentAccess>| {
+            all.insert(connection_id.to_string(), access);
+            Ok(())
+        })
     }
 
     /// Forgets a deleted connection's agent access, notes, suggested notes, audits and audit folder.
     pub fn forget_agent(&self, connection_id: &str) -> AppResult<()> {
-        let mut all: BTreeMap<String, AgentAccess> = self.read(ACCESS_FILE)?;
-        if all.remove(connection_id).is_some() {
-            self.write(ACCESS_FILE, &all)?;
-        }
-        let mut notes = self.all_notes()?;
-        let before = notes.len();
-        notes.retain(|n| n.connection_id != connection_id);
-        if notes.len() != before {
-            self.write(NOTES_FILE, &notes)?;
-        }
+        self.update(ACCESS_FILE, |all: &mut BTreeMap<String, AgentAccess>| {
+            all.remove(connection_id);
+            Ok(())
+        })?;
+        self.update_notes(|notes| {
+            notes.retain(|n| n.connection_id != connection_id);
+            Ok(())
+        })?;
         self.forget_note_suggestions(connection_id)?;
         self.forget_schema_snapshots(connection_id)?;
         self.forget_audits(connection_id)?;
@@ -281,6 +286,11 @@ impl Store {
 
     pub fn all_notes(&self) -> AppResult<Vec<Note>> {
         self.read(NOTES_FILE)
+    }
+
+    /// Changes the saved notes under the file's lock (see [`Store::update`]).
+    fn update_notes<R>(&self, change: impl FnOnce(&mut Vec<Note>) -> AppResult<R>) -> AppResult<R> {
+        self.update(NOTES_FILE, change)
     }
 
     /// The notes for one database (`None`: the connection's default database). A note kept
@@ -345,78 +355,74 @@ impl Store {
             _ => None,
         };
         let now = now_ms();
-        let mut all = self.all_notes()?;
-        let existing = all.iter().find(|n| n.id == note.id).cloned();
-        let mut saved = match existing {
-            Some(old) => {
-                let mut n = Note {
-                    database: note.database.clone().or(old.database.clone()),
-                    ..old.clone()
-                };
-                if old.text != text {
-                    n.history.insert(
-                        0,
-                        Revision {
-                            text: old.text.clone(),
-                            at: old.updated_at,
-                            source: old.source.clone(),
-                        },
-                    );
-                    n.history.truncate(MAX_HISTORY);
-                    n.text = text;
-                    n.source = note.source.clone();
-                    if note.evidence.is_some() {
-                        n.evidence = note.evidence.clone();
+        self.update_notes(|all| {
+            let existing = all.iter().find(|n| n.id == note.id).cloned();
+            let mut saved = match existing {
+                Some(old) => {
+                    let mut n = Note {
+                        database: note.database.clone().or(old.database.clone()),
+                        ..old.clone()
+                    };
+                    if old.text != text {
+                        n.history.insert(
+                            0,
+                            Revision {
+                                text: old.text.clone(),
+                                at: old.updated_at,
+                                source: old.source.clone(),
+                            },
+                        );
+                        n.history.truncate(MAX_HISTORY);
+                        n.text = text;
+                        n.source = note.source.clone();
+                        if note.evidence.is_some() {
+                            n.evidence = note.evidence.clone();
+                        }
+                        n.suspect = None;
                     }
-                    n.suspect = None;
+                    let same_check = old.check.as_ref().map(|c| c.sql.trim())
+                        == check.as_ref().map(|c| c.sql.trim());
+                    if !same_check {
+                        n.check = check.map(|c| NoteCheck { last: None, ..c });
+                        n.verified_at = None;
+                        n.suspect = None;
+                    }
+                    n
                 }
-                let same_check = old.check.as_ref().map(|c| c.sql.trim())
-                    == check.as_ref().map(|c| c.sql.trim());
-                if !same_check {
-                    n.check = check.map(|c| NoteCheck { last: None, ..c });
-                    n.verified_at = None;
-                    n.suspect = None;
-                }
-                n
-            }
-            None => Note {
-                created_at: if note.created_at > 0 {
-                    note.created_at
-                } else {
-                    now
+                None => Note {
+                    created_at: if note.created_at > 0 {
+                        note.created_at
+                    } else {
+                        now
+                    },
+                    text,
+                    check: check.map(|c| NoteCheck { last: None, ..c }),
+                    suspect: None,
+                    verified_at: None,
+                    ..note
                 },
-                text,
-                check: check.map(|c| NoteCheck { last: None, ..c }),
-                suspect: None,
-                verified_at: None,
-                ..note
-            },
-        };
-        saved.updated_at = now;
-        if let Some(schema) = schema {
-            saved.anchors = anchors::resolve(&saved.text, schema).anchors;
-        }
-        match all.iter_mut().find(|n| n.id == saved.id) {
-            Some(slot) => *slot = saved.clone(),
-            None => all.push(saved.clone()),
-        }
-        self.write(NOTES_FILE, &all)?;
-        Ok(saved)
+            };
+            saved.updated_at = now;
+            if let Some(schema) = schema {
+                saved.anchors = anchors::resolve(&saved.text, schema).anchors;
+            }
+            match all.iter_mut().find(|n| n.id == saved.id) {
+                Some(slot) => *slot = saved.clone(),
+                None => all.push(saved.clone()),
+            }
+            Ok(saved)
+        })
     }
 
     /// Applies `change` to the saved note `id`, if it's still there, and returns it.
     pub fn update_note(&self, id: &str, change: impl FnOnce(&mut Note)) -> AppResult<Option<Note>> {
-        let mut all = self.all_notes()?;
-        let Some(n) = all.iter_mut().find(|n| n.id == id) else {
-            return Ok(None);
-        };
-        let before = n.clone();
-        change(n);
-        let out = n.clone();
-        if out != before {
-            self.write(NOTES_FILE, &all)?;
-        }
-        Ok(Some(out))
+        self.update_notes(|all| {
+            let Some(n) = all.iter_mut().find(|n| n.id == id) else {
+                return Ok(None);
+            };
+            change(n);
+            Ok(Some(n.clone()))
+        })
     }
 
     /// Marks a note doubtful, keeping the first reason until it's reviewed.
@@ -507,9 +513,10 @@ impl Store {
     }
 
     pub fn delete_note(&self, id: &str) -> AppResult<()> {
-        let mut all = self.all_notes()?;
-        all.retain(|n| n.id != id);
-        self.write(NOTES_FILE, &all)
+        self.update_notes(|all| {
+            all.retain(|n| n.id != id);
+            Ok(())
+        })
     }
 }
 

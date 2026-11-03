@@ -21,6 +21,7 @@ const config = (id: string): ConnectionConfig => ({
   file: `/${id}.db`,
   ssl: false,
   trustCert: false,
+  production: false,
 });
 
 function setup() {
@@ -47,7 +48,7 @@ describe("useConnectionActions", () => {
   });
 
   it("deletes the connection and closes its tabs", async () => {
-    deleteConnection.mockResolvedValue(undefined);
+    deleteConnection.mockResolvedValue(null);
     const r = setup();
     let ok: boolean | undefined;
     await act(async () => {

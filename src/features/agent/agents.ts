@@ -5,7 +5,7 @@ import type { AuditTarget } from "./audit";
  * The coding agents SayQL knows how to connect, and how each runs SayQL's audit. Every fact here
  * was checked against the agent's own docs (2026-10-28). Where a docs page doesn't say how
  * something looks in the app, the wording stays generic or falls back to pasting the prompt.
- * The ids match src-tauri/src/coding_agents.rs, which finds the installed ones.
+ * The ids match src-tauri/src/audit/coding_agents.rs, which finds the installed ones.
  */
 
 export type Os = McpSetup["os"];

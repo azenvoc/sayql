@@ -4,6 +4,15 @@
 //! corrections and removals of notes that look outdated. Served as the MCP prompt `audit`
 //! (`/mcp__sayql__audit` in Claude Code) and copied from the app for AI apps without prompts.
 
+pub mod coding_agents;
+pub mod knowledge;
+pub mod opencode;
+pub mod process;
+pub mod repos;
+pub mod run;
+pub mod runner;
+pub mod sources;
+
 use crate::db::ConnConfig;
 use crate::store::Store;
 

@@ -63,6 +63,22 @@ pub struct LoadedSchema {
     pub schema_text: String,
 }
 
+impl LoadedSchema {
+    /// The schema and its text as an AI may read them on a connection with these never-send
+    /// columns (see [`crate::safety::never_send::schema_for_ai`]). The cached text is kept when nothing
+    /// is left out.
+    pub fn for_ai(self: &Arc<Self>, never_send: &[String]) -> Arc<LoadedSchema> {
+        let never = crate::safety::never_send::entries(never_send);
+        match crate::safety::never_send::schema_for_ai(&self.schema, &never) {
+            std::borrow::Cow::Borrowed(_) => Arc::clone(self),
+            std::borrow::Cow::Owned(schema) => Arc::new(LoadedSchema {
+                schema_text: schema::render_full(&schema),
+                schema,
+            }),
+        }
+    }
+}
+
 pub struct AppState {
     pub store: Store,
     pub demo_path: PathBuf,
@@ -462,5 +478,35 @@ mod tests {
         let mut g = lock(&m);
         g.push(3);
         assert_eq!(*g, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn the_schema_for_ai_drops_never_send_comments_and_keeps_the_cached_text_otherwise() {
+        use crate::schema::{Column, Table};
+        let schema = Schema {
+            dialect: "SQLite".into(),
+            tables: vec![Table {
+                name: "users".into(),
+                kind: "table".into(),
+                columns: vec![Column {
+                    name: "api_key".into(),
+                    data_type: "text".into(),
+                    nullable: true,
+                    comment: Some("test key sk_live_abc".into()),
+                    ..Default::default()
+                }],
+                checks: vec!["CHECK (api_key <> 'sk_test_abc')".into()],
+                ..Default::default()
+            }],
+        };
+        let loaded = Arc::new(LoadedSchema {
+            schema_text: schema::render_full(&schema),
+            schema,
+        });
+        let same = loaded.for_ai(&["orders.api_key".into()]);
+        assert!(Arc::ptr_eq(&same, &loaded));
+        let ai = loaded.for_ai(&["users.api_key".into()]);
+        assert_eq!(ai.schema_text, "users [table](api_key text)");
+        assert!(loaded.schema_text.contains("sk_live_abc"));
     }
 }

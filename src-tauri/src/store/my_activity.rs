@@ -22,7 +22,7 @@ const MAX_SQL: usize = 4000;
 const MAX_DETAIL: usize = 300;
 
 /// One query you ran.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MyActivity {
     /// Milliseconds since the Unix epoch.

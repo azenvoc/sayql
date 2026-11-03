@@ -30,12 +30,16 @@
 //! - **Search** (`packages/core/src/ripgrep.ts`): `grep` runs ripgrep with `--no-config
 //!   --hidden`, so a ripgrep config can't exclude anything and dotfiles such as `.env` are
 //!   searched. On macOS and Linux the `rg` on the run's PATH is a script SayQL writes for the
-//!   run ([`rg_wrapper`]) that adds an exclude for every secret file ([`RG_SECRET_GLOBS`]) after
-//!   OpenCode's own globs, where ripgrep gives it precedence. On Windows, where OpenCode looks
-//!   for `rg.exe` and a script can't stand in, `grep` is denied; `read` and `glob` remain.
+//!   run ([`rg_wrapper`]) that adds a case-insensitive exclude for every secret file
+//!   ([`rg_secret_globs`]) after OpenCode's own globs, where ripgrep gives it precedence. On
+//!   Windows, where OpenCode looks for `rg.exe` and a script can't stand in, `grep` is denied;
+//!   `read` and `glob` remain.
 //! - **Symbolic links**: OpenCode checks a path against the sources as written, without
 //!   resolving links, so a link inside a source could lead `read` anywhere. SayQL refuses to run
 //!   over a source with a link out of the sources ([`link_out`]).
+//! - **Secret files** ([`secrets`]): denied to `read` by name, and since OpenCode's patterns are
+//!   case-sensitive outside Windows, also by the shape of every secret-looking file a scan of
+//!   the sources finds before the run, in any case ([`secret_paths`]).
 //! - **Git** (`packages/core/src/git.ts`, `src/project/project.ts`): in a git repository OpenCode
 //!   reads anywhere in the repository, not only the folder it runs in, and writes a project id
 //!   into its `.git` folder. The run's `GIT_DIR` names a folder that doesn't exist, so OpenCode
@@ -44,14 +48,15 @@
 //!   list) and names the tools `sayql_<tool>`.
 
 use crate::ai::{Api, KeyNeed, Provider};
-use crate::audit_runner::{CREDITS_HAIKU, CREDITS_OPUS, CREDITS_SONNET, Line, SAYQL_TOOLS};
+use crate::audit::runner::{CREDITS_HAIKU, CREDITS_OPUS, CREDITS_SONNET, Line, SAYQL_TOOLS, short};
 use crate::store::ProviderSettings;
+use crate::store::digest::sha256_file;
 use futures_util::StreamExt;
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
 use std::ffi::OsString;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 
 /// The audit runner's id, as the window names it.
@@ -77,7 +82,8 @@ pub enum Archive {
     TarGz,
 }
 
-/// A release file SayQL downloads, pinned by size and SHA-256.
+/// A release file SayQL downloads, pinned by size and SHA-256, and the SHA-256 of the
+/// executable unpacked from it, which every run checks again.
 #[derive(Debug)]
 pub struct Asset {
     pub url: &'static str,
@@ -86,6 +92,8 @@ pub struct Asset {
     pub archive: Archive,
     /// The executable inside the archive, by file name.
     pub entry: &'static str,
+    /// The SHA-256 of that executable as unpacked.
+    pub exe_sha256: &'static str,
 }
 
 /// What a platform downloads: OpenCode and ripgrep.
@@ -99,7 +107,8 @@ pub struct Platform {
 }
 
 // Sizes and digests as GitHub lists them for each release (2026-11-02); x64 uses the
-// `-baseline` builds, which run on CPUs without AVX2.
+// `-baseline` builds, which run on CPUs without AVX2. `exe_sha256`: each executable as
+// unpacked from those archives (checked against the archive digests first, 2026-11-02).
 pub const PLATFORMS: [Platform; 4] = [
     Platform {
         os: "macos",
@@ -110,6 +119,7 @@ pub const PLATFORMS: [Platform; 4] = [
             sha256: "c1c9e62521192192ef4c3ed1355ada2144055bddb61682217e997b03c55203c1",
             archive: Archive::Zip,
             entry: "opencode",
+            exe_sha256: "feaafead8cd563af0c2dcb386b0757e4355e327ebb6bd1aaad5440fe2f83596c",
         },
         ripgrep: Asset {
             url: "https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-aarch64-apple-darwin.tar.gz",
@@ -117,6 +127,7 @@ pub const PLATFORMS: [Platform; 4] = [
             sha256: "378e973289176ca0c6054054ee7f631a065874a352bf43f0fa60ef079b6ba715",
             archive: Archive::TarGz,
             entry: "rg",
+            exe_sha256: "4fdf1d8365af224bc70e3c1490d8461d859c37cc70e739a11e987af0215f3e94",
         },
     },
     Platform {
@@ -128,6 +139,7 @@ pub const PLATFORMS: [Platform; 4] = [
             sha256: "e1235374cb7e712cdc15e21ba915a029a5d22312b460606d0783754739706775",
             archive: Archive::Zip,
             entry: "opencode",
+            exe_sha256: "27d2aa00d9868aa81374e0a00ce0ade50a57fe35b8d13c50ff8e4b56b0c275a1",
         },
         ripgrep: Asset {
             url: "https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-x86_64-apple-darwin.tar.gz",
@@ -135,6 +147,7 @@ pub const PLATFORMS: [Platform; 4] = [
             sha256: "64811cb24e77cac3057d6c40b63ac9becf9082eedd54ca411b475b755d334882",
             archive: Archive::TarGz,
             entry: "rg",
+            exe_sha256: "3bafa7e6ee51ba3ac4ed065883484a309be09b26ea6dad561ae4049bfe049c50",
         },
     },
     Platform {
@@ -146,6 +159,7 @@ pub const PLATFORMS: [Platform; 4] = [
             sha256: "e4dac5cd38a182a24e7b3e18853f01d08cdb137e50b3bd1397c1a89e54d28c63",
             archive: Archive::Zip,
             entry: "opencode.exe",
+            exe_sha256: "6f15c8f241f3df22375f174753193a71c488f6c0a6bbbae3f9fa34d112673b7b",
         },
         ripgrep: Asset {
             url: "https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-x86_64-pc-windows-msvc.zip",
@@ -153,6 +167,7 @@ pub const PLATFORMS: [Platform; 4] = [
             sha256: "124510b94b6baa3380d051fdf4650eaa80a302c876d611e9dba0b2e18d87493a",
             archive: Archive::Zip,
             entry: "rg.exe",
+            exe_sha256: "decdd4992f3f1b9a5ef9898f1b40ab16886d579d6516b4efd3d5eaa19364e408",
         },
     },
     Platform {
@@ -164,6 +179,7 @@ pub const PLATFORMS: [Platform; 4] = [
             sha256: "17c200fd4b2289954cc01552559f9b6d03ec157b2ddfb5eb54144f491656333d",
             archive: Archive::TarGz,
             entry: "opencode",
+            exe_sha256: "7df4e4136301f16589b0f30bf91a61380fca5f8ef22dd36570f5ebe1d4ec802c",
         },
         ripgrep: Asset {
             url: "https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz",
@@ -171,6 +187,7 @@ pub const PLATFORMS: [Platform; 4] = [
             sha256: "1c9297be4a084eea7ecaedf93eb03d058d6faae29bbc57ecdaf5063921491599",
             archive: Archive::TarGz,
             entry: "rg",
+            exe_sha256: "ebeaf56f8a25e102e9419933423738b3a2a613a444fd749d695e15eba53f71f2",
         },
     },
 ];
@@ -205,7 +222,8 @@ pub fn install_dir(runners: &Path) -> PathBuf {
     runners.join("opencode").join(VERSION)
 }
 
-/// The SHA-256 of each executable, written once both were checked and unpacked.
+/// Written once both executables were checked and unpacked: marks an install as finished. Its
+/// contents (the hashes) aren't trusted; [`installed`] checks against [`Asset::exe_sha256`].
 const HASHES: &str = "sha256.json";
 
 /// An installed OpenCode: the executable, and the folder with it and ripgrep (first on PATH).
@@ -224,34 +242,21 @@ pub fn exe(name: &str) -> String {
     }
 }
 
-fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
-}
-
-/// The SHA-256 of a file, as lowercase hex.
-pub fn sha256_file(path: &Path) -> std::io::Result<String> {
-    let mut file = std::fs::File::open(path)?;
-    let mut hasher = Sha256::new();
-    let mut buf = vec![0u8; 1 << 20];
-    loop {
-        let n = file.read(&mut buf)?;
-        if n == 0 {
-            break;
-        }
-        hasher.update(&buf[..n]);
-    }
-    Ok(hex(&hasher.finalize()))
-}
-
 /// The installed OpenCode in `dir`, if both executables are there and still match the hashes
-/// taken when they were unpacked. Checked before every run.
+/// pinned for this computer. Checked before every run.
 pub fn installed(dir: &Path) -> Option<Installed> {
+    installed_for(dir, this_platform().ok()?)
+}
+
+/// [`installed`], against `platform`'s pinned hashes. Not against a file in the install folder:
+/// anything that can change the executables there could change that file too.
+pub fn installed_for(dir: &Path, platform: &Platform) -> Option<Installed> {
     let bin_dir = dir.join("bin");
-    let hashes: Value =
-        serde_json::from_str(&std::fs::read_to_string(dir.join(HASHES)).ok()?).ok()?;
-    for name in ["opencode", "rg"] {
-        let want = hashes.get(name).and_then(Value::as_str)?;
-        if sha256_file(&bin_dir.join(exe(name))).ok()? != want {
+    if !dir.join(HASHES).is_file() {
+        return None;
+    }
+    for (name, asset) in [("opencode", &platform.opencode), ("rg", &platform.ripgrep)] {
+        if sha256_file(&bin_dir.join(exe(name))).ok()? != asset.exe_sha256 {
             return None;
         }
     }
@@ -273,7 +278,8 @@ pub fn present(dir: &Path) -> Option<PathBuf> {
 const MAX_EXECUTABLE: u64 = 512 * 1024 * 1024;
 
 /// Checks a downloaded `archive` against `asset` (size, then SHA-256) and only then unpacks its
-/// executable to `dest`, executable bit set. Returns the executable's SHA-256.
+/// executable to `dest`, executable bit set, keeping it only if it matches
+/// [`Asset::exe_sha256`]. Returns the executable's SHA-256.
 pub fn install_from_archive(archive: &Path, asset: &Asset, dest: &Path) -> Result<String, String> {
     let len = std::fs::metadata(archive)
         .map_err(|e| format!("Couldn't read the download: {e}"))?
@@ -292,7 +298,10 @@ pub fn install_from_archive(archive: &Path, asset: &Asset, dest: &Path) -> Resul
             let mut found = false;
             for i in 0..zip.len() {
                 let mut entry = zip.by_index(i).map_err(|e| e.to_string())?;
-                let name = Path::new(entry.name()).file_name().map(|n| n.to_owned());
+                let entry_name = entry.name().map_err(|e| e.to_string())?;
+                let name = Path::new(entry_name.as_ref())
+                    .file_name()
+                    .map(|n| n.to_owned());
                 if entry.is_file() && name.as_deref() == Some(std::ffi::OsStr::new(asset.entry)) {
                     copy_limited(&mut entry, &mut out)?;
                     found = true;
@@ -329,7 +338,14 @@ pub fn install_from_archive(archive: &Path, asset: &Asset, dest: &Path) -> Resul
         std::fs::set_permissions(dest, std::fs::Permissions::from_mode(0o755))
             .map_err(|e| e.to_string())?;
     }
-    sha256_file(dest).map_err(|e| e.to_string())
+    let exe_sha = sha256_file(dest).map_err(|e| e.to_string())?;
+    if exe_sha != asset.exe_sha256 {
+        let _ = std::fs::remove_file(dest);
+        return Err(
+            "The download's program didn't match its checksum, so SayQL didn't use it.".into(),
+        );
+    }
+    Ok(exe_sha)
 }
 
 fn copy_limited(from: &mut impl Read, to: &mut std::fs::File) -> Result<(), String> {
@@ -356,11 +372,10 @@ pub async fn download(
     stop: &CancellationToken,
     mut progress: impl FnMut(u64, u64),
 ) -> Result<Installed, String> {
-    const FAILED: &str = "Couldn't download OpenCode. Check your connection and try again.";
     let platform = this_platform()?;
     let _guard = install_lock().lock().await;
     let dest = install_dir(runners);
-    if let Some(done) = installed(&dest) {
+    if let Some(done) = installed_off_thread(&dest).await {
         return Ok(done);
     }
     let parent = dest.parent().ok_or("No folder for OpenCode.")?;
@@ -372,35 +387,26 @@ pub async fn download(
         let mut hashes = serde_json::Map::new();
         for (name, asset) in [("opencode", &platform.opencode), ("rg", &platform.ripgrep)] {
             let archive = work.join(format!("{name}.download"));
-            let response = http
-                .get(asset.url)
-                .send()
-                .await
-                .and_then(|r| r.error_for_status())
-                .map_err(|_| FAILED)?;
-            let mut file = std::fs::File::create(&archive).map_err(|e| e.to_string())?;
-            let mut got = 0u64;
-            let mut stream = response.bytes_stream();
-            loop {
-                let chunk = tokio::select! {
-                    _ = stop.cancelled() => return Err("Download cancelled.".to_string()),
-                    next = stream.next() => next,
-                };
-                let Some(chunk) = chunk else { break };
-                let chunk = chunk.map_err(|_| FAILED)?;
-                got += chunk.len() as u64;
-                if got > asset.bytes {
-                    return Err(
-                        "The download is larger than expected, so SayQL didn't use it.".into(),
-                    );
-                }
-                file.write_all(&chunk).map_err(|e| e.to_string())?;
-                received += chunk.len() as u64;
-                progress(received, total);
-            }
-            file.flush().map_err(|e| e.to_string())?;
-            drop(file);
-            let sha = install_from_archive(&archive, asset, &work.join("bin").join(exe(name)))?;
+            fetch(
+                http,
+                asset.url,
+                asset.bytes,
+                &archive,
+                stop,
+                TIMEOUTS,
+                |n| {
+                    received += n;
+                    progress(received, total);
+                },
+            )
+            .await?;
+            // Hashing and unpacking 80 MB is blocking work: off the async threads.
+            let dest_exe = work.join("bin").join(exe(name));
+            let from = archive.clone();
+            let sha =
+                tokio::task::spawn_blocking(move || install_from_archive(&from, asset, &dest_exe))
+                    .await
+                    .map_err(|e| e.to_string())??;
             let _ = std::fs::remove_file(&archive);
             hashes.insert(name.into(), Value::String(sha));
         }
@@ -410,11 +416,68 @@ pub async fn download(
             std::fs::remove_dir_all(&dest).map_err(|e| e.to_string())?;
         }
         std::fs::rename(&work, &dest).map_err(|e| e.to_string())?;
-        installed(&dest).ok_or_else(|| "OpenCode didn't install correctly. Try again.".to_string())
+        installed_off_thread(&dest)
+            .await
+            .ok_or_else(|| "OpenCode didn't install correctly. Try again.".to_string())
     }
     .await;
     let _ = std::fs::remove_dir_all(&work);
     result
+}
+
+/// [`installed`] on a blocking thread: it hashes both executables (about 190 MB).
+async fn installed_off_thread(dir: &Path) -> Option<Installed> {
+    let dir = dir.to_path_buf();
+    tokio::task::spawn_blocking(move || installed(&dir))
+        .await
+        .ok()
+        .flatten()
+}
+
+const FAILED: &str = "Couldn't download OpenCode. Check your connection and try again.";
+
+/// How long a download waits for the server to answer, and then for each piece of the file.
+pub const TIMEOUTS: (Duration, Duration) = (Duration::from_secs(30), Duration::from_secs(60));
+
+/// Downloads `url` into `to`, at most `limit` bytes, reporting each piece's size. Fails when the
+/// server doesn't answer within `timeouts.0` or the file stops coming for `timeouts.1`;
+/// `stop` cancels.
+pub async fn fetch(
+    http: &reqwest::Client,
+    url: &str,
+    limit: u64,
+    to: &Path,
+    stop: &CancellationToken,
+    timeouts: (Duration, Duration),
+    mut on_bytes: impl FnMut(u64),
+) -> Result<(), String> {
+    let (answer, stall) = timeouts;
+    let response = tokio::select! {
+        _ = stop.cancelled() => return Err("Download cancelled.".to_string()),
+        r = tokio::time::timeout(answer, http.get(url).send()) => r,
+    };
+    let response = response
+        .map_err(|_| FAILED)?
+        .and_then(|r| r.error_for_status())
+        .map_err(|_| FAILED)?;
+    let mut file = std::fs::File::create(to).map_err(|e| e.to_string())?;
+    let mut got = 0u64;
+    let mut stream = response.bytes_stream();
+    loop {
+        let chunk = tokio::select! {
+            _ = stop.cancelled() => return Err("Download cancelled.".to_string()),
+            next = tokio::time::timeout(stall, stream.next()) => next.map_err(|_| FAILED)?,
+        };
+        let Some(chunk) = chunk else { break };
+        let chunk = chunk.map_err(|_| FAILED)?;
+        got += chunk.len() as u64;
+        if got > limit {
+            return Err("The download is larger than expected, so SayQL didn't use it.".into());
+        }
+        file.write_all(&chunk).map_err(|e| e.to_string())?;
+        on_bytes(chunk.len() as u64);
+    }
+    file.flush().map_err(|e| e.to_string())
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -568,22 +631,8 @@ fn ordered(pairs: &[(&str, J)]) -> String {
     format!("{{{}}}", body.join(","))
 }
 
-/// Files whose contents are secrets: never read, even inside a source.
-pub const SECRET_FILES: [&str; 13] = [
-    "*.env",
-    "*.env.*",
-    "*.pem",
-    "*.key",
-    "*.p12",
-    "*.pfx",
-    "*id_rsa*",
-    "*id_ed25519*",
-    "*.npmrc",
-    "*.netrc",
-    "*credentials*",
-    ".git/*",
-    "*/.git/*",
-];
+mod secrets;
+pub use secrets::{Hidden, rg_secret_globs, secret_files, secret_paths};
 
 /// Tools denied by name too, so a rule merged in before SayQL's can't come after it.
 const DENIED: [&str; 14] = [
@@ -602,7 +651,7 @@ const DENIED: [&str; 14] = [
     "question",
     "doom_loop",
 ];
-/// SayQL's tools the audit doesn't use (see `audit_runner::CLAUDE_DENIED`).
+/// SayQL's tools the audit doesn't use (see `runner::CLAUDE_DENIED`).
 const SAYQL_DENIED: [&str; 5] = [
     "export_csv",
     "add_connection",
@@ -615,30 +664,44 @@ const SAYQL_DENIED: [&str; 5] = [
 /// files out of the search (not on Windows).
 pub const GREP: &str = if cfg!(windows) { "deny" } else { "allow" };
 
+/// A source's path as OpenCode may be given it, without a trailing slash: macOS names temp and
+/// app folders with or without `/private`, and OpenCode compares paths as given, so both.
+fn source_names(source: &Path) -> Vec<String> {
+    let d = source
+        .to_string_lossy()
+        .trim_end_matches(['/', '\\'])
+        .to_string();
+    let mut out = Vec::new();
+    if let Some(bare) = d.strip_prefix("/private/") {
+        out.push(format!("/{bare}"));
+    }
+    out.push(d);
+    out
+}
+
 /// One permission's rules: `(pattern, action)` in order; a lone `*` is written as the action.
 pub type Rules = (String, Vec<(String, &'static str)>);
 
 /// The `sayql-audit` agent's permission rules, in order: everything denied, then reading
 /// (secrets aside), searching, the code sources outside the working folder, and SayQL's tools.
-/// OpenCode reads them in this order and the last match wins.
-pub fn rules(sources: &[PathBuf]) -> Vec<Rules> {
+/// OpenCode reads them in this order and the last match wins. `hidden` is what the scan of the
+/// sources found that looks like a secret in any case ([`secret_paths`]), denied last.
+pub fn rules(sources: &[PathBuf], hidden: &[Hidden]) -> Vec<Rules> {
     let all = |action: &'static str| vec![("*".to_string(), action)];
     let mut read = all("allow");
-    read.extend(SECRET_FILES.iter().map(|p| (p.to_string(), "deny")));
+    read.extend(secret_files().into_iter().map(|p| (p, "deny")));
     // As OpenCode's own default: the example file names settings without their values.
-    read.push(("*.env.example".into(), "allow"));
+    read.push((secrets::READABLE.into(), "allow"));
+    read.extend(
+        secrets::hidden_rules(sources, hidden)
+            .into_iter()
+            .map(|p| (p, "deny")),
+    );
     let mut external = all("deny");
     for d in sources {
-        let d = d
-            .to_string_lossy()
-            .trim_end_matches(['/', '\\'])
-            .to_string();
-        // macOS names temp and app folders with or without `/private`; OpenCode compares paths
-        // as given, so both are allowed.
-        if let Some(bare) = d.strip_prefix("/private/") {
-            external.push((format!("/{bare}/*"), "allow"));
+        for name in source_names(d) {
+            external.push((format!("{name}/*"), "allow"));
         }
-        external.push((format!("{d}/*"), "allow"));
     }
     let mut out: Vec<Rules> = vec![
         ("*".into(), all("deny")),
@@ -663,8 +726,8 @@ pub fn rules(sources: &[PathBuf]) -> Vec<Rules> {
 }
 
 /// [`rules`] as OpenCode's `permission` config, keys in order.
-pub fn permission(sources: &[PathBuf]) -> String {
-    let rules = rules(sources);
+pub fn permission(sources: &[PathBuf], hidden: &[Hidden]) -> String {
+    let rules = rules(sources, hidden);
     let pairs: Vec<(&str, J)> = rules
         .iter()
         .map(|(perm, list)| {
@@ -684,6 +747,10 @@ pub fn permission(sources: &[PathBuf]) -> String {
     ordered(&pairs)
 }
 
+/// The most the deny rules for [`secret_paths`] may add to the config, in bytes. The config
+/// goes in one environment variable, and Linux allows 128 KiB for one.
+pub const MAX_HIDDEN: usize = 64 * 1024;
+
 /// What the run's config needs.
 pub struct RunConfig<'a> {
     pub model: &'a Model,
@@ -694,12 +761,36 @@ pub struct RunConfig<'a> {
     pub mcp_env: &'a [(String, String)],
     /// Every code source; the first is the working folder.
     pub sources: &'a [PathBuf],
+    /// What looks like a secret in the sources, in any case ([`secret_paths`]).
+    pub hidden: &'a [Hidden],
 }
 
 /// The config SayQL gives OpenCode in `OPENCODE_CONFIG_CONTENT`. It never holds the key: it
 /// names [`KEY_ENV`], which OpenCode substitutes. Paths with `{` are refused, since OpenCode
-/// would read `{env:...}` or `{file:...}` in them.
+/// would read `{env:...}` or `{file:...}` in them, and sources with `*` or `?`, which would
+/// widen the rule that lets OpenCode into them (its patterns have no escape). So are more
+/// secret-looking files than the config can deny one by one ([`MAX_HIDDEN`]).
 pub fn config_json(c: &RunConfig) -> Result<String, String> {
+    for s in c.sources {
+        let p = s.to_string_lossy();
+        if p.contains(['*', '?']) {
+            return Err(format!(
+                "SayQL can't run OpenCode over “{p}”: it has a * or ? in it, which OpenCode would read as a wildcard. Rename the folder, or install Claude Code to run the audit."
+            ));
+        }
+    }
+    let hidden_bytes: usize = secrets::hidden_rules(c.sources, c.hidden)
+        .iter()
+        .map(|p| p.len() + 10)
+        .sum();
+    if hidden_bytes > MAX_HIDDEN {
+        let some: Vec<&str> = c.hidden.iter().take(3).map(|h| h.rel.as_str()).collect();
+        return Err(format!(
+            "The sources have {} files that look like secrets ({}, ...), more than SayQL can keep from OpenCode one by one. Remove them from the sources, or install Claude Code to run the audit.",
+            c.hidden.len(),
+            some.join(", ")
+        ));
+    }
     let paths = c
         .sources
         .iter()
@@ -725,7 +816,7 @@ pub fn config_json(c: &RunConfig) -> Result<String, String> {
         .iter()
         .map(|(k, v)| (k.clone(), json!(v)))
         .collect();
-    let perm = permission(c.sources);
+    let perm = permission(c.sources, c.hidden);
     let agent = ordered(&[
         ("build", J::V(json!({ "disable": true }))),
         ("plan", J::V(json!({ "disable": true }))),
@@ -850,31 +941,16 @@ impl Home {
     }
 }
 
-/// Secret files ripgrep never searches, as ripgrep globs: [`SECRET_FILES`] (a glob without a
-/// slash matches the file name in any folder).
-pub const RG_SECRET_GLOBS: [&str; 12] = [
-    "*.env",
-    "*.env.*",
-    "*.pem",
-    "*.key",
-    "*.p12",
-    "*.pfx",
-    "*id_rsa*",
-    "*id_ed25519*",
-    "*.npmrc",
-    "*.netrc",
-    "*credentials*",
-    "**/.git/**",
-];
-
 /// The `rg` OpenCode runs on macOS and Linux: SayQL's ripgrep with an exclude per secret file.
 /// The excludes go just before the first `--` (after it come the pattern and the path), or at the
-/// end: after OpenCode's own `--glob` options, so they win over an include the model chose.
+/// end: after OpenCode's own `--glob` options, so they win over an include the model chose
+/// (ripgrep applies every `--iglob` after the `--glob`s anyway). `--iglob` ignores case, so
+/// `.ENV` and `ID_RSA` are left out as `.env` and `id_rsa` are.
 pub fn rg_wrapper(real: &Path) -> String {
     let quote = |s: &str| format!("'{}'", s.replace('\'', r"'\''"));
-    let globs: Vec<String> = RG_SECRET_GLOBS
+    let globs: Vec<String> = rg_secret_globs()
         .iter()
-        .map(|g| quote(&format!("--glob=!{g}")))
+        .map(|g| quote(&format!("--iglob=!{g}")))
         .collect();
     let globs = globs.join(" ");
     format!(
@@ -1030,7 +1106,7 @@ pub fn run_args(model: &Model, folder: &Path) -> Vec<String> {
 pub fn link_out(sources: &[PathBuf]) -> Option<(PathBuf, PathBuf)> {
     let roots: Vec<PathBuf> = sources
         .iter()
-        .map(|s| s.canonicalize().unwrap_or_else(|_| s.clone()))
+        .map(|s| dunce::canonicalize(s).unwrap_or_else(|_| s.clone()))
         .collect();
     let inside = |p: &Path| roots.iter().any(|r| p.starts_with(r));
     let mut stack: Vec<PathBuf> = sources.to_vec();
@@ -1042,7 +1118,7 @@ pub fn link_out(sources: &[PathBuf]) -> Option<(PathBuf, PathBuf)> {
             let Ok(kind) = e.file_type() else { continue };
             let path = e.path();
             if kind.is_symlink() {
-                if let Ok(target) = path.canonicalize()
+                if let Ok(target) = dunce::canonicalize(&path)
                     && !inside(&target)
                 {
                     return Some((path, target));
@@ -1140,7 +1216,7 @@ impl OpenCodeStream {
                 .to_string()
         };
         let error = state.get("error").and_then(Value::as_str).unwrap_or("");
-        let rel = |p: &str| crate::audit_runner::rel_path(&self.sources, p);
+        let rel = |p: &str| crate::audit::runner::rel_path(&self.sources, p);
         let what = match name {
             "read" => format!("Reading {}", rel(&s("filePath"))),
             "grep" => {
@@ -1206,7 +1282,7 @@ impl OpenCodeStream {
             .unwrap_or(("", None));
         let all = format!("{message}\n{stderr}").to_lowercase();
         if self.credits
-            && let Some(m) = crate::audit_runner::credits_failure(&all, None)
+            && let Some(m) = crate::audit::runner::credits_failure(&all, None)
         {
             return m.into();
         }
@@ -1244,7 +1320,7 @@ impl OpenCodeStream {
     }
 }
 
-impl crate::audit_runner::RunStream for OpenCodeStream {
+impl crate::audit::runner::RunStream for OpenCodeStream {
     fn feed(&mut self, line: &str) -> Vec<Line> {
         OpenCodeStream::feed(self, line)
     }
@@ -1259,16 +1335,6 @@ impl crate::audit_runner::RunStream for OpenCodeStream {
     }
     fn failure(&self, stderr: &str, exit: Option<i32>) -> String {
         OpenCodeStream::failure(self, stderr, exit)
-    }
-}
-
-fn short(s: &str, max: usize) -> String {
-    let s = s.split_whitespace().collect::<Vec<_>>().join(" ");
-    if s.chars().count() <= max {
-        s
-    } else {
-        let cut: String = s.chars().take(max - 1).collect();
-        format!("{}…", cut.trim_end())
     }
 }
 

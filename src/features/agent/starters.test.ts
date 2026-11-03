@@ -8,6 +8,8 @@ const table = (name: string, row_estimate: number | null, kind: "table" | "view"
   columns: [],
   foreign_keys: [],
   row_estimate,
+  comment: null,
+  checks: [],
 });
 
 describe("agentStarters", () => {

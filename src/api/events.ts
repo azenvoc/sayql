@@ -1,8 +1,15 @@
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import {
+  AGENT_EVENT,
+  AI_DELTA_EVENT,
+  AI_DONE_EVENT,
+  AI_RESET_EVENT,
+  AUDIT_EVENT,
+  type Reset,
+} from "./bindings";
 import type { AgentEvent, AiDelta, AiDone, AuditEvent, VoiceProgress } from "./types";
 
-/** Must match EVENT in src-tauri/src/commands/agent.rs. */
-export const AGENT_EVENT = "agent://event";
+export { AGENT_EVENT, AUDIT_EVENT };
 
 /** Subscribes to agent mode's events; filter them by `runId`. */
 export function subscribeToAgent(handler: (e: AgentEvent) => void): Promise<UnlistenFn> {
@@ -19,9 +26,9 @@ export interface AiEventHandlers {
 /** Subscribes to the AI streaming events emitted by src-tauri/src/ai/mod.rs. */
 export async function subscribeToAi(handlers: AiEventHandlers): Promise<UnlistenFn> {
   const unlisten = await Promise.all([
-    listen<AiDelta>("ai://delta", (e) => handlers.delta(e.payload)),
-    listen<AiDone>("ai://done", (e) => handlers.done(e.payload)),
-    listen<{ reqId: number }>("ai://reset", (e) => handlers.reset(e.payload.reqId)),
+    listen<AiDelta>(AI_DELTA_EVENT, (e) => handlers.delta(e.payload)),
+    listen<AiDone>(AI_DONE_EVENT, (e) => handlers.done(e.payload)),
+    listen<Reset>(AI_RESET_EVENT, (e) => handlers.reset(e.payload.reqId)),
   ]);
   return () => unlisten.forEach((u) => u());
 }
@@ -56,9 +63,6 @@ export async function subscribeToVoice(handlers: VoiceEventHandlers): Promise<Un
   ]);
   return () => unlisten.forEach((u) => u());
 }
-
-/** Must match EVENT in src-tauri/src/commands/audit.rs. */
-export const AUDIT_EVENT = "audit://event";
 
 /** Subscribes to "Run audit" runs' progress; filter it by `runId`. */
 export function subscribeToAudit(handler: (e: AuditEvent) => void): Promise<UnlistenFn> {

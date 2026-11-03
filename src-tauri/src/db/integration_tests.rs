@@ -166,7 +166,7 @@ async fn usage_statistics_from_real_servers() {
         // Postgres publishes a session's counters shortly after its transaction ends.
         let mut out = String::new();
         for _ in 0..40 {
-            out = crate::readonly::describe_with(
+            out = crate::safety::readonly::describe_with(
                 &schema,
                 Some("sayql_usage_it"),
                 &usage::read(&pool).await,

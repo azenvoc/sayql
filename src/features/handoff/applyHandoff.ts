@@ -36,6 +36,7 @@ export function draftToConnection(d: ConnectionDraft): ConnectionConfig {
     file: d.file,
     ssl: d.ssl ?? kind.defaultSsl,
     trustCert: d.trustCert ?? false,
+    production: false,
   };
 }
 

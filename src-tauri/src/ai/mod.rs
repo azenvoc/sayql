@@ -9,10 +9,10 @@ mod models;
 pub(crate) mod openai;
 mod prompt;
 mod providers;
-pub(crate) mod redact;
 
 #[cfg(test)]
-pub(crate) use redact::database_error as mask_database_error;
+pub(crate) use crate::safety::redact::database_error as mask_database_error;
+pub mod settings;
 mod sse;
 pub mod subscription;
 #[cfg(test)]
@@ -30,10 +30,10 @@ use serde::Serialize;
 use std::time::Instant;
 use tauri::{AppHandle, Emitter};
 
-// Event names; must match src/api/events.ts.
-const EVENT_DELTA: &str = "ai://delta";
-const EVENT_DONE: &str = "ai://done";
-const EVENT_RESET: &str = "ai://reset";
+// Event names; the UI gets them from the generated src/api/bindings.ts (`AI_DELTA_EVENT`, …).
+pub(crate) const EVENT_DELTA: &str = "ai://delta";
+pub(crate) const EVENT_DONE: &str = "ai://done";
+pub(crate) const EVENT_RESET: &str = "ai://reset";
 
 /// Where a request goes, with what it needs to authenticate.
 pub enum Endpoint {
@@ -118,27 +118,27 @@ pub struct GenRequest {
     pub skill: Option<String>,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-struct Delta {
+pub(crate) struct Delta {
     req_id: u64,
     text: String,
     /// Set on the first chunk: milliseconds from request start to the first SQL text.
     first_token_ms: Option<u128>,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-struct Done {
+pub(crate) struct Done {
     req_id: u64,
     error: Option<String>,
     total_ms: u128,
     cache_read_tokens: Option<u64>,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-struct Reset {
+pub(crate) struct Reset {
     req_id: u64,
 }
 

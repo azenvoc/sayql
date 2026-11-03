@@ -44,6 +44,8 @@ use std::collections::{HashMap, HashSet};
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
+pub mod run_dir;
+
 /// The longest a run may take before SayQL stops it.
 pub const TIME_LIMIT: std::time::Duration = std::time::Duration::from_secs(15 * 60);
 /// Agentic turns before Claude Code stops by itself (`--max-turns`).
@@ -82,7 +84,7 @@ pub(crate) const CLAUDE_DENIED: [&str; 14] = [
 
 /// The model the audit runs on: Sonnet unless the person picks another. Claude Code's aliases
 /// (<https://code.claude.com/docs/en/model-config>) follow the latest model of each family.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum AuditModel {
     /// Cheaper, and enough to read code and suggest notes.
@@ -114,7 +116,7 @@ impl AuditModel {
 pub const CREDITS_RUNS: bool = false;
 
 /// Who pays for the audit's model requests.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum AuditPayment {
     /// The person's own Claude Code sign-in, whatever Claude Code is set up with.
@@ -664,7 +666,8 @@ pub struct ClaudeStream {
 
 const SHORT: usize = 90;
 
-fn short(s: &str, max: usize) -> String {
+/// `s` on one line (runs of whitespace as one space), cut to at most `max` characters with `…`.
+pub(crate) fn short(s: &str, max: usize) -> String {
     let s = s.split_whitespace().collect::<Vec<_>>().join(" ");
     if s.chars().count() <= max {
         s
@@ -1178,7 +1181,7 @@ mod tests {
 
     #[test]
     fn credit_models_are_the_ones_the_credits_service_prices() {
-        let service = include_str!("../../site/api/ai/v1/messages.js");
+        let service = include_str!("../../../site/api/ai/v1/messages.js");
         for m in [CREDITS_OPUS, CREDITS_SONNET, CREDITS_HAIKU] {
             assert!(
                 service.contains(&format!("\"{m}\": {{")),

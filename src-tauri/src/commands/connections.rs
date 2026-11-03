@@ -1,4 +1,4 @@
-use super::settings::{SettingsView, settings_view};
+use crate::ai::settings::{SettingsView, view as settings_view};
 use crate::db::{self, ConnConfig, DatabaseList, Kind};
 use crate::error::AppResult;
 use crate::schema::Schema;
@@ -10,7 +10,7 @@ use tauri::State;
 
 const DEMO_ID: &str = "demo";
 
-#[derive(Serialize)]
+#[derive(Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct InitView {
     connections: Vec<ConnConfig>,
@@ -35,6 +35,7 @@ fn demo_connection(path: &Path) -> ConnConfig {
 
 /// Startup: saved connections and settings. Adds the demo database on first launch.
 #[tauri::command]
+#[specta::specta]
 pub async fn init(state: State<'_, AppState>) -> AppResult<InitView> {
     let _guard = state.init_lock.lock().await;
     // Read every saved file now, so an unreadable one is reported on the startup screen
@@ -44,11 +45,14 @@ pub async fn init(state: State<'_, AppState>) -> AppResult<InitView> {
     let mut settings = state.store.settings()?;
     if !settings.demo_added {
         db::ensure_demo(&state.demo_path).await?;
-        let mut list = state.store.connections()?;
-        list.insert(0, demo_connection(&state.demo_path));
-        state.store.save_connections(&list)?;
-        settings.demo_added = true;
-        state.store.save_settings(&settings)?;
+        state.store.update_connections(|list| {
+            list.insert(0, demo_connection(&state.demo_path));
+            Ok(())
+        })?;
+        settings = state.store.update_settings(|s| {
+            s.demo_added = true;
+            Ok(s.clone())
+        })?;
     }
     Ok(InitView {
         connections: state.store.connections()?,
@@ -58,6 +62,7 @@ pub async fn init(state: State<'_, AppState>) -> AppResult<InitView> {
 
 /// Creates (empty id) or updates a connection. `password: None` keeps the saved password.
 #[tauri::command]
+#[specta::specta]
 pub fn save_connection(
     state: State<'_, AppState>,
     mut config: ConnConfig,
@@ -70,12 +75,13 @@ pub fn save_connection(
     if let Some(pw) = password {
         secrets::set_password(&config.id, &pw)?;
     }
-    let mut list = state.store.connections()?;
-    match list.iter_mut().find(|c| c.id == config.id) {
-        Some(existing) => *existing = config.clone(),
-        None => list.push(config.clone()),
-    }
-    state.store.save_connections(&list)?;
+    state.store.update_connections(|list| {
+        match list.iter_mut().find(|c| c.id == config.id) {
+            Some(existing) => *existing = config.clone(),
+            None => list.push(config.clone()),
+        }
+        Ok(())
+    })?;
     // The details may have changed: reconnect on next open.
     state.close(&config.id);
     Ok(config)
@@ -83,15 +89,13 @@ pub fn save_connection(
 
 /// Removes the saved connection and its password. The database itself is not touched.
 #[tauri::command]
+#[specta::specta]
 pub fn delete_connection(state: State<'_, AppState>, id: String) -> AppResult<()> {
     refuse_team(&id)?;
-    let list: Vec<ConnConfig> = state
-        .store
-        .connections()?
-        .into_iter()
-        .filter(|c| c.id != id)
-        .collect();
-    state.store.save_connections(&list)?;
+    state.store.update_connections(|list| {
+        list.retain(|c| c.id != id);
+        Ok(())
+    })?;
     state.close(&id);
     if let Err(e) = state.store.forget_agent(&id) {
         eprintln!("sayql: couldn't remove the agent settings of connection {id}: {e}");
@@ -112,6 +116,7 @@ fn refuse_team(id: &str) -> AppResult<()> {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn test_connection(config: ConnConfig, password: Option<String>) -> AppResult<String> {
     let password = password.or_else(|| secrets::password(&config.id));
     let pool = db::connect(&config, password).await?;
@@ -125,6 +130,7 @@ pub async fn test_connection(config: ConnConfig, password: Option<String>) -> Ap
 /// Opens one database of a connection (or reuses it) and returns its schema.
 /// `database: None` opens the connection's default database.
 #[tauri::command]
+#[specta::specta]
 pub async fn open_database(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
@@ -161,6 +167,7 @@ pub async fn open_database(
 
 /// Re-reads the schema, e.g. after tables were added.
 #[tauri::command]
+#[specta::specta]
 pub async fn refresh_schema(
     state: State<'_, AppState>,
     id: String,
@@ -171,6 +178,7 @@ pub async fn refresh_schema(
 
 /// The databases on the connection's server; `None` for SQLite.
 #[tauri::command]
+#[specta::specta]
 pub async fn list_databases(
     state: State<'_, AppState>,
     id: String,

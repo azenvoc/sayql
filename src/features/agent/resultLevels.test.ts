@@ -57,6 +57,7 @@ describe("one vocabulary for what the AI gets back", () => {
         apps: "counts",
         askBeforeSend: true,
         neverSend: [],
+        team: null,
       }),
     ).toBe("Results to AI: counts and summaries · Ask before send");
   });
@@ -74,6 +75,7 @@ describe("the status bar's privacy indicator", () => {
     apps: "counts",
     askBeforeSend: true,
     neverSend: [] as string[],
+    team: null,
   } as const;
 
   it("says the most that can reach an AI, from Investigate or AI apps", () => {

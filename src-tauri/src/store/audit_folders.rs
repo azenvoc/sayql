@@ -3,7 +3,7 @@
 //! sources on first read, and a deleted connection's entry is still removed from it.
 
 use super::Store;
-use crate::audit_runner::{AuditModel, AuditPayment};
+use crate::audit::runner::{AuditModel, AuditPayment};
 use crate::error::AppResult;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -26,30 +26,31 @@ impl Store {
     }
 
     pub fn set_audit_model(&self, model: AuditModel) -> AppResult<()> {
-        let mut prefs: AuditPrefs = self.read(PREFS)?;
-        prefs.model = model;
-        self.write(PREFS, &prefs)
+        self.update(PREFS, |prefs: &mut AuditPrefs| {
+            prefs.model = model;
+            Ok(())
+        })
     }
 
     /// Who pays for the audit run: the person's own sign-in unless they picked credits (a saved
-    /// choice that is ignored while `audit_runner::CREDITS_RUNS` is off).
+    /// choice that is ignored while `audit::runner::CREDITS_RUNS` is off).
     pub fn audit_payment(&self) -> AppResult<AuditPayment> {
         Ok(self.read::<AuditPrefs>(PREFS)?.payment)
     }
 
     pub fn set_audit_payment(&self, payment: AuditPayment) -> AppResult<()> {
-        let mut prefs: AuditPrefs = self.read(PREFS)?;
-        prefs.payment = payment;
-        self.write(PREFS, &prefs)
+        self.update(PREFS, |prefs: &mut AuditPrefs| {
+            prefs.payment = payment;
+            Ok(())
+        })
     }
 
     /// Forgets a deleted connection's folder.
     pub(super) fn forget_audit_folder(&self, connection_id: &str) -> AppResult<()> {
-        let mut all: BTreeMap<String, String> = self.read(FILE)?;
-        if all.remove(connection_id).is_some() {
-            self.write(FILE, &all)?;
-        }
-        Ok(())
+        self.update(FILE, |all: &mut BTreeMap<String, String>| {
+            all.remove(connection_id);
+            Ok(())
+        })
     }
 }
 

@@ -1,5 +1,5 @@
 //! Which columns and values are likely personal data: by a column's name (its words), and by
-//! a value's shape (`crate::pii`).
+//! a value's shape (`crate::safety::pii`).
 
 use super::*;
 

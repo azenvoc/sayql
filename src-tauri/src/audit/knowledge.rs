@@ -3,14 +3,16 @@
 //! audit reads like a code folder. Nothing here goes anywhere but the files and pages named:
 //! the snapshots reach only the AI the person chose, when they run an audit.
 
+use crate::audit::repos::private_dir;
 use crate::error::AppResult;
-use crate::repos::private_dir;
 use sha2::{Digest, Sha256};
 use std::collections::{HashSet, VecDeque};
 use std::net::{IpAddr, SocketAddr};
 use std::path::Path;
 use std::time::Duration;
 use url::Url;
+
+pub mod pdf;
 
 /// The largest file read.
 pub const MAX_FILE_BYTES: u64 = 20 * 1024 * 1024;
@@ -48,8 +50,8 @@ pub fn extract(name: &str, bytes: &[u8]) -> Result<String, String> {
     let text = match ext.as_str() {
         e if TEXT_EXTENSIONS.contains(&e) => String::from_utf8_lossy(bytes).into_owned(),
         "html" | "htm" => html_text(bytes),
-        "pdf" => pdf_extract::extract_text_from_mem(bytes)
-            .map_err(|e| format!("{name} isn't a PDF SayQL can read ({e})."))?,
+        // In a child process: pdf-extract can panic, and a panic here closes the app.
+        "pdf" => pdf::text(name, bytes)?,
         "docx" => docx_text(bytes)
             .map_err(|e| format!("{name} isn't a Word file SayQL can read ({e})."))?,
         _ => {
@@ -704,43 +706,6 @@ mod tests {
             !text.contains("<p>") && !text.contains("alert") && !text.contains("color:red"),
             "{text}"
         );
-    }
-
-    /// A one-page PDF with `text` in Helvetica, its cross-reference table worked out here.
-    fn pdf(text: &str) -> Vec<u8> {
-        let stream = format!("BT /F1 12 Tf 72 720 Td ({text}) Tj ET");
-        let objects = [
-            "<< /Type /Catalog /Pages 2 0 R >>".to_string(),
-            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_string(),
-            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>".to_string(),
-            format!("<< /Length {} >>\nstream\n{stream}\nendstream", stream.len()),
-            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>".to_string(),
-        ];
-        let mut out = b"%PDF-1.4\n".to_vec();
-        let mut offsets = Vec::new();
-        for (i, body) in objects.iter().enumerate() {
-            offsets.push(out.len());
-            write!(out, "{} 0 obj\n{body}\nendobj\n", i + 1).unwrap();
-        }
-        let xref = out.len();
-        write!(out, "xref\n0 {}\n0000000000 65535 f \n", objects.len() + 1).unwrap();
-        for o in offsets {
-            writeln!(out, "{o:010} 00000 n ").unwrap();
-        }
-        write!(
-            out,
-            "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n",
-            objects.len() + 1
-        )
-        .unwrap();
-        out
-    }
-
-    #[test]
-    fn pdf_text_is_extracted() {
-        let text = extract("spec.pdf", &pdf("Refunds are stored in cents")).unwrap();
-        assert!(text.contains("Refunds are stored in cents"), "{text:?}");
-        assert!(extract("bad.pdf", b"not a pdf").is_err());
     }
 
     fn docx(document_xml: &str) -> Vec<u8> {

@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import pkg from "../../package.json";
-import commandsSource from "../api/commands.ts?raw";
+import { COMMAND_ARGS } from "../api";
 import { isReadOnly } from "./readOnly";
 
 type Handler = (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
@@ -14,95 +14,8 @@ beforeAll(async () => {
   (await import("./mockBackend")).installMockBackend();
 });
 
-// Every command src/api/commands.ts invokes, so the dev UI never hits the throwing default.
-const COMMANDS = [
-  "init",
-  "save_connection",
-  "delete_connection",
-  "test_connection",
-  "open_database",
-  "refresh_schema",
-  "list_databases",
-  "run_query",
-  "cancel_query",
-  "generate_sql",
-  "cancel_generation",
-  "check_claude_plan",
-  "my_activity",
-  "clear_my_activity",
-  "list_scripts",
-  "save_script",
-  "delete_script",
-  "list_skills",
-  "save_skill",
-  "delete_skill",
-  "mcp_setup",
-  "installed_coding_agents",
-  "open_install_link",
-  "mcp_activity",
-  "mcp_apps",
-  "set_mcp_app_blocked",
-  "approve_mcp_app",
-  "set_mcp_only_approved",
-  "clear_mcp_activity",
-  "mcp_audits",
-  "audit_prompt",
-  "audit_agents",
-  "knowledge_sources",
-  "add_knowledge_folder",
-  "add_knowledge_repo",
-  "add_knowledge_files",
-  "add_knowledge_url",
-  "remove_knowledge_source",
-  "refresh_knowledge_source",
-  "start_audit",
-  "cancel_audit",
-  "audit_model",
-  "set_audit_model",
-  "audit_payment",
-  "set_audit_payment",
-  "open_audit_in_terminal",
-  "take_handoffs",
-  "app_info",
-  "check_update",
-  "install_update",
-  "save_settings",
-  "finish_onboarding",
-  "list_models",
-  "voice_status",
-  "voice_download",
-  "voice_cancel_download",
-  "voice_delete_model",
-  "voice_start",
-  "voice_stop",
-  "voice_cancel",
-  "agent_access",
-  "save_agent_access",
-  "start_agent",
-  "reply_agent",
-  "stop_agent",
-  "list_notes",
-  "list_shared_notes",
-  "suggest_note",
-  "save_note",
-  "delete_note",
-  "check_note",
-  "check_notes",
-  "confirm_note",
-  "list_note_suggestions",
-  "accept_note_suggestion",
-  "dismiss_note_suggestion",
-  "save_agent_settings",
-  "choose_model",
-  "credits_balance",
-  "team_sign_in",
-  "team_sso_start",
-  "team_sso_finish",
-  "team_status",
-  "team_sign_out",
-  "team_connections",
-  "team_ai",
-];
+// Every Tauri command (from the generated bindings), so the dev UI never hits the throwing default.
+const COMMANDS = Object.keys(COMMAND_ARGS);
 
 describe("mock backend", () => {
   it("throws for a command it doesn't know", async () => {
@@ -111,9 +24,8 @@ describe("mock backend", () => {
     );
   });
 
-  it("has a mock for every command the app invokes", async () => {
-    const invoked = [...commandsSource.matchAll(/invoke<[^>]*>\("(\w+)"/g)].map((m) => m[1]);
-    expect(invoked.sort()).toEqual([...COMMANDS].sort());
+  it("answers every command", async () => {
+    expect(COMMANDS).toContain("run_query");
     const args: Record<string, Record<string, unknown>> = {
       save_connection: { config: { id: "x" } },
       run_query: { sql: "SELECT 1", allowWrite: false },
@@ -139,6 +51,8 @@ describe("mock backend", () => {
       approve_mcp_app: { name: "Windsurf" },
       set_mcp_only_approved: { on: true },
       accept_note_suggestion: { id: "sug-1" },
+      check_note: { id: "1f3a9c2e-5b7d-4e8f-9a01-2c3d4e5f6a7b" },
+      confirm_note: { id: "7c2e1b4d-8a9f-4c3e-b2d1-0e9f8a7b6c5d" },
       dismiss_note_suggestion: { id: "sug-2" },
       audit_prompt: { id: "demo", database: null },
       open_install_link: { url: "vscode:mcp/install?%7B%7D" },
@@ -202,7 +116,7 @@ describe("mock backend", () => {
   });
 });
 
-// The cases from the tests in src-tauri/src/db/classify.rs.
+// The cases from the tests in src-tauri/src/safety/classify.rs.
 describe("isReadOnly matches classify.rs", () => {
   it("classifies read-only statements", () => {
     expect(isReadOnly("select 1")).toBe(true);

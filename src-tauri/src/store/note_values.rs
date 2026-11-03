@@ -11,7 +11,7 @@
 //! with thousands separators, money amounts with a currency symbol, people's names and masked
 //! tokens.
 
-use crate::pii::{is_card, is_email, is_long_id, is_phone, is_ssn};
+use crate::safety::pii::{is_card, is_email, is_long_id, is_phone, is_ssn};
 
 /// What the refusal lists as fine and as not, to keep the message true to the checks.
 pub const ALLOWED: &str =

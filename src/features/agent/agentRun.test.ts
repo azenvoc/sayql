@@ -67,6 +67,8 @@ describe("agentReducer", () => {
           notes: [],
           proposedSql: null,
           proposedChangesData: false,
+          notesQueued: false,
+          notesShared: false,
           cannotAnswer: false,
           unverified: [],
           model: "m",

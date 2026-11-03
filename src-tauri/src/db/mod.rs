@@ -1,7 +1,6 @@
 //! Database access for PostgreSQL, MySQL, SQLite and SQL Server: connecting, running queries
 //! safely, decoding values for display and reading the schema.
 
-mod classify;
 mod connect;
 mod databases;
 mod decode;
@@ -12,7 +11,7 @@ mod mssql_pool;
 pub mod schema_hash;
 pub mod usage;
 
-pub use classify::is_read_only;
+pub use crate::safety::classify::is_read_only;
 pub use connect::connect;
 pub use databases::{DatabaseList, list_databases, open_database};
 pub use demo::ensure_demo;
@@ -27,7 +26,7 @@ use sqlx::{MySqlPool, PgPool, SqlitePool};
 /// Rows beyond this are not sent to the UI.
 pub(crate) const MAX_ROWS: usize = 5000;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum Kind {
     Postgres,
@@ -48,7 +47,7 @@ impl Kind {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ConnConfig {
     pub id: String,
@@ -124,7 +123,7 @@ pub struct LitePools {
     pub(crate) ro: SqlitePool,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryResult {
     pub columns: Vec<String>,

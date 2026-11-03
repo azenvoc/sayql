@@ -14,6 +14,9 @@ const claude = (patch: Partial<AuditAgent> = {}): AuditAgent => ({
   ready: true,
   problem: null,
   installUrl: "https://code.claude.com/docs/en/setup",
+  builtIn: false,
+  downloadBytes: null,
+  detail: null,
   ...patch,
 });
 const codex: AuditAgent = {
@@ -25,6 +28,9 @@ const codex: AuditAgent = {
   ready: false,
   problem: "Codex reads code by running shell commands.",
   installUrl: "https://developers.openai.com/codex/cli",
+  builtIn: false,
+  downloadBytes: null,
+  detail: null,
 };
 
 let agents: AuditAgent[] = [];
