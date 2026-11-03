@@ -608,7 +608,8 @@ const agentAccess = new Map<string, AgentAccess>(
             results: "counts",
             apps: "counts",
             askBeforeSend: false,
-            neverSend: [],
+            // As the activity log's refusal says.
+            neverSend: ["customers.email"],
             team: null,
           },
         ],

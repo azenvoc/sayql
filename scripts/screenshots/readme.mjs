@@ -3,8 +3,9 @@
 //   pnpm exec vite --port 1431 --strictPort        # in another terminal
 //   node scripts/screenshots/readme.mjs
 //
-// Writes .github/assets/{hero,feature-ask,feature-agent}-{light,dark}.png at 2×: the hero as a
-// window with a title bar, the features as cropped cards, on a transparent background.
+// Writes .github/assets/{hero,feature-access,feature-notes,feature-ask,feature-agent}-{light,dark}.png
+// at 2×, on a transparent background: the hero (Settings → AI apps → Activity, as on sayql.dev) and
+// the notes as windows with a title bar, the others as cropped cards.
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, sleep } from "../video/cdp.mjs";
@@ -100,7 +101,6 @@ for (const theme of ["light", "dark"]) {
   await enter();
   await waitForText("Kenji Watanabe");
   await sleep(800);
-  const hero = await shot();
   const askBox = await waitFor('textarea[aria-label="Ask in plain English"]');
   const askCard = await shot({ x: 0, y: askBox.y - 17, w: VIEW.width, h: 262 });
 
@@ -132,6 +132,75 @@ for (const theme of ["light", "dark"]) {
   const answer = await waitFor('section[aria-label="Answer"]');
   const bottom = await shot({ x: agentClip.x, y: tab.y - 6, w: agentClip.w, h: answer.y + answer.h + 14 - (tab.y - 6) });
 
+  const size = (height) =>
+    page.send("Emulation.setDeviceMetricsOverride", { width: VIEW.width, height, deviceScaleFactor: 2, mobile: false });
+  const scrollTo = (title) =>
+    page.evaluate((title) => {
+      [...document.querySelectorAll("h3")].find((h) => h.textContent === title).scrollIntoView({ block: "start" });
+      return true;
+    }, title);
+  // A section of Settings: the heading's nearest ancestor with its list or table in it.
+  const section = (title) =>
+    page.evaluate((title) => {
+      let el = [...document.querySelectorAll("h3")].find((h) => h.textContent === title).parentElement;
+      while (!el.querySelector("ul, table")) el = el.parentElement;
+      const r = el.getBoundingClientRect();
+      return { x: r.x, y: r.y, w: r.width, h: r.height };
+    }, title);
+
+  // The hero, as on sayql.dev: Settings → AI apps → Activity, what each app ran and what was
+  // refused, with Cursor's refused change opened.
+  await size(540);
+  await click(await waitFor('button[aria-label^="Settings"]'));
+  await click(await waitFor('[role="tab"]', "Activity"));
+  await waitForText("never-send column email");
+  await click(await waitFor("td", "Cursor"));
+  await waitForText("App could see");
+  await sleep(500);
+  const governance = await shot();
+
+  // The access card, two strips stacked: blocking an app, then the demo store's row of the
+  // connections table, what AI apps get back and the columns they never see.
+  await size(1400);
+  await click(await waitFor('[role="tab"]', "Access"));
+  await waitForText("What AI apps get back");
+  await scrollTo("Apps");
+  await sleep(400);
+  const apps = await section("Apps");
+  const appsStrip = await shot({ x: apps.x - 16, y: apps.y - 12, w: apps.w + 32, h: apps.h + 24 });
+  const demoRow = await page.evaluate(() => {
+    const table = [...document.querySelectorAll("table")].find((t) => t.innerText.includes("What AI apps get back"));
+    const head = table.querySelector("thead").getBoundingClientRect();
+    const row = [...table.querySelectorAll("tbody tr")].find((r) => r.innerText.includes("Demo store (SQLite)")).getBoundingClientRect();
+    return { x: head.x, y: head.y, w: head.width, h: row.bottom - head.y };
+  });
+  // Ends at the row's own bottom edge, so none of the next row shows.
+  const rowStrip = await shot({ x: apps.x - 16, y: demoRow.y - 12, w: apps.w + 32, h: demoRow.h + 12 });
+
+  // The notes card: an audit suggests notes, then a note whose column was renamed is doubtful,
+  // with SayQL's fix.
+  await size(VIEW.height);
+  await page.evaluate(() => {
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true, cancelable: true }));
+    return true;
+  });
+  await sleep(500);
+  await click(await waitFor("span", "Teach SayQL this database"));
+  await sleep(400);
+  await click(await waitFor('[role="dialog"] button', "Run audit"));
+  // The sources load before Start audit does anything.
+  await waitFor('[role="dialog"] button', "Start audit");
+  await sleep(800);
+  await click(await waitFor('[role="dialog"] button', "Start audit"));
+  await waitForText("2 notes suggested", 30000);
+  await click(await waitFor('[role="dialog"] button[aria-label="Close"]'));
+  await waitForText("may be out of date");
+  await sleep(400);
+  await click(await waitFor("span", "products.price is in cents, not dollars"));
+  await waitFor('[role="dialog"] button', "Use this text");
+  await sleep(500);
+  const notes = await shot();
+
   // Frame them on a transparent page.
   const dark = theme === "dark";
   const css = `
@@ -160,11 +229,11 @@ for (const theme of ["light", "dark"]) {
   };
   const img = (data, w) => `<img src="data:image/png;base64,${data}" width="${w}">`;
   await page.send("Emulation.setDeviceMetricsOverride", { width: VIEW.width + 120, height: VIEW.height + 160, deviceScaleFactor: 2, mobile: false });
-  await frame(
-    "hero",
-    `<div class="win"><div class="bar"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span>SayQL</div>${img(hero, VIEW.width)}</div>`,
-    VIEW.width + 2,
-  );
+  const win = (data) =>
+    `<div class="win"><div class="bar"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span>SayQL</div>${img(data, VIEW.width)}</div>`;
+  await frame("hero", win(governance), VIEW.width + 2);
+  await frame("feature-access", `<div class="card">${img(appsStrip, apps.w + 32)}<div class="gap"></div>${img(rowStrip, apps.w + 32)}</div>`, apps.w + 34);
+  await frame("feature-notes", win(notes), VIEW.width + 2);
   await frame("feature-ask", `<div class="card">${img(askCard, VIEW.width)}</div>`, VIEW.width + 2);
   await frame("feature-agent", `<div class="card">${img(top, agentClip.w)}<div class="gap"></div>${img(bottom, agentClip.w)}</div>`, agentClip.w + 2);
   await page.close();
