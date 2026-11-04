@@ -602,6 +602,14 @@ section.block { padding: 80px 0 0; }
 .small a { text-decoration: underline; text-underline-offset: 2px; }
 .note { margin: 0; padding: 4px 0 4px 24px; border-left: 2px solid var(--color-border); color: var(--color-text-muted); }
 .note footer { margin-top: 12px; font-size: 14px; color: var(--color-text-subtle); }
+/* The credit: SayQL's mark linked to Azenvoc's, beside who wrote the quote. */
+.note .credit { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin-top: 16px; }
+.credit-lockup { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-surface); color: var(--color-text); }
+.credit-lockup:hover { border-color: var(--color-border-strong); text-decoration: none; }
+.credit-mark { width: 24px; height: 24px; }
+.credit-link { width: 14px; height: 14px; fill: none; stroke: var(--color-text-subtle); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.credit-az { width: auto; height: 22px; }
+.note .credit span a { color: var(--color-text-muted); text-decoration: underline; text-underline-offset: 2px; }
 @media (max-width: 760px) { .free { grid-template-columns: 1fr; gap: 32px; } }
 .install-cmd { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-page); }
 .install-cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font: 400 13px/1.6 var(--font-mono); color: var(--color-text); }
@@ -1195,7 +1203,15 @@ section.block { padding: 80px 0 0; }
     </div>
     <blockquote class="note">
       <p>“AI agents are coming to every company's databases. We built SayQL so they get the answers they need, and never the data they don't.”</p>
-      <footer>The SayQL team at <a href="https://azenvoc.com">Azenvoc</a></footer>
+      <footer class="credit">
+        <a class="credit-lockup" href="https://azenvoc.com" aria-label="SayQL, made by Azenvoc">
+          <svg class="credit-mark" aria-hidden="true"><use href="#i-mark"/></svg>
+          <svg class="credit-link" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <!-- Azenvoc's monogram, as azenvoc.com draws it: the glyph in the text colour, no badge. -->
+          <svg class="credit-az" viewBox="10 8 44 48" aria-hidden="true"><g transform="skewX(-6) translate(3.4 0)" fill="currentColor"><path d="M32 11.5 43.6 39h-8.8L32 31.4 22.1 52.5H12.6L32 11.5Z"/><path d="M24.9 38.2h13.9l2.6 6.2H22.3l2.6-6.2Z" opacity="0.92"/><path d="M39.6 46.6h8.7l2.5 5.9h-8.7l-2.5-5.9Z"/><path d="M46.4 33.6h4.1l2.3 5.4h-4.1l-2.3-5.4Z" opacity="0.5"/></g></svg>
+        </a>
+        <span>The SayQL team at <a href="https://azenvoc.com">Azenvoc</a></span>
+      </footer>
     </blockquote>
   </div>
 </section>
