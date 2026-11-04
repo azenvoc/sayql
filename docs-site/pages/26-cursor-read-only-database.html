@@ -1,0 +1,25 @@
+<!-- order: 26 | slug: cursor-read-only-database | title: Give Cursor read-only access to your database | group: Guides | published: 2026-11-04 | updated: 2026-11-04 | seo: Give Cursor read-only database access (MCP, no rows by default) | description: Let Cursor's agent query your database read-only through SayQL's MCP server: schema and counts by default, never your passwords or private columns. -->
+<p class="lead">Cursor's agent can query your database through SayQL's MCP server, read-only. It gets your schema and, by default, counts and summaries instead of rows, and it never sees the database password.</p>
+
+<h2>Set it up</h2>
+<ol class="steps">
+  <li><b>Install SayQL</b> from the <a href="/download/">download page</a> and add your database. A <a href="/docs/databases/#use-a-read-only-login">read-only login</a> makes the database enforce read-only too.</li>
+  <li><b>Connect Cursor.</b> Open <b>Settings → AI apps</b>, then <b>Connect an app</b> on the <b>Access</b> tab, and pick Cursor. <b>Open in Cursor</b> adds SayQL in one click (Cursor asks first), or SayQL shows the entry to put in <code>~/.cursor/mcp.json</code>.</li>
+  <li><b>Ask in Cursor's Agent chat:</b> "how many customers signed up last week, by country?" The agent reads the schema and runs read-only queries through SayQL.</li>
+</ol>
+
+<h2>Read-only, enforced</h2>
+<p>SayQL checks every statement before it runs, and AI apps can't change data: <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code> and DDL are refused. When you do want a change, the agent can open the SQL in a SayQL tab for you to review and run yourself.</p>
+
+<h2>Decide what it sees</h2>
+<ul>
+  <li><b>Per connection,</b> choose what AI apps get back from a query: nothing, counts and summaries (the default), masked rows, or all rows.</li>
+  <li><b>Never-send columns</b> are refused in any form and withheld from <code>SELECT *</code>.</li>
+  <li><b>Database notes</b> you approve, such as what a status code means, are part of the schema Cursor gets, so its SQL fits your data.</li>
+</ul>
+<p>All of this is in <a href="/docs/mcp/">MCP for AI apps</a>.</p>
+
+<h2>Keep track</h2>
+<p>The <b>Activity</b> tab lists what Cursor ran, refused queries too. <b>Block</b> stops it at once, and <b>Only allow apps I've approved</b> refuses apps you haven't chosen.</p>
+
+<p>Using Claude Code? See <a href="/docs/claude-code-postgresql/">Connect Claude Code to PostgreSQL safely</a>. To keep personal data out entirely, see <a href="/docs/keep-personal-data-out-of-ai/">Keep personal data out of AI prompts</a>.</p>

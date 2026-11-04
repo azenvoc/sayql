@@ -1,0 +1,38 @@
+<!-- order: 25 | slug: claude-code-postgresql | title: Connect Claude Code to PostgreSQL safely | group: Guides | published: 2026-11-04 | updated: 2026-11-04 | seo: Connect Claude Code to PostgreSQL safely (read-only, no rows) | description: Give Claude Code your PostgreSQL schema and the numbers it needs, not your rows: read-only queries through SayQL's MCP server, every query logged. -->
+<p class="lead">You can let Claude Code query your PostgreSQL database without giving it your rows or a way to change data. SayQL sits in between as an MCP server: Claude Code gets the schema and, by default, counts and summaries.</p>
+<p>It works the same for MySQL, MariaDB, SQLite and SQL Server, and for production databases, which is where it matters most.</p>
+
+<h2>Why not give Claude Code a database URL?</h2>
+<p>A connection string in your project lets the agent run anything that login can: read every row into its context, which goes to the AI provider, and change data if the login can write. SayQL keeps the password in your keychain, checks every statement before it runs, and decides what Claude Code sees of each result.</p>
+
+<h2>Set it up</h2>
+<ol class="steps">
+  <li><b>Install SayQL</b> from the <a href="/download/">download page</a>. It's free and open source.</li>
+  <li><b>Add your PostgreSQL connection</b> in SayQL. Use a <a href="/docs/databases/#use-a-read-only-login">read-only login</a> if you can (a role with <code>CONNECT</code>, <code>USAGE</code> on the schema and <code>SELECT</code> on its tables), so the database enforces it too.</li>
+  <li><b>Connect Claude Code.</b> Open <b>Settings → AI apps</b>, then <b>Connect an app</b> on the <b>Access</b> tab, and pick Claude Code. SayQL shows the command with the path filled in, which looks like <code>claude mcp add --scope user sayql -- &lt;path&gt;</code>. Run it once in a terminal.</li>
+  <li><b>Ask.</b> In Claude Code, ask about your data: "which tables are still in use, and how many orders came in this month?" It lists your connections, reads the schema and runs read-only queries through SayQL.</li>
+</ol>
+
+<h2>Choose what Claude Code sees</h2>
+<p>In <b>Settings → AI apps → Access</b>, each connection has a row. Under <b>What AI apps get back</b>, choose:</p>
+<ul>
+  <li><b>Nothing:</b> row counts and column names only.</li>
+  <li><b>Counts and summaries</b> (the default): per column, its type, nulls and distinct values, and min and max of plain numbers and dates. No row values.</li>
+  <li><b>Rows, masked:</b> rows, with likely personal data replaced by tokens such as <code>‹email-1›</code>.</li>
+  <li><b>All rows:</b> for data you're happy to share with the app.</li>
+</ul>
+<p>Columns that must never reach the AI, such as <code>customers.email</code>, go in the same row under <b>never send</b>: any query that could read them is refused, and <code>SELECT *</code> runs with them withheld. Details are in <a href="/docs/mcp/#what-ai-apps-may-see">What AI apps may see</a>.</p>
+
+<h2>What Claude Code can't do</h2>
+<ul>
+  <li><b>Change data.</b> Statements that could change data are refused. When a change is what you want, Claude Code can open the SQL in SayQL for you to review and run.</li>
+  <li><b>See your password.</b> It stays in your system keychain.</li>
+  <li><b>Read server files</b> through functions such as <code>pg_read_file</code>, or reach outside the database with <code>dblink</code>, even when the login could.</li>
+</ul>
+
+<h2>See what it ran</h2>
+<p>The <b>Activity</b> tab in <b>Settings → AI apps</b> lists every query Claude Code ran, with its SQL and whether it ran or was refused. <b>Block</b> stops an app in one click, and <b>Only allow apps I've approved</b> keeps out apps you haven't chosen.</p>
+
+<div class="callout tip"><svg><use href="#i-info"/></svg><p><b>For a team,</b> the self-hosted <a href="/docs/teams/">SayQL server</a> gives each agent its own key, its databases, tables and rows, and puts every query from people and agents in one audit log.</p></div>
+
+<p>Using Cursor instead? See <a href="/docs/cursor-read-only-database/">Give Cursor read-only access to your database</a>. Comparing tools? See <a href="/docs/compare/">how SayQL compares</a>.</p>

@@ -1,0 +1,53 @@
+# SayQL
+
+> SayQL is a free, open-source (Apache 2.0) desktop SQL client for macOS, Windows and Linux that lets people and AI agents query PostgreSQL, MySQL, MariaDB, SQLite and SQL Server in plain English without handing the data to the AI. AI apps such as Claude Code and Cursor connect through its MCP server and get the schema and, by default, counts and summaries instead of rows; columns marked never send are refused in any form; every AI query is read-only; and each app's queries are logged. A paid, self-hosted team server adds shared connections, per-agent keys with table and row limits, and one audit log for every person and agent.
+
+Made by Azenvoc (https://azenvoc.com). Download: https://sayql.dev/download/ · Source: https://github.com/azenvoc/sayql · Contact: hello@azenvoc.com
+
+## Getting started
+
+- [Introduction](https://sayql.dev/docs/): Let agents into your database, not your data. Install, connect, pick an AI and ask.
+- [Install](https://sayql.dev/docs/install/): Download SayQL and open it for the first time on macOS, Windows or Linux.
+
+## Using SayQL
+
+- [Ask in plain English](https://sayql.dev/docs/asking/): Turn questions into SQL as you type, refine them with follow-ups, and fix or improve queries.
+- [Run queries safely](https://sayql.dev/docs/running-queries/): How SayQL keeps your data safe, plus results, tabs and saved scripts.
+- [Navigator](https://sayql.dev/docs/navigator/): Browse connections, databases and tables, and pick tables for the AI.
+- [Investigate](https://sayql.dev/docs/agent-mode/): Let SayQL investigate a question in several read-only steps and answer with the queries behind it, and control exactly what it may send to the AI.
+- [SayQL for teams](https://sayql.dev/docs/teams/): Govern AI agents on your databases: each agent its own key and rules, private columns withheld, every query on record, on a server your company runs.
+
+## Configure
+
+- [AI providers](https://sayql.dev/docs/ai-providers/): Use Claude, OpenAI, Gemini, a local model or any OpenAI-compatible API.
+- [Databases](https://sayql.dev/docs/databases/): Connect PostgreSQL, MySQL, SQLite, SQL Server and Azure SQL.
+- [MCP for AI apps](https://sayql.dev/docs/mcp/): Let Claude, Cursor and other MCP apps query your databases through SayQL.
+
+## Reference
+
+- [Keyboard shortcuts](https://sayql.dev/docs/shortcuts/): Every keyboard shortcut in SayQL: run queries, open tabs, use / commands and pick tables for the AI.
+- [Troubleshooting](https://sayql.dev/docs/troubleshooting/): Fixes for the messages SayQL shows and common first-run issues.
+- [Updates](https://sayql.dev/docs/updates/): How SayQL checks for, downloads and verifies signed updates on macOS, Windows and Linux.
+- [Privacy and data](https://sayql.dev/docs/privacy/): What SayQL sends to your database, your AI provider and MCP apps, and when table rows can reach the AI (Investigate, only if you turn it on).
+- [License](https://sayql.dev/docs/license/): SayQL is free and open source under the Apache License 2.0.
+
+## Guides
+
+- [Ask PostgreSQL questions in plain English](https://sayql.dev/docs/postgresql-plain-english/): Ask PostgreSQL questions in plain English and get SQL as you type. SayQL knows your schema and runs queries read-only by default.
+- [Text-to-SQL for MySQL and MariaDB](https://sayql.dev/docs/mysql-text-to-sql/): Free text-to-SQL for MySQL and MariaDB. Type a question in plain English, get SQL that fits your schema, and run it read-only by default.
+- [Query SQL Server and Azure SQL in plain English](https://sayql.dev/docs/sql-server-plain-english/): Query SQL Server and Azure SQL in plain English. SayQL writes T-SQL for your schema as you type and checks every statement before it runs.
+- [Let your team query production safely](https://sayql.dev/docs/safe-production-queries/): Let your team, and their AI agents, query production safely. Read-only by default; agents get counts, not rows, unless you allow more.
+- [Write SQL with a local AI (Ollama or LM Studio)](https://sayql.dev/docs/local-ai-sql-ollama/): Write SQL with a local AI using Ollama or LM Studio. Your questions and schema stay on your computer, and no API key is needed.
+- [Connect Claude Code to PostgreSQL safely](https://sayql.dev/docs/claude-code-postgresql/): Give Claude Code your PostgreSQL schema and the numbers it needs, not your rows: read-only queries through SayQL's MCP server, every query logged.
+- [Give Cursor read-only access to your database](https://sayql.dev/docs/cursor-read-only-database/): Let Cursor's agent query your database read-only through SayQL's MCP server: schema and counts by default, never your passwords or private columns.
+- [Keep personal data out of AI prompts](https://sayql.dev/docs/keep-personal-data-out-of-ai/): Use AI on your database without sending emails, phones or other personal data to the model: counts by default, masked rows, never-send columns.
+
+## Compare
+
+- [How SayQL compares](https://sayql.dev/docs/compare/): SayQL compared with Chat2DB, DBeaver, DataGrip, MCP Toolbox for Databases and Vanna: what each sends to the AI, read-only safety, MCP and price, every cell sourced.
+- [SayQL vs Chat2DB](https://sayql.dev/docs/sayql-vs-chat2db/): SayQL vs Chat2DB: a sourced, side-by-side comparison of what each sends to the AI, read-only safety, MCP, pricing and more, checked 3 November 2026.
+- [SayQL vs DBeaver](https://sayql.dev/docs/sayql-vs-dbeaver/): SayQL vs DBeaver: a sourced, side-by-side comparison of what each sends to the AI, read-only safety, MCP, pricing and more, checked 3 November 2026.
+- [SayQL vs DataGrip](https://sayql.dev/docs/sayql-vs-datagrip/): SayQL vs DataGrip: a sourced, side-by-side comparison of what each sends to the AI, read-only safety, MCP, pricing and more, checked 3 November 2026.
+- [SayQL vs MCP Toolbox for Databases](https://sayql.dev/docs/sayql-vs-mcp-toolbox/): SayQL vs MCP Toolbox for Databases: a sourced, side-by-side comparison of what each sends to the AI, read-only safety, MCP, pricing and more, checked 3 November 2026.
+- [SayQL vs Vanna](https://sayql.dev/docs/sayql-vs-vanna/): SayQL vs Vanna: a sourced, side-by-side comparison of what each sends to the AI, read-only safety, MCP, pricing and more, checked 3 November 2026.
+- [Vanna alternatives](https://sayql.dev/docs/vanna-alternatives/): Vanna was archived in March 2026. Alternatives by what you used it for: text-to-SQL in your app, AI agents on your databases, or an AI SQL client.

@@ -3,22 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>{{TITLE}} · SayQL Docs</title>
+<title>{{HEADTITLE}}</title>
 <meta name="description" content="{{DESCRIPTION}}">
 <link rel="canonical" href="https://sayql.dev{{URL}}">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SayQL">
-<meta property="og:title" content="{{TITLE}} · SayQL Docs">
+<meta property="og:title" content="{{HEADTITLE}}">
 <meta property="og:description" content="{{DESCRIPTION}}">
 <meta property="og:url" content="https://sayql.dev{{URL}}">
-<meta property="og:image" content="https://sayql.dev/og.png">
+<meta property="article:published_time" content="{{PUBLISHED}}">
+<meta property="article:modified_time" content="{{UPDATED}}">
+<meta property="og:image" content="{{OGIMAGE}}">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
-<meta property="og:image:alt" content="SayQL: Let agents into your database. Not your data.">
+<meta property="og:image:alt" content="{{OGALT}}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{{TITLE}} · SayQL Docs">
+<meta name="twitter:title" content="{{HEADTITLE}}">
 <meta name="twitter:description" content="{{DESCRIPTION}}">
-<meta name="twitter:image" content="https://sayql.dev/og.png">
+<meta name="twitter:image" content="{{OGIMAGE}}">
 <meta name="theme-color" content="#1f6feb">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
@@ -252,6 +254,7 @@ main { min-width: 0; padding: 36px clamp(16px, 4vw, 56px) 96px; }
 .crumb { font-size: 13px; color: var(--color-text-subtle); }
 .crumb a { color: var(--color-text-subtle); }
 h1 { margin: 6px 0 0; font-size: clamp(30px, 4.4vw, 40px); line-height: 1.12; font-weight: 800; letter-spacing: -0.03em; text-wrap: balance; }
+.updated { margin: 6px 0 0; font-size: 13px; color: var(--color-text-subtle); }
 .lead { margin: 12px 0 8px; font-size: 18px; color: var(--color-text-muted); }
 .page h2 { margin: 40px 0 10px; font-size: 22px; line-height: 1.25; font-weight: 700; letter-spacing: -0.015em; }
 .page h3 { margin: 28px 0 8px; font-size: 17px; font-weight: 600; }
@@ -268,6 +271,29 @@ table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.
 th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--color-border-subtle); }
 th { font-weight: 600; color: var(--color-text-muted); background: var(--color-grid-header); white-space: nowrap; }
 tr:last-child td { border-bottom: none; }
+/* Comparison tables: SayQL's column tinted, sources quiet. */
+table.compare tbody th { white-space: normal; min-width: 120px; }
+table.compare td:nth-child(2), table.compare thead th:nth-child(2) { background: color-mix(in srgb, var(--color-accent-soft) 60%, var(--color-surface)); }
+table.compare small a { color: var(--color-text-subtle); }
+/* The overview's wide table gets the whole page: no "On this page" column, a wider text column. */
+@media (min-width: 1241px) {
+  .shell:has(table.compare-wide) { grid-template-columns: 264px minmax(0, 1fr); }
+  .shell:has(table.compare-wide) .onpage { display: none; }
+}
+.page:has(table.compare-wide) { max-width: 1140px; }
+table.compare-wide { font-size: 13.5px; }
+table.compare-wide th, table.compare-wide td { padding: 10px 12px; }
+/* Too narrow for seven columns: each question becomes a block, one line per tool. */
+@media (max-width: 1100px) {
+  table.compare-wide thead { display: none; }
+  table.compare-wide tr { display: block; border-bottom: 1px solid var(--color-border); }
+  table.compare-wide tr:last-child { border-bottom: none; }
+  table.compare-wide tbody th { display: block; border-bottom: 1px solid var(--color-border-subtle); }
+  table.compare-wide td { display: grid; grid-template-columns: minmax(72px, 28%) minmax(0, 1fr); gap: 10px; overflow-wrap: anywhere; }
+  table.compare-wide td::before { content: attr(data-label); font-weight: 600; color: var(--color-text); }
+  table.compare-wide tr:last-child td { border-bottom: 1px solid var(--color-border-subtle); }
+  table.compare-wide tr:last-child td:last-child { border-bottom: none; }
+}
 .callout { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; margin: 18px 0; padding: 12px 14px; border-radius: var(--radius-lg); border: 1px solid var(--color-border); background: var(--color-surface); font-size: 15px; }
 .callout svg { width: 18px; height: 18px; margin-top: 4px; }
 .callout.tip { border-color: color-mix(in srgb, var(--color-accent) 35%, transparent); background: var(--color-accent-soft); }
@@ -367,6 +393,7 @@ footer a { color: var(--color-text-muted); }
     <article class="page">
       <div class="crumb"><a href="/docs/">Docs</a> / {{GROUP}}</div>
       <h1>{{TITLE}}</h1>
+      <p class="updated">Updated <time datetime="{{UPDATED}}">{{UPDATED_TEXT}}</time></p>
       {{CONTENT}}
       {{PAGER}}
       <p class="help">Something missing or unclear? Ask in <a href="https://github.com/azenvoc/sayql/discussions">Discussions</a>.</p>
@@ -381,7 +408,7 @@ footer a { color: var(--color-text-muted); }
 <footer>
   <div class="inner">
     <a class="brand" href="/" style="font-size:14px"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
-    <span>© 2026 Adith L S. SayQL Community Edition, a product of <a href="https://azenvoc.com">Azenvoc</a>.</span>
+    <span>© 2026 Azenvoc LLP. SayQL Community Edition, a product of <a href="https://azenvoc.com">Azenvoc</a>.</span>
     <nav aria-label="Footer"><a href="/">Home</a><a href="https://github.com/azenvoc/sayql-releases/releases">Changelog</a><a href="https://github.com/azenvoc/sayql/discussions">Discussions</a><a href="https://github.com/azenvoc/sayql/blob/main/LICENSE">License</a><a href="https://github.com/azenvoc/sayql-releases/blob/main/PRIVACY.md">Privacy</a></nav>
   </div>
 </footer>

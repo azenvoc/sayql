@@ -1,4 +1,4 @@
-<!-- order: 8 | slug: mcp | title: MCP for AI apps | group: Configure | description: Let Claude, Cursor and other MCP apps query your databases through SayQL. -->
+<!-- order: 8 | slug: mcp | title: MCP for AI apps | group: Configure | published: 2026-10-21 | updated: 2026-11-03 | description: Let Claude, Cursor and other MCP apps query your databases through SayQL. -->
 <p class="lead">SayQL includes an MCP server, so AI assistants like Claude and Cursor can query your databases through the connections you saved in SayQL.</p>
 <div class="callout"><svg><use href="#i-info"/></svg><p><b>On Linux,</b> use the <code>.deb</code> or <code>.rpm</code> for MCP. The AppImage opens from a new folder each time, so the path you give your AI app would stop working.</p></div>
 <p>The assistant can list connections, list databases, describe the schema, and run a read-only query. The same read-only rules apply. Database passwords are never shared with the assistant. What it gets back from a query is up to you, per connection (below): by default counts and summaries, not your rows.</p>
@@ -74,6 +74,7 @@
 <p>If SayQL's settings for AI apps can't be read (a damaged file), every request is refused until you open SayQL, which shows the problem; the MCP server never moves or rewrites SayQL's files.</p>
 
 <div class="callout tip"><svg><use href="#i-info"/></svg><p><b>For a company,</b> govern agents centrally instead: on a <a href="/docs/teams/#govern-your-ai-agents">SayQL server</a>, an admin gives each agent its own key, the databases, tables and rows it may read, and what it may see. Private columns are withheld on the server, and every agent query is in the team's audit log.</p></div>
+<p>How this compares with other database MCP servers and AI SQL clients: <a href="/docs/sayql-vs-mcp-toolbox/">SayQL vs MCP Toolbox for Databases</a>, <a href="/docs/sayql-vs-chat2db/">SayQL vs Chat2DB</a>, and <a href="/docs/compare/">all tools side by side</a>.</p>
 
 <h2>Connect your coding agent</h2>
 <p>Open <b>Settings → AI apps</b> and, at the top of the <b>Access</b> tab, <b>Connect an app</b> (open and highlighted until an app has connected, one line after that). The first-run setup ends with a shortcut here too. Pick <b>Your coding agent</b>: it shows the exact command, link or config for that agent, with the path to <code>sayql-mcp</code> on your computer filled in. <b>Teach SayQL this database</b> has the same list. SayQL picks one for you to start with: the agent you chose last time, else one it finds installed (it only checks for the app or command, and runs nothing), else the app that last connected, else Claude Code.</p>

@@ -370,6 +370,24 @@ cd site
 npx vercel@latest deploy --prod
 ```
 
+Then tell search engines to recrawl. IndexNow covers Bing, Yandex and the others that use it (the
+key file `site/<key>.txt` must be live first):
+
+```bash
+python3 scripts/indexnow.py
+```
+
+Pass page paths (`/docs/compare/`) to send only those. Google doesn't use IndexNow: for a new or
+much-changed page, use **URL inspection → Request indexing** in Search Console.
+
+### Comparison pages
+
+The **Compare** group (`docs-site/pages/30-*` to `3x-*`) compares SayQL with other tools by name, so
+every claim about another product has a source link in its cell and the page says when it was last
+checked. Recheck them every few months: follow each source, fix what changed, and bump `updated`,
+the "Checked on" note and the `(2026)` in the `seo` titles when the year turns. The share images in
+`site/og/` show four of the answers; regenerate or edit them when those change.
+
 To use a custom domain such as sayql.app, add it under the project's
 Settings → Domains on vercel.com and set the DNS records it shows.
 

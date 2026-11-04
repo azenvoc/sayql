@@ -1,0 +1,23 @@
+<!-- order: 27 | slug: keep-personal-data-out-of-ai | title: Keep personal data out of AI prompts | group: Guides | published: 2026-11-04 | updated: 2026-11-04 | seo: Keep PII out of AI prompts when AI queries your database | description: Use AI on your database without sending emails, phones or other personal data to the model: counts by default, masked rows, never-send columns. -->
+<p class="lead">AI can help with your database without your customers' personal data ever reaching the model. SayQL gives the AI your schema and the numbers it needs, and keeps chosen columns out entirely.</p>
+
+<h2>What the AI sees by default</h2>
+<p>When you ask in SayQL's Ask box, the AI gets your question and your table and column names, not your rows. AI apps such as Claude Code and Cursor get <b>counts and summaries</b> of query results by default: a row count and, per column, its type, nulls and distinct values. No row values.</p>
+
+<h2>Three levels of protection</h2>
+<ol class="steps">
+  <li><b>Counts, not rows.</b> Per connection, choose what AI apps see of results: nothing, counts and summaries, masked rows, or all rows. <a href="/docs/agent-mode/">Investigate</a>, SayQL's multi-step mode, has its own setting: nothing (the default), counts and summaries, or up to 20 masked rows, and can ask you before each send.</li>
+  <li><b>Masked rows.</b> When rows help, <b>Rows, masked</b> replaces likely personal data (emails, phones, names, IDs) with tokens such as <code>‹email-1›</code>. It's best effort: a free-text column can hold anything.</li>
+  <li><b>Never send.</b> The firm line. Mark a column, such as <code>customers.email</code> or <code>patients.ssn</code>, and any query that could read it in any form is refused before it runs, at every level, for AI apps and Investigate alike. Its comments and allowed values are left out of the schema too.</li>
+</ol>
+
+<h2>Skills for the Ask box</h2>
+<p>Skills such as <code>/pii-safe</code> tell the AI to keep contact details out of the SQL it writes. See <a href="/docs/asking/">Ask in plain English</a>.</p>
+
+<h2>Errors can quote values too</h2>
+<p>A database error can include a value from your data. Below <b>All rows</b>, AI apps get a fixed description of the error instead of the database's message.</p>
+
+<h2>For a company</h2>
+<p>On the self-hosted <a href="/docs/teams/">SayQL server</a>, never-send columns are withheld on the server for every person and agent, and every query is in one audit log. Your data stays on your network.</p>
+
+<p>More: <a href="/docs/privacy/">Privacy and data</a>, <a href="/docs/mcp/#what-ai-apps-may-see">What AI apps may see</a>, and <a href="/docs/compare/">how other tools handle this</a>.</p>
