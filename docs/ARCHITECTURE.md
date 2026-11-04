@@ -25,7 +25,7 @@ src/
                         ContextMenu, BrandMark…)
   features/             one folder per product area; each exports its public API from index.ts
     agent/              agent mode: run state (agentRun.ts reducer, useAgentRun), the Agent view, the
-                        per-connection opt-in dialog and access store, note editing, Settings → Agent mode
+                        per-connection opt-in dialog and access store, note editing, Settings → Investigate
     ask/                plain-English input, instant fast path, AI generation hook
     connections/        connection dialog, kinds metadata, useConnections
     editor/             Monaco setup (offline, themed) and SqlEditor
