@@ -3,29 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>{{TITLE}} · SayQL Docs</title>
+<title>{{HEADTITLE}}</title>
 <meta name="description" content="{{DESCRIPTION}}">
 <link rel="canonical" href="https://sayql.dev{{URL}}">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SayQL">
-<meta property="og:title" content="{{TITLE}} · SayQL Docs">
+<meta property="og:title" content="{{HEADTITLE}}">
 <meta property="og:description" content="{{DESCRIPTION}}">
 <meta property="og:url" content="https://sayql.dev{{URL}}">
-<meta property="og:image" content="https://sayql.dev/og.png">
+<meta property="article:published_time" content="{{PUBLISHED}}">
+<meta property="article:modified_time" content="{{UPDATED}}">
+<meta property="og:image" content="{{OGIMAGE}}">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
-<meta property="og:image:alt" content="SayQL: Let agents into your database. Not your data.">
+<meta property="og:image:alt" content="{{OGALT}}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{{TITLE}} · SayQL Docs">
+<meta name="twitter:title" content="{{HEADTITLE}}">
 <meta name="twitter:description" content="{{DESCRIPTION}}">
-<meta name="twitter:image" content="https://sayql.dev/og.png">
+<meta name="twitter:image" content="{{OGIMAGE}}">
 <meta name="theme-color" content="#1f6feb">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<!-- Fonts load without blocking the first paint: system fonts show until Inter arrives. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap"></noscript>
 <script>
   try { var t = localStorage.getItem("sayql-site-theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
 </script>
@@ -53,7 +57,7 @@
   --color-border-strong: #b9c0ca;
   --color-text: #1d2125;
   --color-text-muted: #56606b;
-  --color-text-subtle: #8a939d;
+  --color-text-subtle: #626b77;
   --color-accent: #1f6feb;
   --color-accent-hover: #1a5fd0;
   --color-accent-soft: #e5efff;
@@ -101,7 +105,7 @@
     --color-border-strong: #474c55;
     --color-text: #e2e5e9;
     --color-text-muted: #a3aab4;
-    --color-text-subtle: #727a85;
+    --color-text-subtle: #959da8;
     --color-accent: #4a8dff;
     --color-accent-hover: #6aa2ff;
     --color-accent-soft: #1e2d48;
@@ -147,7 +151,7 @@
   --color-border-strong: #474c55;
   --color-text: #e2e5e9;
   --color-text-muted: #a3aab4;
-  --color-text-subtle: #727a85;
+  --color-text-subtle: #959da8;
   --color-accent: #4a8dff;
   --color-accent-hover: #6aa2ff;
   --color-accent-soft: #1e2d48;
@@ -184,6 +188,9 @@ html { scroll-padding-top: 84px; }
 body { margin: 0; background: var(--color-page); color: var(--color-text); font: 400 16px/1.7 var(--font-sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { color: var(--color-accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* Links in running text are underlined, so they don't rely on colour alone. */
+.page p a, .page li a, footer p a, footer span a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 2px; }
+.page p a, .page li a, .page td a, .help a, .callout a { color: var(--color-accent-hover); }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: var(--radius-md); }
 code { font: 500 0.86em/1.4 var(--font-mono); background: var(--color-surface-sunken); border: 1px solid var(--color-border-subtle); padding: 1px 5px; border-radius: var(--radius-md); overflow-wrap: anywhere; }
 pre { position: relative; margin: 14px 0; padding: 14px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow-x: auto; font: 400 13px/1.6 var(--font-mono); }
@@ -252,6 +259,7 @@ main { min-width: 0; padding: 36px clamp(16px, 4vw, 56px) 96px; }
 .crumb { font-size: 13px; color: var(--color-text-subtle); }
 .crumb a { color: var(--color-text-subtle); }
 h1 { margin: 6px 0 0; font-size: clamp(30px, 4.4vw, 40px); line-height: 1.12; font-weight: 800; letter-spacing: -0.03em; text-wrap: balance; }
+.updated { margin: 6px 0 0; font-size: 13px; color: var(--color-text-subtle); }
 .lead { margin: 12px 0 8px; font-size: 18px; color: var(--color-text-muted); }
 .page h2 { margin: 40px 0 10px; font-size: 22px; line-height: 1.25; font-weight: 700; letter-spacing: -0.015em; }
 .page h3 { margin: 28px 0 8px; font-size: 17px; font-weight: 600; }
@@ -268,6 +276,41 @@ table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.
 th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--color-border-subtle); }
 th { font-weight: 600; color: var(--color-text-muted); background: var(--color-grid-header); white-space: nowrap; }
 tr:last-child td { border-bottom: none; }
+@media (max-width: 640px) { th { white-space: normal; } th, td { padding: 8px 10px; overflow-wrap: anywhere; } }
+/* Comparison tables: SayQL's column tinted, sources quiet. */
+table.compare tbody th { white-space: normal; min-width: 120px; }
+table.compare td:nth-child(2), table.compare thead th:nth-child(2) { background: color-mix(in srgb, var(--color-accent-soft) 60%, var(--color-surface)); }
+table.compare small a { color: var(--color-text-subtle); }
+/* The overview's wide table gets the whole page: no "On this page" column, a wider text column. */
+@media (min-width: 1241px) {
+  .shell:has(table.compare-wide) { grid-template-columns: 264px minmax(0, 1fr); }
+  .shell:has(table.compare-wide) .onpage { display: none; }
+}
+.page:has(table.compare-wide) { max-width: 1140px; }
+table.compare-wide { font-size: 13.5px; }
+table.compare-wide th, table.compare-wide td { padding: 10px 12px; }
+/* Too narrow for the columns (seven below 1100px, three on phones): each row becomes a block, one
+   line per tool, named by the cell's data-label. */
+@media (max-width: 1100px) {
+  table.compare-wide thead { display: none; }
+  table.compare-wide tr { display: block; border-bottom: 1px solid var(--color-border); }
+  table.compare-wide tr:last-child { border-bottom: none; }
+  table.compare-wide tbody th { display: block; border-bottom: 1px solid var(--color-border-subtle); }
+  table.compare-wide td { display: grid; grid-template-columns: minmax(72px, 28%) minmax(0, 1fr); gap: 10px; overflow-wrap: anywhere; }
+  table.compare-wide td::before { content: attr(data-label); font-weight: 600; color: var(--color-text); }
+  table.compare-wide tr:last-child td { border-bottom: 1px solid var(--color-border-subtle); }
+  table.compare-wide tr:last-child td:last-child { border-bottom: none; }
+}
+@media (max-width: 640px) {
+  table.compare thead { display: none; }
+  table.compare tr { display: block; border-bottom: 1px solid var(--color-border); }
+  table.compare tr:last-child { border-bottom: none; }
+  table.compare tbody th { display: block; border-bottom: 1px solid var(--color-border-subtle); }
+  table.compare td { display: grid; grid-template-columns: minmax(72px, 28%) minmax(0, 1fr); gap: 10px; overflow-wrap: anywhere; }
+  table.compare td::before { content: attr(data-label); font-weight: 600; color: var(--color-text); }
+  table.compare tr:last-child td { border-bottom: 1px solid var(--color-border-subtle); }
+  table.compare tr:last-child td:last-child { border-bottom: none; }
+}
 .callout { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; margin: 18px 0; padding: 12px 14px; border-radius: var(--radius-lg); border: 1px solid var(--color-border); background: var(--color-surface); font-size: 15px; }
 .callout svg { width: 18px; height: 18px; margin-top: 4px; }
 .callout.tip { border-color: color-mix(in srgb, var(--color-accent) 35%, transparent); background: var(--color-accent-soft); }
@@ -346,7 +389,7 @@ footer a { color: var(--color-text-muted); }
         <svg class="theme-light-icon"><use href="#i-moon"/></svg>
         <svg class="theme-dark-icon"><use href="#i-sun"/></svg>
       </button>
-      <a class="btn" href="/download/"><svg><use href="#i-download"/></svg><span>Download</span></a>
+      <a class="btn" href="/download/" aria-label="Download SayQL"><svg><use href="#i-download"/></svg><span>Download</span></a>
     </div>
   </div>
 </header>
@@ -367,6 +410,7 @@ footer a { color: var(--color-text-muted); }
     <article class="page">
       <div class="crumb"><a href="/docs/">Docs</a> / {{GROUP}}</div>
       <h1>{{TITLE}}</h1>
+      <p class="updated">Updated <time datetime="{{UPDATED}}">{{UPDATED_TEXT}}</time></p>
       {{CONTENT}}
       {{PAGER}}
       <p class="help">Something missing or unclear? Ask in <a href="https://github.com/azenvoc/sayql/discussions">Discussions</a>.</p>
@@ -380,8 +424,8 @@ footer a { color: var(--color-text-muted); }
 
 <footer>
   <div class="inner">
-    <a class="brand" href="/" style="font-size:14px"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
-    <span>© 2026 Adith L S. SayQL Community Edition, a product of <a href="https://azenvoc.com">Azenvoc</a>.</span>
+    <a class="brand" href="/" style="font-size:14px" aria-label="SayQL home"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
+    <span>© 2026 Azenvoc LLP. SayQL Community Edition, a product of <a href="https://azenvoc.com">Azenvoc</a>.</span>
     <nav aria-label="Footer"><a href="/">Home</a><a href="https://github.com/azenvoc/sayql-releases/releases">Changelog</a><a href="https://github.com/azenvoc/sayql/discussions">Discussions</a><a href="https://github.com/azenvoc/sayql/blob/main/LICENSE">License</a><a href="https://github.com/azenvoc/sayql-releases/blob/main/PRIVACY.md">Privacy</a></nav>
   </div>
 </footer>

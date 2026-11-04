@@ -8,6 +8,6 @@ space.
 
 ## Reporting
 
-If someone's behaviour is a problem, report it privately to the maintainer,
-[@dithzz](https://github.com/dithzz) on GitHub. Reports are kept confidential. The maintainer may remove comments, close
+If someone's behaviour is a problem, report it privately to the maintainers at
+[hello@azenvoc.com](mailto:hello@azenvoc.com). Reports are kept confidential. The maintainers may remove comments, close
 discussions, or block people who break this code of conduct.

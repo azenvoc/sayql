@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SayQL vs Google MCP Toolbox (2026): database MCP servers</title>
+<meta name="description" content="SayQL vs MCP Toolbox for Databases: a sourced, side-by-side comparison of what each sends to the AI, read-only safety, MCP, pricing and more, checked 3 November 2026.">
+<link rel="canonical" href="https://sayql.dev/docs/sayql-vs-mcp-toolbox/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="SayQL">
+<meta property="og:title" content="SayQL vs Google MCP Toolbox (2026): database MCP servers">
+<meta property="og:description" content="SayQL vs MCP Toolbox for Databases: a sourced, side-by-side comparison of what each sends to the AI, read-only safety, MCP, pricing and more, checked 3 November 2026.">
+<meta property="og:url" content="https://sayql.dev/docs/sayql-vs-mcp-toolbox/">
+<meta property="article:published_time" content="2026-11-03">
+<meta property="article:modified_time" content="2026-11-03">
+<meta property="og:image" content="https://sayql.dev/og/sayql-vs-mcp-toolbox.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="SayQL vs Google MCP Toolbox (2026): database MCP servers">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SayQL vs Google MCP Toolbox (2026): database MCP servers">
+<meta name="twitter:description" content="SayQL vs MCP Toolbox for Databases: a sourced, side-by-side comparison of what each sends to the AI, read-only safety, MCP, pricing and more, checked 3 November 2026.">
+<meta name="twitter:image" content="https://sayql.dev/og/sayql-vs-mcp-toolbox.png">
+<meta name="theme-color" content="#1f6feb">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Fonts load without blocking the first paint: system fonts show until Inter arrives. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap"></noscript>
+<script>
+  try { var t = localStorage.getItem("sayql-site-theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
+</script>
+<style>
+:root {
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 12px;
+  --page-w: 1180px;
+  --gutter: max(16px, env(safe-area-inset-left, 0px));
+
+  color-scheme: light;
+  --color-bg: #eceef1;
+  --color-page: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f6f7f9;
+  --color-surface-sunken: #f0f2f5;
+  --color-surface-hover: #eef1f5;
+  --color-surface-selected: #dde8fb;
+  --color-border: #d6dae0;
+  --color-border-subtle: #e6e9ed;
+  --color-border-strong: #b9c0ca;
+  --color-text: #1d2125;
+  --color-text-muted: #56606b;
+  --color-text-subtle: #626b77;
+  --color-accent: #1f6feb;
+  --color-accent-hover: #1a5fd0;
+  --color-accent-soft: #e5efff;
+  --color-focus-ring: rgba(31, 111, 235, 0.35);
+  --color-ai: #7048e8;
+  --color-ai-soft: #f1ecff;
+  --color-success: #1a7f37;
+  --color-success-soft: #e6f4ea;
+  --color-warning: #9a6700;
+  --color-warning-soft: #fff4d6;
+  --color-danger: #c62f37;
+  --color-danger-soft: #fdecec;
+  --color-kind-postgres: #336791;
+  --color-kind-mysql: #c47a00;
+  --color-kind-sqlite: #2f8f5b;
+  --color-kind-mssql: #b8312f;
+  --color-grid-header: #f3f5f8;
+  --color-grid-row-alt: #fafbfc;
+  --color-grid-number: #0b5cad;
+  --syn-keyword: #0b4fc4;
+  --syn-string: #1a7f37;
+  --syn-number: #b35900;
+  --syn-comment: #8a939d;
+  --syn-operator: #56606b;
+  --shadow-raised: 0 1px 2px rgba(15, 23, 42, 0.12);
+  --shadow-window: 0 30px 80px -20px rgba(15, 23, 42, 0.28), 0 8px 24px -8px rgba(15, 23, 42, 0.16);
+  --glow-a: rgba(31, 111, 235, 0.16);
+  --glow-b: rgba(112, 72, 232, 0.14);
+  --grid-line: rgba(15, 23, 42, 0.05);
+}
+
+/* Dark: same values as :root[data-theme="dark"] in tokens.css. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-bg: #17191d;
+    --color-page: #131518;
+    --color-surface: #1f2227;
+    --color-surface-muted: #24272d;
+    --color-surface-sunken: #1a1c20;
+    --color-surface-hover: #2a2e35;
+    --color-surface-selected: #253552;
+    --color-border: #33373e;
+    --color-border-subtle: #2a2d33;
+    --color-border-strong: #474c55;
+    --color-text: #e2e5e9;
+    --color-text-muted: #a3aab4;
+    --color-text-subtle: #959da8;
+    --color-accent: #4a8dff;
+    --color-accent-hover: #6aa2ff;
+    --color-accent-soft: #1e2d48;
+    --color-focus-ring: rgba(74, 141, 255, 0.4);
+    --color-ai: #a78bfa;
+    --color-ai-soft: #2a2341;
+    --color-success: #56c26f;
+    --color-success-soft: #1d3324;
+    --color-warning: #e3b341;
+    --color-warning-soft: #3a3016;
+    --color-danger: #f26b72;
+    --color-danger-soft: #3b1f23;
+    --color-kind-postgres: #6fa3d6;
+    --color-kind-mysql: #f0a833;
+    --color-kind-sqlite: #5ccb8d;
+    --color-kind-mssql: #f07a6e;
+    --color-grid-header: #262a30;
+    --color-grid-row-alt: #22252a;
+    --color-grid-number: #7fb4ff;
+    --syn-keyword: #6aa2ff;
+    --syn-string: #8fd19e;
+    --syn-number: #f0a868;
+    --syn-comment: #727a85;
+    --syn-operator: #a3aab4;
+    --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-window: 0 30px 90px -20px rgba(0, 0, 0, 0.7), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+    --glow-a: rgba(74, 141, 255, 0.16);
+    --glow-b: rgba(167, 139, 250, 0.14);
+    --grid-line: rgba(255, 255, 255, 0.035);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #17191d;
+  --color-page: #131518;
+  --color-surface: #1f2227;
+  --color-surface-muted: #24272d;
+  --color-surface-sunken: #1a1c20;
+  --color-surface-hover: #2a2e35;
+  --color-surface-selected: #253552;
+  --color-border: #33373e;
+  --color-border-subtle: #2a2d33;
+  --color-border-strong: #474c55;
+  --color-text: #e2e5e9;
+  --color-text-muted: #a3aab4;
+  --color-text-subtle: #959da8;
+  --color-accent: #4a8dff;
+  --color-accent-hover: #6aa2ff;
+  --color-accent-soft: #1e2d48;
+  --color-focus-ring: rgba(74, 141, 255, 0.4);
+  --color-ai: #a78bfa;
+  --color-ai-soft: #2a2341;
+  --color-success: #56c26f;
+  --color-success-soft: #1d3324;
+  --color-warning: #e3b341;
+  --color-warning-soft: #3a3016;
+  --color-danger: #f26b72;
+  --color-danger-soft: #3b1f23;
+  --color-kind-postgres: #6fa3d6;
+  --color-kind-mysql: #f0a833;
+  --color-kind-sqlite: #5ccb8d;
+  --color-kind-mssql: #f07a6e;
+  --color-grid-header: #262a30;
+  --color-grid-row-alt: #22252a;
+  --color-grid-number: #7fb4ff;
+  --syn-keyword: #6aa2ff;
+  --syn-string: #8fd19e;
+  --syn-number: #f0a868;
+  --syn-comment: #727a85;
+  --syn-operator: #a3aab4;
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-window: 0 30px 90px -20px rgba(0, 0, 0, 0.7), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+  --glow-a: rgba(74, 141, 255, 0.16);
+  --glow-b: rgba(167, 139, 250, 0.14);
+  --grid-line: rgba(255, 255, 255, 0.035);
+}
+
+* { box-sizing: border-box; }
+html { scroll-padding-top: 84px; }
+body { margin: 0; background: var(--color-page); color: var(--color-text); font: 400 16px/1.7 var(--font-sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+/* Links in running text are underlined, so they don't rely on colour alone. */
+.page p a, .page li a, footer p a, footer span a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 2px; }
+.page p a, .page li a, .page td a, .help a, .callout a { color: var(--color-accent-hover); }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: var(--radius-md); }
+code { font: 500 0.86em/1.4 var(--font-mono); background: var(--color-surface-sunken); border: 1px solid var(--color-border-subtle); padding: 1px 5px; border-radius: var(--radius-md); overflow-wrap: anywhere; }
+pre { position: relative; margin: 14px 0; padding: 14px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow-x: auto; font: 400 13px/1.6 var(--font-mono); }
+pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+.copy { position: absolute; top: 8px; right: 8px; height: 26px; padding: 0 9px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-muted); font: 500 12px/1 var(--font-sans); cursor: pointer; }
+.copy:hover { color: var(--color-text); }
+kbd { font: 500 12px/1 var(--font-mono); border: 1px solid var(--color-border); border-bottom-width: 2px; border-radius: var(--radius-sm); padding: 3px 6px; background: var(--color-surface); color: var(--color-text); white-space: nowrap; }
+
+/* header, same as the landing page */
+.nav { position: sticky; top: 0; z-index: 30; height: 60px; background: color-mix(in srgb, var(--color-page) 86%, transparent); backdrop-filter: saturate(160%) blur(12px); -webkit-backdrop-filter: saturate(160%) blur(12px); border-bottom: 1px solid var(--color-border-subtle); }
+.nav-inner { display: flex; align-items: center; gap: 28px; height: 100%; max-width: 1440px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-left, 0px)); }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; color: var(--color-text); }
+.brand:hover { text-decoration: none; }
+.brand svg.wordmark { width: auto; height: 26px; }
+.brand .docs-tag { font: 600 12px/1 var(--font-sans); color: var(--color-text-subtle); border-left: 1px solid var(--color-border); padding-left: 10px; }
+.nav-links { display: flex; gap: 22px; font-size: 14px; }
+.nav-links a { color: var(--color-text-muted); }
+.nav-links a:hover, .nav-links a[aria-current="page"] { color: var(--color-text); text-decoration: none; }
+.nav-end { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: var(--radius-lg); border: 1px solid var(--color-accent); background: var(--color-accent); color: #fff; font: 600 14px/1 var(--font-sans); }
+.btn:hover { background: var(--color-accent-hover); text-decoration: none; }
+.btn svg { width: 16px; height: 16px; }
+.icon-btn { width: 36px; height: 36px; display: grid; place-items: center; border-radius: var(--radius-lg); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-muted); cursor: pointer; }
+.icon-btn:hover { color: var(--color-text); }
+.icon-btn svg { width: 16px; height: 16px; }
+.theme-dark-icon { display: none; }
+:root[data-theme="dark"] .theme-dark-icon { display: block; }
+:root[data-theme="dark"] .theme-light-icon { display: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .theme-dark-icon { display: block; } :root:not([data-theme="light"]) .theme-light-icon { display: none; } }
+.menu-btn { display: none; }
+@media (max-width: 960px) { .nav-links { display: none; } .menu-btn { display: grid; } }
+@media (max-width: 420px) { .nav .btn span { display: none; } .brand .docs-tag { display: none; } }
+
+/* three columns: pages | content | on this page */
+.shell { display: grid; grid-template-columns: 264px minmax(0, 1fr) 224px; max-width: 1440px; margin: 0 auto; }
+@media (max-width: 1240px) { .shell { grid-template-columns: 264px minmax(0, 1fr); } .onpage { display: none; } }
+@media (max-width: 960px) { .shell { grid-template-columns: minmax(0, 1fr); } }
+
+.sidebar { position: sticky; top: 60px; height: calc(100vh - 60px); overflow-y: auto; padding: 24px 16px 40px max(16px, env(safe-area-inset-left, 0px)); border-right: 1px solid var(--color-border-subtle); }
+.search { position: relative; margin-bottom: 20px; }
+.search input { width: 100%; height: 36px; padding: 0 52px 0 34px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); color: var(--color-text); font: 400 14px var(--font-sans); }
+.search input:focus { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-focus-ring); }
+.search > svg { position: absolute; left: 11px; top: 10px; width: 15px; height: 15px; color: var(--color-text-subtle); }
+.search kbd { position: absolute; right: 8px; top: 8px; }
+.results { position: absolute; z-index: 10; left: 0; right: 0; top: 42px; max-height: 60vh; overflow: auto; margin: 0; padding: 6px; list-style: none; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-window); }
+.results[hidden] { display: none; }
+.results a { display: grid; gap: 1px; padding: 8px 10px; border-radius: var(--radius-md); color: var(--color-text); }
+.results a:hover, .results a.on { background: var(--color-surface-hover); text-decoration: none; }
+.results small { color: var(--color-text-subtle); font-size: 12px; }
+.results .none { padding: 10px; color: var(--color-text-subtle); font-size: 14px; }
+.group { margin-bottom: 22px; }
+.group h2 { margin: 0 0 6px; padding: 0 10px; font: 600 12px/1.2 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-subtle); }
+.group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.group a { display: block; padding: 6px 10px; border-radius: var(--radius-md); color: var(--color-text-muted); font-size: 14px; line-height: 1.4; }
+.group a:hover { color: var(--color-text); background: var(--color-surface-hover); text-decoration: none; }
+.group a[aria-current="page"] { color: var(--color-accent); background: var(--color-accent-soft); font-weight: 600; }
+@media (max-width: 960px) {
+  .sidebar { position: fixed; z-index: 25; left: 0; top: 60px; width: min(320px, 86vw); background: var(--color-page); box-shadow: var(--shadow-window); transform: translateX(-105%); transition: transform 200ms; }
+  .sidebar.open { transform: none; }
+  .scrim { position: fixed; inset: 60px 0 0; z-index: 20; background: var(--color-backdrop, rgba(0,0,0,.35)); }
+  .scrim[hidden] { display: none; }
+}
+
+main { min-width: 0; padding: 36px clamp(16px, 4vw, 56px) 96px; }
+.page { max-width: 760px; margin: 0 auto; }
+.crumb { font-size: 13px; color: var(--color-text-subtle); }
+.crumb a { color: var(--color-text-subtle); }
+h1 { margin: 6px 0 0; font-size: clamp(30px, 4.4vw, 40px); line-height: 1.12; font-weight: 800; letter-spacing: -0.03em; text-wrap: balance; }
+.updated { margin: 6px 0 0; font-size: 13px; color: var(--color-text-subtle); }
+.lead { margin: 12px 0 8px; font-size: 18px; color: var(--color-text-muted); }
+.page h2 { margin: 40px 0 10px; font-size: 22px; line-height: 1.25; font-weight: 700; letter-spacing: -0.015em; }
+.page h3 { margin: 28px 0 8px; font-size: 17px; font-weight: 600; }
+.page h2, .page h3 { position: relative; }
+.anchor { position: absolute; left: -22px; padding-right: 6px; color: var(--color-text-subtle); opacity: 0; font-weight: 400; }
+.page h2:hover .anchor, .page h3:hover .anchor { opacity: 1; text-decoration: none; }
+p { margin: 12px 0; }
+.page ul { margin: 12px 0; padding-left: 22px; display: grid; gap: 6px; }
+ol.steps { counter-reset: s; list-style: none; margin: 14px 0; padding: 0; display: grid; gap: 12px; }
+ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 12px; }
+ol.steps > li::before { content: counter(s); width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--color-accent-soft); color: var(--color-accent); font: 700 12px/1 var(--font-sans); margin-top: 2px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); margin: 16px 0; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.55; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--color-border-subtle); }
+th { font-weight: 600; color: var(--color-text-muted); background: var(--color-grid-header); white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+@media (max-width: 640px) { th { white-space: normal; } th, td { padding: 8px 10px; overflow-wrap: anywhere; } }
+/* Comparison tables: SayQL's column tinted, sources quiet. */
+table.compare tbody th { white-space: normal; min-width: 120px; }
+table.compare td:nth-child(2), table.compare thead th:nth-child(2) { background: color-mix(in srgb, var(--color-accent-soft) 60%, var(--color-surface)); }
+table.compare small a { color: var(--color-text-subtle); }
+/* The overview's wide table gets the whole page: no "On this page" column, a wider text column. */
+@media (min-width: 1241px) {
+  .shell:has(table.compare-wide) { grid-template-columns: 264px minmax(0, 1fr); }
+  .shell:has(table.compare-wide) .onpage { display: none; }
+}
+.page:has(table.compare-wide) { max-width: 1140px; }
+table.compare-wide { font-size: 13.5px; }
+table.compare-wide th, table.compare-wide td { padding: 10px 12px; }
+/* Too narrow for the columns (seven below 1100px, three on phones): each row becomes a block, one
+   line per tool, named by the cell's data-label. */
+@media (max-width: 1100px) {
+  table.compare-wide thead { display: none; }
+  table.compare-wide tr { display: block; border-bottom: 1px solid var(--color-border); }
+  table.compare-wide tr:last-child { border-bottom: none; }
+  table.compare-wide tbody th { display: block; border-bottom: 1px solid var(--color-border-subtle); }
+  table.compare-wide td { display: grid; grid-template-columns: minmax(72px, 28%) minmax(0, 1fr); gap: 10px; overflow-wrap: anywhere; }
+  table.compare-wide td::before { content: attr(data-label); font-weight: 600; color: var(--color-text); }
+  table.compare-wide tr:last-child td { border-bottom: 1px solid var(--color-border-subtle); }
+  table.compare-wide tr:last-child td:last-child { border-bottom: none; }
+}
+@media (max-width: 640px) {
+  table.compare thead { display: none; }
+  table.compare tr { display: block; border-bottom: 1px solid var(--color-border); }
+  table.compare tr:last-child { border-bottom: none; }
+  table.compare tbody th { display: block; border-bottom: 1px solid var(--color-border-subtle); }
+  table.compare td { display: grid; grid-template-columns: minmax(72px, 28%) minmax(0, 1fr); gap: 10px; overflow-wrap: anywhere; }
+  table.compare td::before { content: attr(data-label); font-weight: 600; color: var(--color-text); }
+  table.compare tr:last-child td { border-bottom: 1px solid var(--color-border-subtle); }
+  table.compare tr:last-child td:last-child { border-bottom: none; }
+}
+.callout { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; margin: 18px 0; padding: 12px 14px; border-radius: var(--radius-lg); border: 1px solid var(--color-border); background: var(--color-surface); font-size: 15px; }
+.callout svg { width: 18px; height: 18px; margin-top: 4px; }
+.callout.tip { border-color: color-mix(in srgb, var(--color-accent) 35%, transparent); background: var(--color-accent-soft); }
+.callout.tip svg { color: var(--color-accent); }
+.callout.safe { border-color: color-mix(in srgb, var(--color-success) 35%, transparent); background: var(--color-success-soft); }
+.callout.safe svg { color: var(--color-success); }
+.callout.warn { border-color: color-mix(in srgb, var(--color-warning) 40%, transparent); background: var(--color-warning-soft); }
+.callout.warn svg { color: var(--color-warning); }
+.callout p { margin: 0; }
+.quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 24px 0 8px; }
+@media (max-width: 640px) { .quick { grid-template-columns: minmax(0, 1fr); } }
+.quick a { display: grid; gap: 4px; padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-xl); background: var(--color-surface); color: var(--color-text); }
+.quick a:hover { border-color: var(--color-accent); text-decoration: none; }
+.quick b { font-size: 15px; }
+.quick span { font-size: 14px; color: var(--color-text-muted); line-height: 1.5; }
+
+.pager { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--color-border-subtle); }
+.pager a { display: grid; gap: 2px; padding: 14px 16px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); color: var(--color-text); }
+.pager a:hover { border-color: var(--color-accent); text-decoration: none; }
+.pager small { color: var(--color-text-subtle); font-size: 12px; }
+.pager b { font-weight: 600; }
+.pager .next { grid-column: 2; text-align: right; }
+.help { margin-top: 20px; font-size: 14px; color: var(--color-text-subtle); }
+
+.onpage { position: sticky; top: 60px; height: calc(100vh - 60px); overflow-y: auto; padding: 36px 16px 40px 8px; font-size: 13px; }
+.onpage h2 { margin: 0 0 10px; font: 600 12px/1.2 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-subtle); }
+.onpage ul { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--color-border-subtle); }
+.onpage a { display: block; margin-left: -1px; padding: 5px 0 5px 12px; border-left: 2px solid transparent; color: var(--color-text-muted); line-height: 1.4; }
+.onpage a.h3 { padding-left: 24px; }
+.onpage a:hover { color: var(--color-text); text-decoration: none; }
+.onpage a.on { color: var(--color-accent); border-left-color: var(--color-accent); font-weight: 500; }
+.onpage .top { display: inline-block; margin-top: 14px; color: var(--color-text-subtle); }
+
+footer { border-top: 1px solid var(--color-border-subtle); padding: 24px max(16px, env(safe-area-inset-left, 0px)) 36px; font-size: 13px; color: var(--color-text-subtle); }
+footer .inner { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; max-width: 1440px; margin: 0 auto; }
+footer nav { display: flex; gap: 18px; margin-left: auto; flex-wrap: wrap; }
+footer a { color: var(--color-text-muted); }
+</style>
+<!-- Vercel Web Analytics: page views only, no cookies, no personal data. -->
+<script defer src="/_vercel/insights/script.js"></script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Does MCP Toolbox for Databases send query results to the AI?", "acceptedAnswer": {"@type": "Answer", "text": "What each tool returns goes back to the agent; no built-in summarising or masking (optional post-processing, or Google Cloud Model Armor) In SayQL: schema by default. Per connection you choose what AI sees of results: nothing, counts and summaries (default), masked rows, or all rows."}}, {"@type": "Question", "name": "Can MCP Toolbox for Databases keep a column away from the AI?", "acceptedAnswer": {"@type": "Answer", "text": "Not built in: leave the column out of a fixed-SQL tool, or mask with Model Armor on Google Cloud. In SayQL, yes: columns marked never send are refused in any form and withheld from results."}}, {"@type": "Question", "name": "Is MCP Toolbox for Databases read-only for AI?", "acceptedAnswer": {"@type": "Answer", "text": "Fixed-SQL tools take only bound parameters; a free-form SQL tool exists for developer use. A read-only setting is documented for Cloud SQL, AlloyDB and BigQuery; otherwise use a read-only database user. In SayQL: read-only by default: statements are checked before they run and run in a read-only transaction; AI apps can't change data."}}, {"@type": "Question", "name": "Does MCP Toolbox for Databases have an MCP server for AI agents?", "acceptedAnswer": {"@type": "Answer", "text": "Yes: it is an MCP server (stdio or Streamable HTTP) In SayQL, yes: a local MCP server for Claude Code, Cursor and others, and an HTTP gateway on the team server."}}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "SayQL vs MCP Toolbox for Databases", "description": "SayQL vs MCP Toolbox for Databases: a sourced, side-by-side comparison of what each sends to the AI, read-only safety, MCP, pricing and more, checked 3 November 2026.", "url": "https://sayql.dev/docs/sayql-vs-mcp-toolbox/", "image": "https://sayql.dev/og/sayql-vs-mcp-toolbox.png", "datePublished": "2026-11-03", "dateModified": "2026-11-03", "author": {"@type": "Organization", "name": "Azenvoc", "url": "https://azenvoc.com"}, "about": {"@type": "SoftwareApplication", "name": "SayQL", "url": "https://sayql.dev/"}, "publisher": {"@type": "Organization", "name": "SayQL", "logo": {"@type": "ImageObject", "url": "https://sayql.dev/icon-512.png"}}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "SayQL", "item": "https://sayql.dev/"}, {"@type": "ListItem", "position": 2, "name": "Docs", "item": "https://sayql.dev/docs/"}, {"@type": "ListItem", "position": 3, "name": "SayQL vs MCP Toolbox for Databases", "item": "https://sayql.dev/docs/sayql-vs-mcp-toolbox/"}]}</script>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="logo" viewBox="100 100 824 824"><rect x="100" y="100" width="824" height="824" rx="185" fill="#1f6feb"/><path fill="#fff" d="M431.23 768.15 382.82 688.25Q381.40999999999997 688.25 380.0 688.25Q347.1 688.25 322.66 675.56Q298.22 662.87 284.59000000000003 639.8399999999999Q270.96 616.81 270.96 585.79V438.21Q270.96 407.19 284.355 384.15999999999997Q297.75 361.13 322.425 348.44Q347.1 335.75 380.0 335.75Q412.9 335.75 437.34 348.44Q461.78 361.13 475.40999999999997 384.15999999999997Q489.03999999999996 407.19 489.03999999999996 438.21V585.79Q489.03999999999996 616.81 475.645 640.0749999999999Q462.25 663.3399999999999 437.81 675.56L494.67999999999995 768.15ZM380.0 636.55Q404.44 636.55 417.365 623.155Q430.28999999999996 609.76 430.28999999999996 585.79V438.21Q430.28999999999996 414.23999999999995 416.895 400.60999999999996Q403.5 386.97999999999996 380.0 386.97999999999996Q356.5 386.97999999999996 343.105 400.60999999999996Q329.71 414.23999999999995 329.71 438.21V585.79Q329.71 609.76 342.635 623.155Q355.56 636.55 380.0 636.55ZM559.87 683.55V340.45H618.62V630.4399999999999H764.3199999999999V683.55Z"/></symbol>
+    <symbol id="i-wordmark" viewBox="0 0 410 148"><g transform="translate(0 24)"><rect width="100" height="100" rx="24" fill="#1d2125"/><ellipse cx="50" cy="33" rx="30" ry="12" fill="#a78bfa"/><g fill="none" stroke="#4a8dff" stroke-width="9" stroke-linecap="round" stroke-dasharray="0.01 15"><path d="M20 61a30 12 0 0 0 60 0"/></g></g><g transform="translate(117 0)" fill="currentColor"><path d="M30.400000000000002 111.5Q19.8 111.5 13.5 105.9Q7.2 100.3 7.2 90.5H16.2Q16.2 96.6 20.1 100.05Q24.0 103.5 30.400000000000002 103.5Q36.6 103.5 40.3 99.9Q44.0 96.3 44.0 90.5Q44.0 86.1 41.650000000000006 82.85Q39.300000000000004 79.6 34.9 78.4L23.8 75.3Q16.900000000000002 73.3 12.950000000000001 68.15Q9.0 63.0 9.0 56.0Q9.0 50.199999999999996 11.600000000000001 45.8Q14.200000000000001 41.39999999999999 18.900000000000002 38.949999999999996Q23.6 36.5 29.700000000000003 36.5Q35.9 36.5 40.650000000000006 38.949999999999996Q45.400000000000006 41.39999999999999 48.10000000000001 45.74999999999999Q50.800000000000004 50.099999999999994 50.800000000000004 55.8H41.800000000000004Q41.800000000000004 50.8 38.400000000000006 47.65Q35.0 44.5 29.700000000000003 44.5Q24.400000000000002 44.5 21.1 47.65Q17.8 50.8 17.8 55.8Q17.8 59.8 19.950000000000003 62.65Q22.1 65.5 26.0 66.6L37.4 69.8Q44.7 71.8 48.75 77.35Q52.800000000000004 82.9 52.800000000000004 90.5Q52.800000000000004 100.1 46.7 105.8Q40.6 111.5 30.400000000000002 111.5ZM82.2 111.5Q73.7 111.5 68.7 106.75Q63.7 102.0 63.7 94.3Q63.7 89.2 66.0 85.4Q68.3 81.6 72.4 79.44999999999999Q76.5 77.3 81.8 77.3H98.80000000000001V73.0Q98.80000000000001 62.3 87.1 62.3Q81.9 62.3 78.7 64.19999999999999Q75.5 66.1 75.3 69.5H66.3Q66.8 63.0 72.35 58.75Q77.9 54.5 87.1 54.5Q97.1 54.5 102.45 59.3Q107.80000000000001 64.1 107.80000000000001 72.69999999999999V110.5H98.9V100.5H98.7Q97.9 105.6 93.60000000000001 108.55Q89.30000000000001 111.5 82.2 111.5ZM84.4 103.9Q91.0 103.9 94.9 100.7Q98.80000000000001 97.5 98.80000000000001 92.0V84.3H82.8Q78.4 84.3 75.65 86.94999999999999Q72.9 89.6 72.9 94.0Q72.9 98.6 75.95 101.25Q79.0 103.9 84.4 103.9ZM131.8 128.5 139.9 107.1 119.4 55.5H129.1L142.1 89.5Q142.9 91.5 143.60000000000002 93.7Q144.3 95.9 144.6 97.5Q144.9 95.9 145.60000000000002 93.7Q146.3 91.5 147.0 89.5L159.1 55.5H168.6L141.2 128.5Z"/><path transform="translate(-24 0)" d="M240.9 128.5 230.6 111.5Q230.3 111.5 230.0 111.5Q223.0 111.5 217.8 108.8Q212.6 106.1 209.7 101.19999999999999Q206.8 96.3 206.8 89.7V58.3Q206.8 51.699999999999996 209.65 46.8Q212.5 41.89999999999999 217.75 39.199999999999996Q223.0 36.5 230.0 36.5Q237.0 36.5 242.2 39.199999999999996Q247.4 41.89999999999999 250.3 46.8Q253.2 51.699999999999996 253.2 58.3V89.7Q253.2 96.3 250.35 101.25Q247.5 106.2 242.3 108.8L254.4 128.5ZM230.0 100.5Q235.2 100.5 237.95 97.65Q240.7 94.8 240.7 89.7V58.3Q240.7 53.199999999999996 237.85 50.3Q235.0 47.4 230.0 47.4Q225.0 47.4 222.15 50.3Q219.3 53.199999999999996 219.3 58.3V89.7Q219.3 94.8 222.05 97.65Q224.8 100.5 230.0 100.5ZM269.1 110.5V37.5H281.6V99.2H312.6V110.5Z"/></g></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .3a12 12 0 0 0-3.8 23.38c.6.11.82-.26.82-.58 0-.29-.01-1.04-.02-2.04-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.49 1 .11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.48 5.92.43.37.82 1.1.82 2.22 0 1.6-.02 2.9-.02 3.29 0 .32.22.7.83.58A12 12 0 0 0 12 .3"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></g></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.5"/></g></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3L2 20h20z" stroke-linejoin="round"/><path d="M12 10v4M12 17v.5"/></g></symbol>
+  </defs>
+</svg>
+
+<header class="nav">
+  <div class="nav-inner">
+    <button class="icon-btn menu-btn" id="menu" type="button" aria-label="Show the docs pages" aria-expanded="false" aria-controls="sidebar"><svg><use href="#i-menu"/></svg></button>
+    <a class="brand" href="/" aria-label="SayQL home"><svg class="wordmark" width="72" height="26" aria-hidden="true"><use href="#i-wordmark"/></svg><span class="docs-tag">Docs</span></a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="/#features">Features</a>
+      <a href="/#teams">Teams</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#download">Download</a>
+      <a href="/docs/" aria-current="page">Docs</a>
+      <a href="https://github.com/azenvoc/sayql-releases/releases">Changelog</a>
+    </nav>
+    <div class="nav-end">
+      <a class="icon-btn" href="https://github.com/azenvoc/sayql" aria-label="SayQL on GitHub" title="SayQL on GitHub"><svg><use href="#i-github"/></svg></a>
+      <button class="icon-btn" id="theme" type="button" aria-label="Switch between light and dark">
+        <svg class="theme-light-icon"><use href="#i-moon"/></svg>
+        <svg class="theme-dark-icon"><use href="#i-sun"/></svg>
+      </button>
+      <a class="btn" href="/download/" aria-label="Download SayQL"><svg><use href="#i-download"/></svg><span>Download</span></a>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar" aria-label="Docs pages">
+    <div class="search" role="search">
+      <svg><use href="#i-search"/></svg>
+      <input id="q" type="search" placeholder="Search docs" autocomplete="off" aria-label="Search docs" aria-controls="results">
+      <kbd>⌘K</kbd>
+      <ul class="results" id="results" hidden></ul>
+    </div>
+    <nav class="group" aria-label="Getting started"><h2>Getting started</h2><ul><li><a href="/docs/">Introduction</a></li><li><a href="/docs/install/">Install</a></li></ul></nav>
+    <nav class="group" aria-label="Using SayQL"><h2>Using SayQL</h2><ul><li><a href="/docs/asking/">Ask in plain English</a></li><li><a href="/docs/running-queries/">Run queries safely</a></li><li><a href="/docs/navigator/">Navigator</a></li><li><a href="/docs/agent-mode/">Investigate</a></li><li><a href="/docs/teams/">SayQL for teams</a></li></ul></nav>
+    <nav class="group" aria-label="Configure"><h2>Configure</h2><ul><li><a href="/docs/ai-providers/">AI providers</a></li><li><a href="/docs/databases/">Databases</a></li><li><a href="/docs/mcp/">MCP for AI apps</a></li></ul></nav>
+    <nav class="group" aria-label="Reference"><h2>Reference</h2><ul><li><a href="/docs/shortcuts/">Keyboard shortcuts</a></li><li><a href="/docs/troubleshooting/">Troubleshooting</a></li><li><a href="/docs/updates/">Updates</a></li><li><a href="/docs/privacy/">Privacy and data</a></li><li><a href="/docs/license/">License</a></li></ul></nav>
+    <nav class="group" aria-label="Guides"><h2>Guides</h2><ul><li><a href="/docs/postgresql-plain-english/">Ask PostgreSQL questions in plain English</a></li><li><a href="/docs/mysql-text-to-sql/">Text-to-SQL for MySQL and MariaDB</a></li><li><a href="/docs/sql-server-plain-english/">Query SQL Server and Azure SQL in plain English</a></li><li><a href="/docs/safe-production-queries/">Let your team query production safely</a></li><li><a href="/docs/local-ai-sql-ollama/">Write SQL with a local AI (Ollama or LM Studio)</a></li><li><a href="/docs/claude-code-postgresql/">Connect Claude Code to PostgreSQL safely</a></li><li><a href="/docs/cursor-read-only-database/">Give Cursor read-only access to your database</a></li><li><a href="/docs/keep-personal-data-out-of-ai/">Keep personal data out of AI prompts</a></li></ul></nav>
+    <nav class="group" aria-label="Compare"><h2>Compare</h2><ul><li><a href="/docs/compare/">How SayQL compares</a></li><li><a href="/docs/sayql-vs-chat2db/">SayQL vs Chat2DB</a></li><li><a href="/docs/sayql-vs-dbeaver/">SayQL vs DBeaver</a></li><li><a href="/docs/sayql-vs-datagrip/">SayQL vs DataGrip</a></li><li><a href="/docs/sayql-vs-mcp-toolbox/" aria-current="page">SayQL vs MCP Toolbox for Databases</a></li><li><a href="/docs/sayql-vs-vanna/">SayQL vs Vanna</a></li><li><a href="/docs/vanna-alternatives/">Vanna alternatives</a></li></ul></nav>
+  </aside>
+  <div class="scrim" id="scrim" hidden></div>
+
+  <main>
+    <article class="page">
+      <div class="crumb"><a href="/docs/">Docs</a> / Compare</div>
+      <h1>SayQL vs MCP Toolbox for Databases</h1>
+      <p class="updated">Updated <time datetime="2026-11-03">3 November 2026</time></p>
+      <p class="lead">MCP Toolbox for Databases is Google's open-source MCP server that gives AI agents tools for your databases. It's infrastructure for developers: you define tools in YAML and run the server. SayQL is an app for people and agents, with an MCP server and a self-hosted gateway built in.</p>
+<p>Choose MCP Toolbox to build agents across many cloud sources with fixed-SQL tools and sign-in from your identity provider. Choose SayQL for a ready app where people ask in plain English and agents get results at the level you choose, with columns kept from the AI, out of the box.</p>
+<div class="callout tip"><svg><use href="#i-info"/></svg><p>Checked on <b>3 November 2026</b> against each product's own docs, code and pricing; every cell links to its source. Spotted something out of date? Email <a href="mailto:hello@azenvoc.com?subject=Comparison%20page">hello@azenvoc.com</a> and we'll fix it.</p></div>
+
+<h2 id="side-by-side"><a class="anchor" href="#side-by-side" aria-hidden="true" tabindex="-1">#</a>Side by side</h2>
+<div class="table-wrap"><table class="compare">
+  <thead><tr><th></th><th>SayQL</th><th>MCP Toolbox for Databases</th></tr></thead>
+  <tbody>
+      <tr><th>What it is</th><td data-label="SayQL"><span>Desktop SQL client (macOS, Windows, Linux) with AI, plus an optional self-hosted team server <small><a href="/docs/" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>An open-source MCP server that connects AI agents and apps to databases, with prebuilt tools and custom tools you define in YAML; published by Google <small><a href="https://github.com/googleapis/mcp-toolbox" rel="nofollow noopener">source</a></small></span></td></tr>
+      <tr><th>Status</th><td data-label="SayQL"><span>Maintained; 0.6.0 released 2026-11-03 <small><a href="https://github.com/azenvoc/sayql-releases/releases" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>Maintained; 1.15.0 released 23 October 2026 <small><a href="https://github.com/googleapis/mcp-toolbox/releases/tag/v1.15.0" rel="nofollow noopener">source</a></small></span></td></tr>
+      <tr><th>Licence</th><td data-label="SayQL"><span>App: open source, Apache 2.0. Team server: paid licence <small><a href="/docs/license/" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>Open source, Apache 2.0 <small><a href="https://github.com/googleapis/mcp-toolbox/blob/main/LICENSE" rel="nofollow noopener">source</a></small></span></td></tr>
+      <tr><th>Price</th><td data-label="SayQL"><span>App free. Team server $149 a month for up to 10 people, 30-day trial <small><a href="/#pricing" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>Free; no paid tier found <small><a href="https://github.com/googleapis/mcp-toolbox/blob/main/LICENSE" rel="nofollow noopener">source</a></small></span></td></tr>
+      <tr><th>Databases</th><td data-label="SayQL"><span>PostgreSQL, MySQL, MariaDB, SQLite, SQL Server, Azure SQL <small><a href="/docs/databases/" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>51 integrations, including AlloyDB, BigQuery, Spanner, Cloud SQL, PostgreSQL, MySQL, SQL Server, Oracle, SQLite, MongoDB, Redis, Snowflake, ClickHouse and Neo4j <small><a href="https://mcp-toolbox.dev/documentation/configuration/sources/" rel="nofollow noopener">source</a></small></span></td></tr>
+      <tr><th>AI models</th><td data-label="SayQL"><span>Claude, OpenAI, Gemini, OpenRouter, Mistral, Groq, DeepSeek, any OpenAI-compatible API; local models with Ollama or LM Studio <small><a href="/docs/ai-providers/" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>Any MCP client (Claude Code, Gemini CLI, Cursor and others) or agent framework (LangChain, LlamaIndex, Genkit, ADK); it doesn't run a model itself <small><a href="https://mcp-toolbox.dev/documentation/connect-to/mcp-client/" rel="nofollow noopener">source</a></small></span></td></tr>
+      <tr><th>Plain English to SQL</th><td data-label="SayQL"><span>Yes: SQL appears in the editor as you type, from your schema and approved notes <small><a href="/docs/asking/" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>Not itself: the agent writes SQL or calls tools with fixed SQL (BigQuery's conversational analytics tool is the exception) <small><a href="https://mcp-toolbox.dev/integrations/postgres/tools/postgres-sql/" rel="nofollow noopener">source</a></small></span></td></tr>
+      <tr><th>Multi-step questions</th><td data-label="SayQL"><span>Yes (beta): plans, runs read-only steps, checks its work, cites each query <small><a href="/docs/agent-mode/" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>Left to the agent or its framework <small><a href="https://mcp-toolbox.dev/documentation/introduction/" rel="nofollow noopener">source</a></small></span></td></tr>
+      <tr><th>MCP server for AI agents</th><td data-label="SayQL"><span>Yes: a local MCP server for Claude Code, Cursor and others, and an HTTP gateway on the team server <small><a href="/docs/mcp/" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>Yes: it is an MCP server (stdio or Streamable HTTP) <small><a href="https://mcp-toolbox.dev/documentation/connect-to/mcp-client/" rel="nofollow noopener">source</a></small></span></td></tr>
+      <tr><th>What the AI sees of your data</th><td data-label="SayQL"><span>Schema by default. Per connection you choose what AI sees of results: nothing, counts and summaries (default), masked rows, or all rows <small><a href="/docs/mcp/" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>What each tool returns goes back to the agent; no built-in summarising or masking (optional post-processing, or Google Cloud Model Armor) <small><a href="https://mcp-toolbox.dev/documentation/configuration/pre-post-processing/" rel="nofollow noopener">source</a></small></span></td></tr>
+      <tr><th>Keep chosen columns from the AI</th><td data-label="SayQL"><span>Yes: columns marked never send are refused in any form and withheld from results <small><a href="/docs/mcp/" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>Not built in: leave the column out of a fixed-SQL tool, or mask with Model Armor on Google Cloud <small><a href="https://mcp-toolbox.dev/documentation/configuration/security/model-armor/" rel="nofollow noopener">source</a></small></span></td></tr>
+      <tr><th>Read-only for AI</th><td data-label="SayQL"><span>Read-only by default: statements are checked before they run and run in a read-only transaction; AI apps can't change data <small><a href="/docs/running-queries/" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>Fixed-SQL tools take only bound parameters; a free-form SQL tool exists for developer use. A read-only setting is documented for Cloud SQL, AlloyDB and BigQuery; otherwise use a read-only database user <small><a href="https://mcp-toolbox.dev/documentation/configuration/security/read-only/" rel="nofollow noopener">source</a></small></span></td></tr>
+      <tr><th>Record of AI queries</th><td data-label="SayQL"><span>Yes: a local log of what each AI app ran; on the team server, one log of every query from people and agents, whose rows can't be edited <small><a href="/docs/teams/" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>OpenTelemetry traces and metrics per tool call, and logs; no dedicated query audit log documented <small><a href="https://mcp-toolbox.dev/documentation/monitoring/telemetry/" rel="nofollow noopener">source</a></small></span></td></tr>
+      <tr><th>Per-agent or per-user rules</th><td data-label="SayQL"><span>Block or allow each AI app. Team server: each agent its own key, databases, tables and rows <small><a href="/#pricing" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>Sign-in with Google or OIDC, per-tool auth, and parameters filled from the caller's token (through its SDKs); OAuth 2.1 on the MCP endpoint <small><a href="https://mcp-toolbox.dev/documentation/configuration/authentication/" rel="nofollow noopener">source</a></small></span></td></tr>
+      <tr><th>Where it runs, where data goes</th><td data-label="SayQL"><span>Runs on your computer; the team server runs on your servers and your data never reaches us <small><a href="/docs/privacy/" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>You run it: local binary, Docker, Cloud Run or Kubernetes. Data goes from the database through it to the agent and its model <small><a href="https://mcp-toolbox.dev/documentation/deploy-to/" rel="nofollow noopener">source</a></small></span></td></tr>
+      <tr><th>Interface</th><td data-label="SayQL"><span>Desktop app <small><a href="/docs/install/" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>No end-user app; a built-in web UI for testing tools <small><a href="https://mcp-toolbox.dev/documentation/configuration/toolbox-ui/" rel="nofollow noopener">source</a></small></span></td></tr>
+      <tr><th>Learns about your database</th><td data-label="SayQL"><span>Shared notes about the database that people approve and SayQL keeps true as the schema changes; no training on question–SQL pairs <small><a href="/docs/teams/" rel="nofollow noopener">source</a></small></span></td><td data-label="MCP Toolbox for Databases"><span>No <small><a href="https://mcp-toolbox.dev/documentation/introduction/" rel="nofollow noopener">source</a></small></span></td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="what-mcp-toolbox-for-databases-does-better"><a class="anchor" href="#what-mcp-toolbox-for-databases-does-better" aria-hidden="true" tabindex="-1">#</a>What MCP Toolbox for Databases does better</h2>
+<ul>
+  <li>Many more sources: 51 integrations, including managed cloud databases such as BigQuery, Spanner, AlloyDB and Snowflake, and NoSQL and graph stores. <small><a href="https://mcp-toolbox.dev/documentation/configuration/sources/" rel="nofollow noopener">source</a></small></li>
+  <li>Tools with fixed SQL: a developer writes the query and the agent only fills in bound parameters. <small><a href="https://mcp-toolbox.dev/integrations/postgres/tools/postgres-sql/" rel="nofollow noopener">source</a></small></li>
+  <li>Identity-aware tools: sign-in with Google or OIDC, and parameters filled from the caller's token, so rows are scoped per end user. <small><a href="https://mcp-toolbox.dev/documentation/configuration/authentication/" rel="nofollow noopener">source</a></small></li>
+  <li>A central server for many agents and apps, with connection pooling, deployable to Cloud Run, Kubernetes or Docker. <small><a href="https://mcp-toolbox.dev/documentation/deploy-to/" rel="nofollow noopener">source</a></small></li>
+  <li>Built-in OpenTelemetry, and first-party SDKs for LangChain, LlamaIndex, Genkit and ADK. <small><a href="https://mcp-toolbox.dev/documentation/monitoring/telemetry/" rel="nofollow noopener">source</a></small></li>
+</ul>
+
+<h2 id="how-sayql-handles-ai-access"><a class="anchor" href="#how-sayql-handles-ai-access" aria-hidden="true" tabindex="-1">#</a>How SayQL handles AI access</h2>
+<ul>
+  <li><b>Counts, not rows, by default.</b> For each connection you choose what AI apps see of results: nothing, counts and summaries, masked rows or all rows. See <a href="/docs/mcp/#what-ai-apps-may-see">what AI apps may see</a>.</li>
+  <li><b>Columns that never reach the AI.</b> Mark a column never send and any query that could read it is refused, and it's withheld from results. See <a href="/docs/mcp/#never-send-columns">never-send columns</a>.</li>
+  <li><b>Read-only, enforced.</b> Every statement is checked before it runs and runs in a read-only transaction; AI apps can't change data. See <a href="/docs/running-queries/">how queries run safely</a>.</li>
+  <li><b>A record of what AI ran.</b> See every query each AI app ran, and block an app in one click. On the team server, one log covers every person and agent. See <a href="/docs/mcp/#agent-activity-and-blocking-an-app">agent activity</a>.</li>
+  <li><b>Per-agent keys on your own server.</b> The self-hosted team server gives each agent its own key, databases, tables and rows. See <a href="/docs/teams/">SayQL for teams</a>.</li>
+</ul>
+
+<h2 id="questions"><a class="anchor" href="#questions" aria-hidden="true" tabindex="-1">#</a>Questions</h2>
+<section class="qa">
+<h3 id="does-mcp-toolbox-for-databases-send-query-results-to-the-ai"><a class="anchor" href="#does-mcp-toolbox-for-databases-send-query-results-to-the-ai" aria-hidden="true" tabindex="-1">#</a>Does MCP Toolbox for Databases send query results to the AI?</h3>
+<p>What each tool returns goes back to the agent; no built-in summarising or masking (optional post-processing, or Google Cloud Model Armor) <small><a href="https://mcp-toolbox.dev/documentation/configuration/pre-post-processing/" rel="nofollow noopener">source</a></small> In SayQL: schema by default. Per connection you choose what AI sees of results: nothing, counts and summaries (default), masked rows, or all rows. <small><a href="/docs/mcp/" rel="nofollow noopener">source</a></small></p>
+<h3 id="can-mcp-toolbox-for-databases-keep-a-column-away-from-the-ai"><a class="anchor" href="#can-mcp-toolbox-for-databases-keep-a-column-away-from-the-ai" aria-hidden="true" tabindex="-1">#</a>Can MCP Toolbox for Databases keep a column away from the AI?</h3>
+<p>Not built in: leave the column out of a fixed-SQL tool, or mask with Model Armor on Google Cloud. <small><a href="https://mcp-toolbox.dev/documentation/configuration/security/model-armor/" rel="nofollow noopener">source</a></small> In SayQL, yes: columns marked never send are refused in any form and withheld from results. <small><a href="/docs/mcp/" rel="nofollow noopener">source</a></small></p>
+<h3 id="is-mcp-toolbox-for-databases-read-only-for-ai"><a class="anchor" href="#is-mcp-toolbox-for-databases-read-only-for-ai" aria-hidden="true" tabindex="-1">#</a>Is MCP Toolbox for Databases read-only for AI?</h3>
+<p>Fixed-SQL tools take only bound parameters; a free-form SQL tool exists for developer use. A read-only setting is documented for Cloud SQL, AlloyDB and BigQuery; otherwise use a read-only database user. <small><a href="https://mcp-toolbox.dev/documentation/configuration/security/read-only/" rel="nofollow noopener">source</a></small> In SayQL: read-only by default: statements are checked before they run and run in a read-only transaction; AI apps can't change data. <small><a href="/docs/running-queries/" rel="nofollow noopener">source</a></small></p>
+<h3 id="does-mcp-toolbox-for-databases-have-an-mcp-server-for-ai-age"><a class="anchor" href="#does-mcp-toolbox-for-databases-have-an-mcp-server-for-ai-age" aria-hidden="true" tabindex="-1">#</a>Does MCP Toolbox for Databases have an MCP server for AI agents?</h3>
+<p>Yes: it is an MCP server (stdio or Streamable HTTP) <small><a href="https://mcp-toolbox.dev/documentation/connect-to/mcp-client/" rel="nofollow noopener">source</a></small> In SayQL, yes: a local MCP server for Claude Code, Cursor and others, and an HTTP gateway on the team server. <small><a href="/docs/mcp/" rel="nofollow noopener">source</a></small></p>
+</section>
+
+<h2 id="other-comparisons"><a class="anchor" href="#other-comparisons" aria-hidden="true" tabindex="-1">#</a>Other comparisons</h2>
+<ul>
+  <li><a href="/docs/sayql-vs-chat2db/">SayQL vs Chat2DB</a></li>
+  <li><a href="/docs/sayql-vs-dbeaver/">SayQL vs DBeaver</a></li>
+  <li><a href="/docs/sayql-vs-datagrip/">SayQL vs DataGrip</a></li>
+  <li><a href="/docs/sayql-vs-vanna/">SayQL vs Vanna</a></li>
+  <li><a href="/docs/compare/">All tools side by side</a></li>
+</ul>
+
+<p><a href="/download/">Download SayQL</a>: the app is free and open source.</p>
+      <nav class="pager" aria-label="Previous and next page"><a class="prev" href="/docs/sayql-vs-datagrip/"><small>← Previous</small><b>SayQL vs DataGrip</b></a><a class="next" href="/docs/sayql-vs-vanna/"><small>Next →</small><b>SayQL vs Vanna</b></a></nav>
+      <p class="help">Something missing or unclear? Ask in <a href="https://github.com/azenvoc/sayql/discussions">Discussions</a>.</p>
+    </article>
+  </main>
+
+  <aside class="onpage" aria-label="On this page">
+    <h2>On this page</h2><ul><li><a class="h2" href="#side-by-side">Side by side</a></li><li><a class="h2" href="#what-mcp-toolbox-for-databases-does-better">What MCP Toolbox for Databases does better</a></li><li><a class="h2" href="#how-sayql-handles-ai-access">How SayQL handles AI access</a></li><li><a class="h2" href="#questions">Questions</a></li><li><a class="h3" href="#does-mcp-toolbox-for-databases-send-query-results-to-the-ai">Does MCP Toolbox for Databases send query results to the AI?</a></li><li><a class="h3" href="#can-mcp-toolbox-for-databases-keep-a-column-away-from-the-ai">Can MCP Toolbox for Databases keep a column away from the AI?</a></li><li><a class="h3" href="#is-mcp-toolbox-for-databases-read-only-for-ai">Is MCP Toolbox for Databases read-only for AI?</a></li><li><a class="h3" href="#does-mcp-toolbox-for-databases-have-an-mcp-server-for-ai-age">Does MCP Toolbox for Databases have an MCP server for AI agents?</a></li><li><a class="h2" href="#other-comparisons">Other comparisons</a></li></ul><a class="top" href="#">Back to top ↑</a>
+  </aside>
+</div>
+
+<footer>
+  <div class="inner">
+    <a class="brand" href="/" style="font-size:14px" aria-label="SayQL home"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
+    <span>© 2026 Azenvoc LLP. SayQL Community Edition, a product of <a href="https://azenvoc.com">Azenvoc</a>.</span>
+    <nav aria-label="Footer"><a href="/">Home</a><a href="https://github.com/azenvoc/sayql-releases/releases">Changelog</a><a href="https://github.com/azenvoc/sayql/discussions">Discussions</a><a href="https://github.com/azenvoc/sayql/blob/main/LICENSE">License</a><a href="https://github.com/azenvoc/sayql-releases/blob/main/PRIVACY.md">Privacy</a></nav>
+  </div>
+</footer>
+
+<script>
+var SEARCH_INDEX = [{"t": "Introduction", "d": "Let agents into your database, not your data. Install, connect, pick an AI and ask.", "g": "Getting started", "u": "/docs/", "h": [["How it works", "/docs/#how-it-works"], ["Next steps", "/docs/#next-steps"], ["Guides", "/docs/#guides"]]}, {"t": "Install", "d": "Download SayQL and open it for the first time on macOS, Windows or Linux.", "g": "Getting started", "u": "/docs/install/", "h": [["First launch", "/docs/install/#first-launch"], ["The setup guide", "/docs/install/#the-setup-guide"], ["After an update", "/docs/install/#after-an-update"]]}, {"t": "Ask in plain English", "d": "Turn questions into SQL as you type, refine them with follow-ups, and fix or improve queries.", "g": "Using SayQL", "u": "/docs/asking/", "h": [["Say it", "/docs/asking/#say-it"], ["Slash commands", "/docs/asking/#slash-commands"], ["Skills", "/docs/asking/#skills"], ["Point it at the right tables", "/docs/asking/#point-it-at-the-right-tables"], ["Fix and Improve", "/docs/asking/#fix-and-improve"]]}, {"t": "Run queries safely", "d": "How SayQL keeps your data safe, plus results, tabs and saved scripts.", "g": "Using SayQL", "u": "/docs/running-queries/", "h": [["Tabs and saved scripts", "/docs/running-queries/#tabs-and-saved-scripts"]]}, {"t": "Navigator", "d": "Browse connections, databases and tables, and pick tables for the AI.", "g": "Using SayQL", "u": "/docs/navigator/", "h": []}, {"t": "AI providers", "d": "Use Claude, OpenAI, Gemini, a local model or any OpenAI-compatible API.", "g": "Configure", "u": "/docs/ai-providers/", "h": [["Which to choose", "/docs/ai-providers/#which-to-choose"], ["Set it up", "/docs/ai-providers/#set-it-up"], ["What your AI provider gets", "/docs/ai-providers/#what-your-ai-provider-gets"], ["Your Claude plan", "/docs/ai-providers/#your-claude-plan"], ["Local models", "/docs/ai-providers/#local-models"]]}, {"t": "Databases", "d": "Connect PostgreSQL, MySQL, SQLite, SQL Server and Azure SQL.", "g": "Configure", "u": "/docs/databases/", "h": [["Production connections", "/docs/databases/#production-connections"], ["Connecting", "/docs/databases/#connecting"], ["Tested versions", "/docs/databases/#tested-versions"], ["Use a read-only login", "/docs/databases/#use-a-read-only-login"], ["Every database on the server", "/docs/databases/#every-database-on-the-server"], ["SQL Server tips", "/docs/databases/#sql-server-tips"], ["The demo database", "/docs/databases/#the-demo-database"]]}, {"t": "MCP for AI apps", "d": "Let Claude, Cursor and other MCP apps query your databases through SayQL.", "g": "Configure", "u": "/docs/mcp/", "h": [["Never-send columns", "/docs/mcp/#never-send-columns"], ["Table usage", "/docs/mcp/#table-usage"], ["Notes suggested by AI apps", "/docs/mcp/#notes-suggested-by-ai-apps"], ["Audit: teach SayQL your database", "/docs/mcp/#audit-teach-sayql-your-database"], ["What AI apps may see", "/docs/mcp/#what-ai-apps-may-see"], ["Agent activity and blocking an app", "/docs/mcp/#agent-activity-and-blocking-an-app"], ["Connect your coding agent", "/docs/mcp/#connect-your-coding-agent"]]}, {"t": "Keyboard shortcuts", "d": "Every keyboard shortcut in SayQL: run queries, open tabs, use / commands and pick tables for the AI.", "g": "Reference", "u": "/docs/shortcuts/", "h": []}, {"t": "Troubleshooting", "d": "Fixes for the messages SayQL shows and common first-run issues.", "g": "Reference", "u": "/docs/troubleshooting/", "h": [["macOS says \"Apple could not verify SayQL\"", "/docs/troubleshooting/#macos-says-apple-could-not-verify-sayql"], ["Windows shows \"Windows protected your PC\"", "/docs/troubleshooting/#windows-shows-windows-protected-your-pc"], ["macOS keeps asking for my keychain password", "/docs/troubleshooting/#macos-keeps-asking-for-my-keychain-password"], ["\"Your API key was rejected\"", "/docs/troubleshooting/#your-api-key-was-rejected"], ["\"This API key isn't tied to a workspace\"", "/docs/troubleshooting/#this-api-key-isn-t-tied-to-a-workspace"], ["\"Could not reach Ollama\" (or LM Studio)", "/docs/troubleshooting/#could-not-reach-ollama-or-lm-studio"], ["SQL Server: certificate errors", "/docs/troubleshooting/#sql-server-certificate-errors"], ["SQL Server: \"Login failed\" (error 18456)", "/docs/troubleshooting/#sql-server-login-failed-error-18456"], ["SQL Server: \"Cannot open database\" (error 4060)", "/docs/troubleshooting/#sql-server-cannot-open-database-error-4060"], ["My results stop at 5,000 rows", "/docs/troubleshooting/#my-results-stop-at-5-000-rows"]]}, {"t": "Updates", "d": "How SayQL checks for, downloads and verifies signed updates on macOS, Windows and Linux.", "g": "Reference", "u": "/docs/updates/", "h": []}, {"t": "Privacy and data", "d": "What SayQL sends to your database, your AI provider and MCP apps, and when table rows can reach the AI (Investigate, only if you turn it on).", "g": "Reference", "u": "/docs/privacy/", "h": [["See it at a glance", "/docs/privacy/#see-it-at-a-glance"], ["Your activity", "/docs/privacy/#your-activity"], ["Voice input", "/docs/privacy/#voice-input"], ["Feedback and the website", "/docs/privacy/#feedback-and-the-website"]]}, {"t": "License", "d": "SayQL is free and open source under the Apache License 2.0.", "g": "Reference", "u": "/docs/license/", "h": [["What you can do", "/docs/license/#what-you-can-do"], ["The name and logo", "/docs/license/#the-name-and-logo"], ["Contributing", "/docs/license/#contributing"], ["Open-source components", "/docs/license/#open-source-components"]]}, {"t": "Investigate", "d": "Let SayQL investigate a question in several read-only steps and answer with the queries behind it, and control exactly what it may send to the AI.", "g": "Using SayQL", "u": "/docs/agent-mode/", "h": [["Start an investigation", "/docs/agent-mode/#start-an-investigation"], ["The answer", "/docs/agent-mode/#the-answer"], ["Database notes", "/docs/agent-mode/#database-notes"], ["What the AI sees", "/docs/agent-mode/#what-the-ai-sees"], ["Safety and limits", "/docs/agent-mode/#safety-and-limits"]]}, {"t": "SayQL for teams", "d": "Govern AI agents on your databases: each agent its own key and rules, private columns withheld, every query on record, on a server your company runs.", "g": "Using SayQL", "u": "/docs/teams/", "h": [["Set up a team server", "/docs/teams/#set-up-a-team-server"], ["Govern your AI agents", "/docs/teams/#govern-your-ai-agents"], ["Sign in", "/docs/teams/#sign-in"], ["Team connections", "/docs/teams/#team-connections"], ["Rules set by your team admin", "/docs/teams/#rules-set-by-your-team-admin"], ["Team AI", "/docs/teams/#team-ai"], ["Messages you may see", "/docs/teams/#messages-you-may-see"], ["Privacy", "/docs/teams/#privacy"]]}, {"t": "Ask PostgreSQL questions in plain English", "d": "Ask PostgreSQL questions in plain English and get SQL as you type. SayQL knows your schema and runs queries read-only by default.", "g": "Guides", "u": "/docs/postgresql-plain-english/", "h": [["Get started", "/docs/postgresql-plain-english/#get-started"], ["Example questions", "/docs/postgresql-plain-english/#example-questions"], ["What keeps it safe", "/docs/postgresql-plain-english/#what-keeps-it-safe"]]}, {"t": "Text-to-SQL for MySQL and MariaDB", "d": "Free text-to-SQL for MySQL and MariaDB. Type a question in plain English, get SQL that fits your schema, and run it read-only by default.", "g": "Guides", "u": "/docs/mysql-text-to-sql/", "h": [["Get started", "/docs/mysql-text-to-sql/#get-started"], ["Example questions", "/docs/mysql-text-to-sql/#example-questions"], ["What keeps it safe", "/docs/mysql-text-to-sql/#what-keeps-it-safe"]]}, {"t": "Query SQL Server and Azure SQL in plain English", "d": "Query SQL Server and Azure SQL in plain English. SayQL writes T-SQL for your schema as you type and checks every statement before it runs.", "g": "Guides", "u": "/docs/sql-server-plain-english/", "h": [["Get started", "/docs/sql-server-plain-english/#get-started"], ["Example questions", "/docs/sql-server-plain-english/#example-questions"], ["What keeps it safe", "/docs/sql-server-plain-english/#what-keeps-it-safe"]]}, {"t": "Let your team query production safely", "d": "Let your team, and their AI agents, query production safely. Read-only by default; agents get counts, not rows, unless you allow more.", "g": "Guides", "u": "/docs/safe-production-queries/", "h": [["Get started", "/docs/safe-production-queries/#get-started"], ["Four layers of safety", "/docs/safe-production-queries/#four-layers-of-safety"], ["AI agents on production", "/docs/safe-production-queries/#ai-agents-on-production"]]}, {"t": "Write SQL with a local AI (Ollama or LM Studio)", "d": "Write SQL with a local AI using Ollama or LM Studio. Your questions and schema stay on your computer, and no API key is needed.", "g": "Guides", "u": "/docs/local-ai-sql-ollama/", "h": [["Get started", "/docs/local-ai-sql-ollama/#get-started"], ["Example questions", "/docs/local-ai-sql-ollama/#example-questions"], ["What keeps it safe", "/docs/local-ai-sql-ollama/#what-keeps-it-safe"]]}, {"t": "Connect Claude Code to PostgreSQL safely", "d": "Give Claude Code your PostgreSQL schema and the numbers it needs, not your rows: read-only queries through SayQL's MCP server, every query logged.", "g": "Guides", "u": "/docs/claude-code-postgresql/", "h": [["Why not give Claude Code a database URL?", "/docs/claude-code-postgresql/#why-not-give-claude-code-a-database-url"], ["Set it up", "/docs/claude-code-postgresql/#set-it-up"], ["Choose what Claude Code sees", "/docs/claude-code-postgresql/#choose-what-claude-code-sees"], ["What Claude Code can't do", "/docs/claude-code-postgresql/#what-claude-code-can-t-do"], ["See what it ran", "/docs/claude-code-postgresql/#see-what-it-ran"]]}, {"t": "Give Cursor read-only access to your database", "d": "Let Cursor's agent query your database read-only through SayQL's MCP server: schema and counts by default, never your passwords or private columns.", "g": "Guides", "u": "/docs/cursor-read-only-database/", "h": [["Set it up", "/docs/cursor-read-only-database/#set-it-up"], ["Read-only, enforced", "/docs/cursor-read-only-database/#read-only-enforced"], ["Decide what it sees", "/docs/cursor-read-only-database/#decide-what-it-sees"], ["Keep track", "/docs/cursor-read-only-database/#keep-track"]]}, {"t": "Keep personal data out of AI prompts", "d": "Use AI on your database without sending emails, phones or other personal data to the model: counts by default, masked rows, never-send columns.", "g": "Guides", "u": "/docs/keep-personal-data-out-of-ai/", "h": [["What the AI sees by default", "/docs/keep-personal-data-out-of-ai/#what-the-ai-sees-by-default"], ["Three levels of protection", "/docs/keep-personal-data-out-of-ai/#three-levels-of-protection"], ["Skills for the Ask box", "/docs/keep-personal-data-out-of-ai/#skills-for-the-ask-box"], ["Errors can quote values too", "/docs/keep-personal-data-out-of-ai/#errors-can-quote-values-too"], ["For a company", "/docs/keep-personal-data-out-of-ai/#for-a-company"]]}, {"t": "How SayQL compares", "d": "SayQL compared with Chat2DB, DBeaver, DataGrip, MCP Toolbox for Databases and Vanna: what each sends to the AI, read-only safety, MCP and price, every cell sourced.", "g": "Compare", "u": "/docs/compare/", "h": [["At a glance", "/docs/compare/#at-a-glance"], ["One page per tool", "/docs/compare/#one-page-per-tool"], ["How we compare", "/docs/compare/#how-we-compare"]]}, {"t": "SayQL vs Chat2DB", "d": "SayQL vs Chat2DB: a sourced, side-by-side comparison of what each sends to the AI, read-only safety, MCP, pricing and more, checked 3 November 2026.", "g": "Compare", "u": "/docs/sayql-vs-chat2db/", "h": [["Side by side", "/docs/sayql-vs-chat2db/#side-by-side"], ["What Chat2DB does better", "/docs/sayql-vs-chat2db/#what-chat2db-does-better"], ["How SayQL handles AI access", "/docs/sayql-vs-chat2db/#how-sayql-handles-ai-access"], ["Questions", "/docs/sayql-vs-chat2db/#questions"], ["Does Chat2DB send query results to the AI?", "/docs/sayql-vs-chat2db/#does-chat2db-send-query-results-to-the-ai"], ["Can Chat2DB keep a column away from the AI?", "/docs/sayql-vs-chat2db/#can-chat2db-keep-a-column-away-from-the-ai"], ["Is Chat2DB read-only for AI?", "/docs/sayql-vs-chat2db/#is-chat2db-read-only-for-ai"], ["Does Chat2DB have an MCP server for AI agents?", "/docs/sayql-vs-chat2db/#does-chat2db-have-an-mcp-server-for-ai-agents"], ["Other comparisons", "/docs/sayql-vs-chat2db/#other-comparisons"]]}, {"t": "SayQL vs DBeaver", "d": "SayQL vs DBeaver: a sourced, side-by-side comparison of what each sends to the AI, read-only safety, MCP, pricing and more, checked 3 November 2026.", "g": "Compare", "u": "/docs/sayql-vs-dbeaver/", "h": [["Side by side", "/docs/sayql-vs-dbeaver/#side-by-side"], ["What DBeaver does better", "/docs/sayql-vs-dbeaver/#what-dbeaver-does-better"], ["How SayQL handles AI access", "/docs/sayql-vs-dbeaver/#how-sayql-handles-ai-access"], ["Questions", "/docs/sayql-vs-dbeaver/#questions"], ["Does DBeaver send query results to the AI?", "/docs/sayql-vs-dbeaver/#does-dbeaver-send-query-results-to-the-ai"], ["Can DBeaver keep a column away from the AI?", "/docs/sayql-vs-dbeaver/#can-dbeaver-keep-a-column-away-from-the-ai"], ["Is DBeaver read-only for AI?", "/docs/sayql-vs-dbeaver/#is-dbeaver-read-only-for-ai"], ["Does DBeaver have an MCP server for AI agents?", "/docs/sayql-vs-dbeaver/#does-dbeaver-have-an-mcp-server-for-ai-agents"], ["Other comparisons", "/docs/sayql-vs-dbeaver/#other-comparisons"]]}, {"t": "SayQL vs DataGrip", "d": "SayQL vs DataGrip: a sourced, side-by-side comparison of what each sends to the AI, read-only safety, MCP, pricing and more, checked 3 November 2026.", "g": "Compare", "u": "/docs/sayql-vs-datagrip/", "h": [["Side by side", "/docs/sayql-vs-datagrip/#side-by-side"], ["What DataGrip does better", "/docs/sayql-vs-datagrip/#what-datagrip-does-better"], ["How SayQL handles AI access", "/docs/sayql-vs-datagrip/#how-sayql-handles-ai-access"], ["Questions", "/docs/sayql-vs-datagrip/#questions"], ["Does DataGrip send query results to the AI?", "/docs/sayql-vs-datagrip/#does-datagrip-send-query-results-to-the-ai"], ["Can DataGrip keep a column away from the AI?", "/docs/sayql-vs-datagrip/#can-datagrip-keep-a-column-away-from-the-ai"], ["Is DataGrip read-only for AI?", "/docs/sayql-vs-datagrip/#is-datagrip-read-only-for-ai"], ["Does DataGrip have an MCP server for AI agents?", "/docs/sayql-vs-datagrip/#does-datagrip-have-an-mcp-server-for-ai-agents"], ["Other comparisons", "/docs/sayql-vs-datagrip/#other-comparisons"]]}, {"t": "SayQL vs MCP Toolbox for Databases", "d": "SayQL vs MCP Toolbox for Databases: a sourced, side-by-side comparison of what each sends to the AI, read-only safety, MCP, pricing and more, checked 3 November 2026.", "g": "Compare", "u": "/docs/sayql-vs-mcp-toolbox/", "h": [["Side by side", "/docs/sayql-vs-mcp-toolbox/#side-by-side"], ["What MCP Toolbox for Databases does better", "/docs/sayql-vs-mcp-toolbox/#what-mcp-toolbox-for-databases-does-better"], ["How SayQL handles AI access", "/docs/sayql-vs-mcp-toolbox/#how-sayql-handles-ai-access"], ["Questions", "/docs/sayql-vs-mcp-toolbox/#questions"], ["Does MCP Toolbox for Databases send query results to the AI?", "/docs/sayql-vs-mcp-toolbox/#does-mcp-toolbox-for-databases-send-query-results-to-the-ai"], ["Can MCP Toolbox for Databases keep a column away from the AI?", "/docs/sayql-vs-mcp-toolbox/#can-mcp-toolbox-for-databases-keep-a-column-away-from-the-ai"], ["Is MCP Toolbox for Databases read-only for AI?", "/docs/sayql-vs-mcp-toolbox/#is-mcp-toolbox-for-databases-read-only-for-ai"], ["Does MCP Toolbox for Databases have an MCP server for AI agents?", "/docs/sayql-vs-mcp-toolbox/#does-mcp-toolbox-for-databases-have-an-mcp-server-for-ai-age"], ["Other comparisons", "/docs/sayql-vs-mcp-toolbox/#other-comparisons"]]}, {"t": "SayQL vs Vanna", "d": "SayQL vs Vanna: a sourced, side-by-side comparison of what each sends to the AI, read-only safety, MCP, pricing and more, checked 3 November 2026.", "g": "Compare", "u": "/docs/sayql-vs-vanna/", "h": [["Side by side", "/docs/sayql-vs-vanna/#side-by-side"], ["What Vanna does better", "/docs/sayql-vs-vanna/#what-vanna-does-better"], ["How SayQL handles AI access", "/docs/sayql-vs-vanna/#how-sayql-handles-ai-access"], ["Questions", "/docs/sayql-vs-vanna/#questions"], ["Does Vanna send query results to the AI?", "/docs/sayql-vs-vanna/#does-vanna-send-query-results-to-the-ai"], ["Can Vanna keep a column away from the AI?", "/docs/sayql-vs-vanna/#can-vanna-keep-a-column-away-from-the-ai"], ["Is Vanna read-only for AI?", "/docs/sayql-vs-vanna/#is-vanna-read-only-for-ai"], ["Does Vanna have an MCP server for AI agents?", "/docs/sayql-vs-vanna/#does-vanna-have-an-mcp-server-for-ai-agents"], ["Other comparisons", "/docs/sayql-vs-vanna/#other-comparisons"]]}, {"t": "Vanna alternatives", "d": "Vanna was archived in March 2026. Alternatives by what you used it for: text-to-SQL in your app, AI agents on your databases, or an AI SQL client.", "g": "Compare", "u": "/docs/vanna-alternatives/", "h": [["If you embedded text-to-SQL in your own app", "/docs/vanna-alternatives/#if-you-embedded-text-to-sql-in-your-own-app"], ["If your team used it to ask about your own databases", "/docs/vanna-alternatives/#if-your-team-used-it-to-ask-about-your-own-databases"], ["If you want a full database tool with AI", "/docs/vanna-alternatives/#if-you-want-a-full-database-tool-with-ai"], ["What you give up from Vanna", "/docs/vanna-alternatives/#what-you-give-up-from-vanna"], ["Questions", "/docs/vanna-alternatives/#questions"], ["Is Vanna still maintained?", "/docs/vanna-alternatives/#is-vanna-still-maintained"], ["Which Vanna alternative keeps my data away from the AI?", "/docs/vanna-alternatives/#which-vanna-alternative-keeps-my-data-away-from-the-ai"], ["Is there a Vanna alternative with an MCP server?", "/docs/vanna-alternatives/#is-there-a-vanna-alternative-with-an-mcp-server"]]}];
+(function () {
+  var root = document.documentElement;
+  document.getElementById("theme").addEventListener("click", function () {
+    var t = root.getAttribute("data-theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    var next = t === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("sayql-site-theme", next); } catch (e) {}
+  });
+
+  /* ---------- phone menu ---------- */
+  var sidebar = document.getElementById("sidebar"), scrim = document.getElementById("scrim"), menu = document.getElementById("menu");
+  function setMenu(open) {
+    sidebar.classList.toggle("open", open);
+    scrim.hidden = !open;
+    menu.setAttribute("aria-expanded", String(open));
+  }
+  menu.addEventListener("click", function () { setMenu(!sidebar.classList.contains("open")); });
+  scrim.addEventListener("click", function () { setMenu(false); });
+
+  /* ---------- copy buttons on code blocks ---------- */
+  document.querySelectorAll(".page pre").forEach(function (pre) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "copy"; b.textContent = "Copy";
+    b.addEventListener("click", function () {
+      var text = pre.querySelector("code") ? pre.querySelector("code").innerText : pre.innerText.replace(/Copy$/, "");
+      (navigator.clipboard ? navigator.clipboard.writeText(text.trim()) : Promise.reject()).then(
+        function () { b.textContent = "Copied"; setTimeout(function () { b.textContent = "Copy"; }, 1400); },
+        function () { b.textContent = "Select and copy"; });
+    });
+    pre.appendChild(b);
+  });
+
+  /* ---------- on this page: highlight the heading being read ---------- */
+  var onLinks = [].slice.call(document.querySelectorAll(".onpage a[href^='#']:not(.top)"));
+  var heads = onLinks.map(function (a) { return document.getElementById(a.getAttribute("href").slice(1)); }).filter(Boolean);
+  function markOn() {
+    var current = heads[0];
+    heads.forEach(function (h) { if (h.getBoundingClientRect().top < 120) current = h; });
+    onLinks.forEach(function (a) { a.classList.toggle("on", current && a.getAttribute("href") === "#" + current.id); });
+  }
+  if (heads.length) { window.addEventListener("scroll", markOn, { passive: true }); markOn(); }
+
+  /* ---------- search across all pages and their headings ---------- */
+  var q = document.getElementById("q"), results = document.getElementById("results"), picked = 0, hits = [];
+  function score(text, words) {
+    var t = text.toLowerCase();
+    return words.every(function (w) { return t.indexOf(w) >= 0; }) ? (t.indexOf(words[0]) === 0 ? 2 : 1) : 0;
+  }
+  function search() {
+    var words = q.value.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    if (!words.length) { results.hidden = true; return; }
+    hits = [];
+    SEARCH_INDEX.forEach(function (p) {
+      var s = score(p.t + " " + p.d, words);
+      if (s) hits.push({ s: s + 2, text: p.t, where: p.g, url: p.u });
+      p.h.forEach(function (h) {
+        var hs = score(h[0], words);
+        if (hs) hits.push({ s: hs, text: h[0], where: p.t, url: h[1] });
+      });
+    });
+    hits.sort(function (a, b) { return b.s - a.s; });
+    hits = hits.slice(0, 8);
+    picked = 0;
+    results.innerHTML = "";
+    if (!hits.length) {
+      var li = document.createElement("li"); li.className = "none"; li.textContent = "No results for “" + q.value.trim() + "”";
+      results.appendChild(li);
+    }
+    hits.forEach(function (h, i) {
+      var li = document.createElement("li"), a = document.createElement("a"), b = document.createElement("span"), s = document.createElement("small");
+      a.href = h.url; b.textContent = h.text; s.textContent = h.where;
+      a.appendChild(b); a.appendChild(s); li.appendChild(a); results.appendChild(li);
+      if (i === 0) a.classList.add("on");
+    });
+    results.hidden = false;
+  }
+  function move(d) {
+    var as = results.querySelectorAll("a");
+    if (!as.length) return;
+    picked = (picked + d + as.length) % as.length;
+    as.forEach(function (a, i) { a.classList.toggle("on", i === picked); });
+    as[picked].scrollIntoView({ block: "nearest" });
+  }
+  q.addEventListener("input", search);
+  q.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowDown") { e.preventDefault(); move(1); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); move(-1); }
+    else if (e.key === "Enter" && hits[picked]) { e.preventDefault(); location.href = hits[picked].url; }
+    else if (e.key === "Escape") { q.value = ""; results.hidden = true; q.blur(); }
+  });
+  document.addEventListener("click", function (e) { if (!e.target.closest(".search")) results.hidden = true; });
+  document.addEventListener("keydown", function (e) {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setMenu(true); q.focus(); q.select(); }
+    else if (e.key === "/" && document.activeElement === document.body) { e.preventDefault(); q.focus(); }
+  });
+})();
+</script>
+</body>
+</html>

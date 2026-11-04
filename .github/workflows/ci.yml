@@ -74,12 +74,12 @@ jobs:
         with:
           python-version: "3.12"
 
-      # site/docs, the sitemap, robots.txt and the landing page's FAQ data are generated from
+      # site/docs, the sitemap, robots.txt, llms.txt and the landing page's FAQ data are generated from
       # docs-site/ and committed. Rebuild them and fail if the committed copy is stale.
       - name: Generated docs are up to date
         run: |
           python3 scripts/build_docs.py
-          git diff --exit-code -- site/docs site/sitemap.xml site/robots.txt site/index.html
+          git diff --exit-code -- site/docs site/sitemap.xml site/robots.txt site/llms.txt site/index.html
 
   # The database tests in src-tauri/src/db/integration_tests.rs (and the MCP tools test) against
   # real servers. Each entry covers one PostgreSQL, one MySQL-family and one SQL Server version;
