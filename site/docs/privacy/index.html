@@ -27,7 +27,9 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<!-- Fonts load without blocking the first paint: system fonts show until Inter arrives. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap"></noscript>
 <script>
   try { var t = localStorage.getItem("sayql-site-theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
 </script>
@@ -55,7 +57,7 @@
   --color-border-strong: #b9c0ca;
   --color-text: #1d2125;
   --color-text-muted: #56606b;
-  --color-text-subtle: #8a939d;
+  --color-text-subtle: #626b77;
   --color-accent: #1f6feb;
   --color-accent-hover: #1a5fd0;
   --color-accent-soft: #e5efff;
@@ -103,7 +105,7 @@
     --color-border-strong: #474c55;
     --color-text: #e2e5e9;
     --color-text-muted: #a3aab4;
-    --color-text-subtle: #727a85;
+    --color-text-subtle: #959da8;
     --color-accent: #4a8dff;
     --color-accent-hover: #6aa2ff;
     --color-accent-soft: #1e2d48;
@@ -149,7 +151,7 @@
   --color-border-strong: #474c55;
   --color-text: #e2e5e9;
   --color-text-muted: #a3aab4;
-  --color-text-subtle: #727a85;
+  --color-text-subtle: #959da8;
   --color-accent: #4a8dff;
   --color-accent-hover: #6aa2ff;
   --color-accent-soft: #1e2d48;
@@ -186,6 +188,9 @@ html { scroll-padding-top: 84px; }
 body { margin: 0; background: var(--color-page); color: var(--color-text); font: 400 16px/1.7 var(--font-sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { color: var(--color-accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* Links in running text are underlined, so they don't rely on colour alone. */
+.page p a, .page li a, footer p a, footer span a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 2px; }
+.page p a, .page li a, .page td a, .help a, .callout a { color: var(--color-accent-hover); }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: var(--radius-md); }
 code { font: 500 0.86em/1.4 var(--font-mono); background: var(--color-surface-sunken); border: 1px solid var(--color-border-subtle); padding: 1px 5px; border-radius: var(--radius-md); overflow-wrap: anywhere; }
 pre { position: relative; margin: 14px 0; padding: 14px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow-x: auto; font: 400 13px/1.6 var(--font-mono); }
@@ -271,6 +276,7 @@ table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.
 th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--color-border-subtle); }
 th { font-weight: 600; color: var(--color-text-muted); background: var(--color-grid-header); white-space: nowrap; }
 tr:last-child td { border-bottom: none; }
+@media (max-width: 640px) { th { white-space: normal; } th, td { padding: 8px 10px; overflow-wrap: anywhere; } }
 /* Comparison tables: SayQL's column tinted, sources quiet. */
 table.compare tbody th { white-space: normal; min-width: 120px; }
 table.compare td:nth-child(2), table.compare thead th:nth-child(2) { background: color-mix(in srgb, var(--color-accent-soft) 60%, var(--color-surface)); }
@@ -384,7 +390,7 @@ footer a { color: var(--color-text-muted); }
         <svg class="theme-light-icon"><use href="#i-moon"/></svg>
         <svg class="theme-dark-icon"><use href="#i-sun"/></svg>
       </button>
-      <a class="btn" href="/download/"><svg><use href="#i-download"/></svg><span>Download</span></a>
+      <a class="btn" href="/download/" aria-label="Download SayQL"><svg><use href="#i-download"/></svg><span>Download</span></a>
     </div>
   </div>
 </header>
@@ -439,16 +445,16 @@ footer a { color: var(--color-text-muted); }
 <p>Over MCP, counts and summaries (the default) and masked rows keep your rows from reaching an AI app by accident, but a count or a sum is still a fact about your rows, and an agent set on it can turn a value into one. Columns marked <b>never send</b> are the firm line: SayQL refuses any query that could read them.</p>
 <p>Read the full <a href="https://github.com/azenvoc/sayql-releases/blob/main/PRIVACY.md">privacy notice</a>.</p>
 
-<h2 id="see-it-at-a-glance"><a class="anchor" href="#see-it-at-a-glance" aria-hidden="true">#</a>See it at a glance</h2>
+<h2 id="see-it-at-a-glance"><a class="anchor" href="#see-it-at-a-glance" aria-hidden="true" tabindex="-1">#</a>See it at a glance</h2>
 <p>The status bar shows, for the connection you're on, the most that can reach an AI from it: <b>No rows to AI</b>, <b>Counts to AI</b>, <b>Masked rows to AI</b> or <b>All rows to AI apps</b>. Its tooltip has a line each for the Ask box, Investigate, AI apps and never-send columns; click it to change them. Right-click a connection and choose <b>Overview…</b> for the same, plus what AI apps did with it, when it was last audited, the knowledge sources its audit reads, and your recent queries on it.</p>
 
-<h2 id="your-activity"><a class="anchor" href="#your-activity" aria-hidden="true">#</a>Your activity</h2>
+<h2 id="your-activity"><a class="anchor" href="#your-activity" aria-hidden="true" tabindex="-1">#</a>Your activity</h2>
 <p><b>Settings → Your activity</b> lists the queries you ran in SayQL: from the editor, the Ask box and Investigate, with when, the connection, the SQL, how many rows came back and how long it took. For Investigate it also says what went to the AI for each query. It's kept on this computer (in SayQL's settings folder), holds the SQL and counts, never the rows, and keeps roughly the last 2 MB. <b>Clear the log</b> deletes it. A connection's overview shows its part of the log. What AI apps ran over MCP is in its own log, under <a href="/docs/mcp/">Settings → AI apps</a>.</p>
 
-<h2 id="voice-input"><a class="anchor" href="#voice-input" aria-hidden="true">#</a>Voice input</h2>
+<h2 id="voice-input"><a class="anchor" href="#voice-input" aria-hidden="true" tabindex="-1">#</a>Voice input</h2>
 <p>When you say your question, the speech model (Whisper) turns it into text on your computer. Audio stays in memory only while you talk, is never saved, and is never sent anywhere, not even to your AI provider. Only the text goes on, like a typed question. Remove the model in <b>Settings → Voice</b>.</p>
 
-<h2 id="feedback-and-the-website"><a class="anchor" href="#feedback-and-the-website" aria-hidden="true">#</a>Feedback and the website</h2>
+<h2 id="feedback-and-the-website"><a class="anchor" href="#feedback-and-the-website" aria-hidden="true" tabindex="-1">#</a>Feedback and the website</h2>
 <p><b>Feedback</b> in the status bar opens a short form, then a pre-filled public GitHub issue in your browser. Your text is filled in, plus your SayQL version and operating system for feedback and bug reports. Nothing is sent until you post it.</p>
 <p>This website counts page views with Vercel Web Analytics. It uses no cookies, doesn't follow you across sites and stores no personal data.</p>
       <nav class="pager" aria-label="Previous and next page"><a class="prev" href="/docs/updates/"><small>← Previous</small><b>Updates</b></a><a class="next" href="/docs/license/"><small>Next →</small><b>License</b></a></nav>
@@ -463,7 +469,7 @@ footer a { color: var(--color-text-muted); }
 
 <footer>
   <div class="inner">
-    <a class="brand" href="/" style="font-size:14px"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
+    <a class="brand" href="/" style="font-size:14px" aria-label="SayQL home"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
     <span>© 2026 Azenvoc LLP. SayQL Community Edition, a product of <a href="https://azenvoc.com">Azenvoc</a>.</span>
     <nav aria-label="Footer"><a href="/">Home</a><a href="https://github.com/azenvoc/sayql-releases/releases">Changelog</a><a href="https://github.com/azenvoc/sayql/discussions">Discussions</a><a href="https://github.com/azenvoc/sayql/blob/main/LICENSE">License</a><a href="https://github.com/azenvoc/sayql-releases/blob/main/PRIVACY.md">Privacy</a></nav>
   </div>

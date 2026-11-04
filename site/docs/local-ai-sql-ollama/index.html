@@ -27,7 +27,9 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<!-- Fonts load without blocking the first paint: system fonts show until Inter arrives. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap"></noscript>
 <script>
   try { var t = localStorage.getItem("sayql-site-theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
 </script>
@@ -55,7 +57,7 @@
   --color-border-strong: #b9c0ca;
   --color-text: #1d2125;
   --color-text-muted: #56606b;
-  --color-text-subtle: #8a939d;
+  --color-text-subtle: #626b77;
   --color-accent: #1f6feb;
   --color-accent-hover: #1a5fd0;
   --color-accent-soft: #e5efff;
@@ -103,7 +105,7 @@
     --color-border-strong: #474c55;
     --color-text: #e2e5e9;
     --color-text-muted: #a3aab4;
-    --color-text-subtle: #727a85;
+    --color-text-subtle: #959da8;
     --color-accent: #4a8dff;
     --color-accent-hover: #6aa2ff;
     --color-accent-soft: #1e2d48;
@@ -149,7 +151,7 @@
   --color-border-strong: #474c55;
   --color-text: #e2e5e9;
   --color-text-muted: #a3aab4;
-  --color-text-subtle: #727a85;
+  --color-text-subtle: #959da8;
   --color-accent: #4a8dff;
   --color-accent-hover: #6aa2ff;
   --color-accent-soft: #1e2d48;
@@ -186,6 +188,9 @@ html { scroll-padding-top: 84px; }
 body { margin: 0; background: var(--color-page); color: var(--color-text); font: 400 16px/1.7 var(--font-sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { color: var(--color-accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* Links in running text are underlined, so they don't rely on colour alone. */
+.page p a, .page li a, footer p a, footer span a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 2px; }
+.page p a, .page li a, .page td a, .help a, .callout a { color: var(--color-accent-hover); }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: var(--radius-md); }
 code { font: 500 0.86em/1.4 var(--font-mono); background: var(--color-surface-sunken); border: 1px solid var(--color-border-subtle); padding: 1px 5px; border-radius: var(--radius-md); overflow-wrap: anywhere; }
 pre { position: relative; margin: 14px 0; padding: 14px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow-x: auto; font: 400 13px/1.6 var(--font-mono); }
@@ -271,6 +276,7 @@ table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.
 th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--color-border-subtle); }
 th { font-weight: 600; color: var(--color-text-muted); background: var(--color-grid-header); white-space: nowrap; }
 tr:last-child td { border-bottom: none; }
+@media (max-width: 640px) { th { white-space: normal; } th, td { padding: 8px 10px; overflow-wrap: anywhere; } }
 /* Comparison tables: SayQL's column tinted, sources quiet. */
 table.compare tbody th { white-space: normal; min-width: 120px; }
 table.compare td:nth-child(2), table.compare thead th:nth-child(2) { background: color-mix(in srgb, var(--color-accent-soft) 60%, var(--color-surface)); }
@@ -384,7 +390,7 @@ footer a { color: var(--color-text-muted); }
         <svg class="theme-light-icon"><use href="#i-moon"/></svg>
         <svg class="theme-dark-icon"><use href="#i-sun"/></svg>
       </button>
-      <a class="btn" href="/download/"><svg><use href="#i-download"/></svg><span>Download</span></a>
+      <a class="btn" href="/download/" aria-label="Download SayQL"><svg><use href="#i-download"/></svg><span>Download</span></a>
     </div>
   </div>
 </header>
@@ -413,7 +419,7 @@ footer a { color: var(--color-text-muted); }
       <p class="updated">Updated <time datetime="2026-10-22">22 October 2026</time></p>
       <p class="lead">SayQL can write SQL with a local AI running in Ollama or LM Studio. Nothing leaves your computer, and you don't need an API key.</p>
 
-<h2 id="get-started"><a class="anchor" href="#get-started" aria-hidden="true">#</a>Get started</h2>
+<h2 id="get-started"><a class="anchor" href="#get-started" aria-hidden="true" tabindex="-1">#</a>Get started</h2>
 <ol class="steps">
   <li><div><a href="/download/">Download SayQL</a> for macOS, Windows or Linux.</div></li>
   <li><div>Install <a href="https://ollama.com/">Ollama</a>, pull a model (for example <code>ollama pull llama3.2</code>) and keep it running. Or start the local server in <a href="https://lmstudio.ai/">LM Studio</a>.</div></li>
@@ -422,7 +428,7 @@ footer a { color: var(--color-text-muted); }
 </ol>
 <p>SayQL connects to Ollama at <code>http://localhost:11434/v1</code> and LM Studio at <code>http://localhost:1234/v1</code>. Change the base URL in Settings if yours runs elsewhere.</p>
 
-<h2 id="example-questions"><a class="anchor" href="#example-questions" aria-hidden="true">#</a>Example questions</h2>
+<h2 id="example-questions"><a class="anchor" href="#example-questions" aria-hidden="true" tabindex="-1">#</a>Example questions</h2>
 <ul>
   <li>"Products low on stock"</li>
   <li>"Revenue by month this year"</li>
@@ -433,7 +439,7 @@ FROM products
 WHERE stock &lt; 10
 ORDER BY stock;</code></pre>
 
-<h2 id="what-keeps-it-safe"><a class="anchor" href="#what-keeps-it-safe" aria-hidden="true">#</a>What keeps it safe</h2>
+<h2 id="what-keeps-it-safe"><a class="anchor" href="#what-keeps-it-safe" aria-hidden="true" tabindex="-1">#</a>What keeps it safe</h2>
 <div class="callout safe"><svg><use href="#i-shield"/></svg><p><b>Nothing leaves your computer.</b> Your questions and schema go only to the model on your machine. Queries still run read-only by default, and anything that could change data asks first.</p></div>
 <p>See <a href="/docs/ai-providers/">AI providers</a> and <a href="/docs/privacy/">Privacy and data</a>.</p>
       <nav class="pager" aria-label="Previous and next page"><a class="prev" href="/docs/safe-production-queries/"><small>← Previous</small><b>Let your team query production safely</b></a><a class="next" href="/docs/claude-code-postgresql/"><small>Next →</small><b>Connect Claude Code to PostgreSQL safely</b></a></nav>
@@ -448,7 +454,7 @@ ORDER BY stock;</code></pre>
 
 <footer>
   <div class="inner">
-    <a class="brand" href="/" style="font-size:14px"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
+    <a class="brand" href="/" style="font-size:14px" aria-label="SayQL home"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
     <span>© 2026 Azenvoc LLP. SayQL Community Edition, a product of <a href="https://azenvoc.com">Azenvoc</a>.</span>
     <nav aria-label="Footer"><a href="/">Home</a><a href="https://github.com/azenvoc/sayql-releases/releases">Changelog</a><a href="https://github.com/azenvoc/sayql/discussions">Discussions</a><a href="https://github.com/azenvoc/sayql/blob/main/LICENSE">License</a><a href="https://github.com/azenvoc/sayql-releases/blob/main/PRIVACY.md">Privacy</a></nav>
   </div>

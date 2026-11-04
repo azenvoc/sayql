@@ -27,7 +27,9 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<!-- Fonts load without blocking the first paint: system fonts show until Inter arrives. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap"></noscript>
 <script>
   try { var t = localStorage.getItem("sayql-site-theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
 </script>
@@ -55,7 +57,7 @@
   --color-border-strong: #b9c0ca;
   --color-text: #1d2125;
   --color-text-muted: #56606b;
-  --color-text-subtle: #8a939d;
+  --color-text-subtle: #626b77;
   --color-accent: #1f6feb;
   --color-accent-hover: #1a5fd0;
   --color-accent-soft: #e5efff;
@@ -103,7 +105,7 @@
     --color-border-strong: #474c55;
     --color-text: #e2e5e9;
     --color-text-muted: #a3aab4;
-    --color-text-subtle: #727a85;
+    --color-text-subtle: #959da8;
     --color-accent: #4a8dff;
     --color-accent-hover: #6aa2ff;
     --color-accent-soft: #1e2d48;
@@ -149,7 +151,7 @@
   --color-border-strong: #474c55;
   --color-text: #e2e5e9;
   --color-text-muted: #a3aab4;
-  --color-text-subtle: #727a85;
+  --color-text-subtle: #959da8;
   --color-accent: #4a8dff;
   --color-accent-hover: #6aa2ff;
   --color-accent-soft: #1e2d48;
@@ -186,6 +188,9 @@ html { scroll-padding-top: 84px; }
 body { margin: 0; background: var(--color-page); color: var(--color-text); font: 400 16px/1.7 var(--font-sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { color: var(--color-accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* Links in running text are underlined, so they don't rely on colour alone. */
+.page p a, .page li a, footer p a, footer span a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 2px; }
+.page p a, .page li a, .page td a, .help a, .callout a { color: var(--color-accent-hover); }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: var(--radius-md); }
 code { font: 500 0.86em/1.4 var(--font-mono); background: var(--color-surface-sunken); border: 1px solid var(--color-border-subtle); padding: 1px 5px; border-radius: var(--radius-md); overflow-wrap: anywhere; }
 pre { position: relative; margin: 14px 0; padding: 14px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow-x: auto; font: 400 13px/1.6 var(--font-mono); }
@@ -271,6 +276,7 @@ table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.
 th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--color-border-subtle); }
 th { font-weight: 600; color: var(--color-text-muted); background: var(--color-grid-header); white-space: nowrap; }
 tr:last-child td { border-bottom: none; }
+@media (max-width: 640px) { th { white-space: normal; } th, td { padding: 8px 10px; overflow-wrap: anywhere; } }
 /* Comparison tables: SayQL's column tinted, sources quiet. */
 table.compare tbody th { white-space: normal; min-width: 120px; }
 table.compare td:nth-child(2), table.compare thead th:nth-child(2) { background: color-mix(in srgb, var(--color-accent-soft) 60%, var(--color-surface)); }
@@ -385,7 +391,7 @@ footer a { color: var(--color-text-muted); }
         <svg class="theme-light-icon"><use href="#i-moon"/></svg>
         <svg class="theme-dark-icon"><use href="#i-sun"/></svg>
       </button>
-      <a class="btn" href="/download/"><svg><use href="#i-download"/></svg><span>Download</span></a>
+      <a class="btn" href="/download/" aria-label="Download SayQL"><svg><use href="#i-download"/></svg><span>Download</span></a>
     </div>
   </div>
 </header>
@@ -416,7 +422,7 @@ footer a { color: var(--color-text-muted); }
 <p>Choose Chat2DB for dashboards, charts and many databases. Choose SayQL when the AI shouldn't see row values, when some columns must never reach it, and when you need to know what each AI app ran.</p>
 <div class="callout tip"><svg><use href="#i-info"/></svg><p>Checked on <b>3 November 2026</b> against each product's own docs, code and pricing; every cell links to its source. Spotted something out of date? Email <a href="mailto:hello@azenvoc.com?subject=Comparison%20page">hello@azenvoc.com</a> and we'll fix it.</p></div>
 
-<h2 id="side-by-side"><a class="anchor" href="#side-by-side" aria-hidden="true">#</a>Side by side</h2>
+<h2 id="side-by-side"><a class="anchor" href="#side-by-side" aria-hidden="true" tabindex="-1">#</a>Side by side</h2>
 <div class="table-wrap"><table class="compare">
   <thead><tr><th></th><th>SayQL</th><th>Chat2DB</th></tr></thead>
   <tbody>
@@ -440,7 +446,7 @@ footer a { color: var(--color-text-muted); }
   </tbody>
 </table></div>
 
-<h2 id="what-chat2db-does-better"><a class="anchor" href="#what-chat2db-does-better" aria-hidden="true">#</a>What Chat2DB does better</h2>
+<h2 id="what-chat2db-does-better"><a class="anchor" href="#what-chat2db-does-better" aria-hidden="true" tabindex="-1">#</a>What Chat2DB does better</h2>
 <ul>
   <li>More databases: over 40, including NoSQL stores and warehouses such as MongoDB, Redis, Elasticsearch, Snowflake and BigQuery. <small><a href="https://github.com/OtterMind/Chat2DB" rel="nofollow noopener">source</a></small></li>
   <li>Built-in dashboards and charts, with AI-made charts in paid plans. <small><a href="https://chat2db.ai/resources/docs/start-guide/subscription-plan" rel="nofollow noopener">source</a></small></li>
@@ -449,28 +455,28 @@ footer a { color: var(--color-text-muted); }
   <li>A large, active community (about 28,000 GitHub stars) and an Enterprise plan with SSO and private deployment. <small><a href="https://chat2db.ai/pricing" rel="nofollow noopener">source</a></small></li>
 </ul>
 
-<h2 id="how-sayql-handles-ai-access"><a class="anchor" href="#how-sayql-handles-ai-access" aria-hidden="true">#</a>How SayQL handles AI access</h2>
+<h2 id="how-sayql-handles-ai-access"><a class="anchor" href="#how-sayql-handles-ai-access" aria-hidden="true" tabindex="-1">#</a>How SayQL handles AI access</h2>
 <ul>
-  <li><b>Counts, not rows, by default.</b> For each connection you choose what AI apps see of results: nothing, counts and summaries, masked rows or all rows. <a href="/docs/mcp/">More</a></li>
-  <li><b>Columns that never reach the AI.</b> Mark a column never send and any query that could read it is refused, and it's withheld from results. <a href="/docs/mcp/">More</a></li>
-  <li><b>Read-only, enforced.</b> Every statement is checked before it runs and runs in a read-only transaction; AI apps can't change data. <a href="/docs/running-queries/">More</a></li>
-  <li><b>A record of what AI ran.</b> See every query each AI app ran, and block an app in one click. On the team server, one log covers every person and agent. <a href="/docs/teams/">More</a></li>
-  <li><b>Per-agent keys on your own server.</b> The self-hosted team server gives each agent its own key, databases, tables and rows. <a href="/docs/teams/">More</a></li>
+  <li><b>Counts, not rows, by default.</b> For each connection you choose what AI apps see of results: nothing, counts and summaries, masked rows or all rows. See <a href="/docs/mcp/#what-ai-apps-may-see">what AI apps may see</a>.</li>
+  <li><b>Columns that never reach the AI.</b> Mark a column never send and any query that could read it is refused, and it's withheld from results. See <a href="/docs/mcp/#never-send-columns">never-send columns</a>.</li>
+  <li><b>Read-only, enforced.</b> Every statement is checked before it runs and runs in a read-only transaction; AI apps can't change data. See <a href="/docs/running-queries/">how queries run safely</a>.</li>
+  <li><b>A record of what AI ran.</b> See every query each AI app ran, and block an app in one click. On the team server, one log covers every person and agent. See <a href="/docs/mcp/#agent-activity-and-blocking-an-app">agent activity</a>.</li>
+  <li><b>Per-agent keys on your own server.</b> The self-hosted team server gives each agent its own key, databases, tables and rows. See <a href="/docs/teams/">SayQL for teams</a>.</li>
 </ul>
 
-<h2 id="questions"><a class="anchor" href="#questions" aria-hidden="true">#</a>Questions</h2>
+<h2 id="questions"><a class="anchor" href="#questions" aria-hidden="true" tabindex="-1">#</a>Questions</h2>
 <section class="qa">
-<h3 id="does-chat2db-send-query-results-to-the-ai"><a class="anchor" href="#does-chat2db-send-query-results-to-the-ai" aria-hidden="true">#</a>Does Chat2DB send query results to the AI?</h3>
+<h3 id="does-chat2db-send-query-results-to-the-ai"><a class="anchor" href="#does-chat2db-send-query-results-to-the-ai" aria-hidden="true" tabindex="-1">#</a>Does Chat2DB send query results to the AI?</h3>
 <p>Schema and query rows: its SQL tool returns up to 200 rows to the model by default (500 at most) <small><a href="https://github.com/OtterMind/Chat2DB/blob/main/chat2db-community-server/chat2db-community-web/src/main/java/ai/chat2db/community/web/api/adapter/ai/AiToolAdapter.java" rel="nofollow noopener">source</a></small> In SayQL: schema by default. Per connection you choose what AI sees of results: nothing, counts and summaries (default), masked rows, or all rows. <small><a href="/docs/mcp/" rel="nofollow noopener">source</a></small></p>
-<h3 id="can-chat2db-keep-a-column-away-from-the-ai"><a class="anchor" href="#can-chat2db-keep-a-column-away-from-the-ai" aria-hidden="true">#</a>Can Chat2DB keep a column away from the AI?</h3>
+<h3 id="can-chat2db-keep-a-column-away-from-the-ai"><a class="anchor" href="#can-chat2db-keep-a-column-away-from-the-ai" aria-hidden="true" tabindex="-1">#</a>Can Chat2DB keep a column away from the AI?</h3>
 <p>Not found in Community's code or docs. <small><a href="https://github.com/OtterMind/Chat2DB" rel="nofollow noopener">source</a></small> In SayQL, yes: columns marked never send are refused in any form and withheld from results. <small><a href="/docs/mcp/" rel="nofollow noopener">source</a></small></p>
-<h3 id="is-chat2db-read-only-for-ai"><a class="anchor" href="#is-chat2db-read-only-for-ai" aria-hidden="true">#</a>Is Chat2DB read-only for AI?</h3>
+<h3 id="is-chat2db-read-only-for-ai"><a class="anchor" href="#is-chat2db-read-only-for-ai" aria-hidden="true" tabindex="-1">#</a>Is Chat2DB read-only for AI?</h3>
 <p>The app runs only SELECT, SHOW and DESCRIBE from the AI automatically; anything else is handed to you to review. No read-only transaction found. <small><a href="https://github.com/OtterMind/Chat2DB/blob/main/chat2db-community-server/chat2db-community-domain/chat2db-community-domain-core/src/main/java/ai/chat2db/community/domain/core/impl/ai/DefaultAiSqlAutoExecutionPolicy.java" rel="nofollow noopener">source</a></small> In SayQL: read-only by default: statements are checked before they run and run in a read-only transaction; AI apps can't change data. <small><a href="/docs/running-queries/" rel="nofollow noopener">source</a></small></p>
-<h3 id="does-chat2db-have-an-mcp-server-for-ai-agents"><a class="anchor" href="#does-chat2db-have-an-mcp-server-for-ai-agents" aria-hidden="true">#</a>Does Chat2DB have an MCP server for AI agents?</h3>
+<h3 id="does-chat2db-have-an-mcp-server-for-ai-agents"><a class="anchor" href="#does-chat2db-have-an-mcp-server-for-ai-agents" aria-hidden="true" tabindex="-1">#</a>Does Chat2DB have an MCP server for AI agents?</h3>
 <p>Yes: a built-in MCP server with tools to list objects, read schemas, run SQL and turn text into SQL. <small><a href="https://github.com/OtterMind/Chat2DB-CLI" rel="nofollow noopener">source</a></small> In SayQL, yes: a local MCP server for Claude Code, Cursor and others, and an HTTP gateway on the team server. <small><a href="/docs/mcp/" rel="nofollow noopener">source</a></small></p>
 </section>
 
-<h2 id="other-comparisons"><a class="anchor" href="#other-comparisons" aria-hidden="true">#</a>Other comparisons</h2>
+<h2 id="other-comparisons"><a class="anchor" href="#other-comparisons" aria-hidden="true" tabindex="-1">#</a>Other comparisons</h2>
 <ul>
   <li><a href="/docs/sayql-vs-dbeaver/">SayQL vs DBeaver</a></li>
   <li><a href="/docs/sayql-vs-datagrip/">SayQL vs DataGrip</a></li>
@@ -492,7 +498,7 @@ footer a { color: var(--color-text-muted); }
 
 <footer>
   <div class="inner">
-    <a class="brand" href="/" style="font-size:14px"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
+    <a class="brand" href="/" style="font-size:14px" aria-label="SayQL home"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
     <span>© 2026 Azenvoc LLP. SayQL Community Edition, a product of <a href="https://azenvoc.com">Azenvoc</a>.</span>
     <nav aria-label="Footer"><a href="/">Home</a><a href="https://github.com/azenvoc/sayql-releases/releases">Changelog</a><a href="https://github.com/azenvoc/sayql/discussions">Discussions</a><a href="https://github.com/azenvoc/sayql/blob/main/LICENSE">License</a><a href="https://github.com/azenvoc/sayql-releases/blob/main/PRIVACY.md">Privacy</a></nav>
   </div>

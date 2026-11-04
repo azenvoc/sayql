@@ -27,7 +27,9 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<!-- Fonts load without blocking the first paint: system fonts show until Inter arrives. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap"></noscript>
 <script>
   try { var t = localStorage.getItem("sayql-site-theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
 </script>
@@ -55,7 +57,7 @@
   --color-border-strong: #b9c0ca;
   --color-text: #1d2125;
   --color-text-muted: #56606b;
-  --color-text-subtle: #8a939d;
+  --color-text-subtle: #626b77;
   --color-accent: #1f6feb;
   --color-accent-hover: #1a5fd0;
   --color-accent-soft: #e5efff;
@@ -103,7 +105,7 @@
     --color-border-strong: #474c55;
     --color-text: #e2e5e9;
     --color-text-muted: #a3aab4;
-    --color-text-subtle: #727a85;
+    --color-text-subtle: #959da8;
     --color-accent: #4a8dff;
     --color-accent-hover: #6aa2ff;
     --color-accent-soft: #1e2d48;
@@ -149,7 +151,7 @@
   --color-border-strong: #474c55;
   --color-text: #e2e5e9;
   --color-text-muted: #a3aab4;
-  --color-text-subtle: #727a85;
+  --color-text-subtle: #959da8;
   --color-accent: #4a8dff;
   --color-accent-hover: #6aa2ff;
   --color-accent-soft: #1e2d48;
@@ -186,6 +188,9 @@ html { scroll-padding-top: 84px; }
 body { margin: 0; background: var(--color-page); color: var(--color-text); font: 400 16px/1.7 var(--font-sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { color: var(--color-accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* Links in running text are underlined, so they don't rely on colour alone. */
+.page p a, .page li a, footer p a, footer span a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 2px; }
+.page p a, .page li a, .page td a, .help a, .callout a { color: var(--color-accent-hover); }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: var(--radius-md); }
 code { font: 500 0.86em/1.4 var(--font-mono); background: var(--color-surface-sunken); border: 1px solid var(--color-border-subtle); padding: 1px 5px; border-radius: var(--radius-md); overflow-wrap: anywhere; }
 pre { position: relative; margin: 14px 0; padding: 14px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow-x: auto; font: 400 13px/1.6 var(--font-mono); }
@@ -271,6 +276,7 @@ table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.
 th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--color-border-subtle); }
 th { font-weight: 600; color: var(--color-text-muted); background: var(--color-grid-header); white-space: nowrap; }
 tr:last-child td { border-bottom: none; }
+@media (max-width: 640px) { th { white-space: normal; } th, td { padding: 8px 10px; overflow-wrap: anywhere; } }
 /* Comparison tables: SayQL's column tinted, sources quiet. */
 table.compare tbody th { white-space: normal; min-width: 120px; }
 table.compare td:nth-child(2), table.compare thead th:nth-child(2) { background: color-mix(in srgb, var(--color-accent-soft) 60%, var(--color-surface)); }
@@ -384,7 +390,7 @@ footer a { color: var(--color-text-muted); }
         <svg class="theme-light-icon"><use href="#i-moon"/></svg>
         <svg class="theme-dark-icon"><use href="#i-sun"/></svg>
       </button>
-      <a class="btn" href="/download/"><svg><use href="#i-download"/></svg><span>Download</span></a>
+      <a class="btn" href="/download/" aria-label="Download SayQL"><svg><use href="#i-download"/></svg><span>Download</span></a>
     </div>
   </div>
 </header>
@@ -413,23 +419,23 @@ footer a { color: var(--color-text-muted); }
       <p class="updated">Updated <time datetime="2026-11-04">4 November 2026</time></p>
       <p class="lead">AI can help with your database without your customers' personal data ever reaching the model. SayQL gives the AI your schema and the numbers it needs, and keeps chosen columns out entirely.</p>
 
-<h2 id="what-the-ai-sees-by-default"><a class="anchor" href="#what-the-ai-sees-by-default" aria-hidden="true">#</a>What the AI sees by default</h2>
+<h2 id="what-the-ai-sees-by-default"><a class="anchor" href="#what-the-ai-sees-by-default" aria-hidden="true" tabindex="-1">#</a>What the AI sees by default</h2>
 <p>When you ask in SayQL's Ask box, the AI gets your question and your table and column names, not your rows. AI apps such as Claude Code and Cursor get <b>counts and summaries</b> of query results by default: a row count and, per column, its type, nulls and distinct values. No row values.</p>
 
-<h2 id="three-levels-of-protection"><a class="anchor" href="#three-levels-of-protection" aria-hidden="true">#</a>Three levels of protection</h2>
+<h2 id="three-levels-of-protection"><a class="anchor" href="#three-levels-of-protection" aria-hidden="true" tabindex="-1">#</a>Three levels of protection</h2>
 <ol class="steps">
   <li><div><b>Counts, not rows.</b> Per connection, choose what AI apps see of results: nothing, counts and summaries, masked rows, or all rows. <a href="/docs/agent-mode/">Investigate</a>, SayQL's multi-step mode, has its own setting: nothing (the default), counts and summaries, or up to 20 masked rows, and can ask you before each send.</div></li>
   <li><div><b>Masked rows.</b> When rows help, <b>Rows, masked</b> replaces likely personal data (emails, phones, names, IDs) with tokens such as <code>‹email-1›</code>. It's best effort: a free-text column can hold anything.</div></li>
   <li><div><b>Never send.</b> The firm line. Mark a column, such as <code>customers.email</code> or <code>patients.ssn</code>, and any query that could read it in any form is refused before it runs, at every level, for AI apps and Investigate alike. Its comments and allowed values are left out of the schema too.</div></li>
 </ol>
 
-<h2 id="skills-for-the-ask-box"><a class="anchor" href="#skills-for-the-ask-box" aria-hidden="true">#</a>Skills for the Ask box</h2>
+<h2 id="skills-for-the-ask-box"><a class="anchor" href="#skills-for-the-ask-box" aria-hidden="true" tabindex="-1">#</a>Skills for the Ask box</h2>
 <p>Skills such as <code>/pii-safe</code> tell the AI to keep contact details out of the SQL it writes. See <a href="/docs/asking/">Ask in plain English</a>.</p>
 
-<h2 id="errors-can-quote-values-too"><a class="anchor" href="#errors-can-quote-values-too" aria-hidden="true">#</a>Errors can quote values too</h2>
+<h2 id="errors-can-quote-values-too"><a class="anchor" href="#errors-can-quote-values-too" aria-hidden="true" tabindex="-1">#</a>Errors can quote values too</h2>
 <p>A database error can include a value from your data. Below <b>All rows</b>, AI apps get a fixed description of the error instead of the database's message.</p>
 
-<h2 id="for-a-company"><a class="anchor" href="#for-a-company" aria-hidden="true">#</a>For a company</h2>
+<h2 id="for-a-company"><a class="anchor" href="#for-a-company" aria-hidden="true" tabindex="-1">#</a>For a company</h2>
 <p>On the self-hosted <a href="/docs/teams/">SayQL server</a>, never-send columns are withheld on the server for every person and agent, and every query is in one audit log. Your data stays on your network.</p>
 
 <p>More: <a href="/docs/privacy/">Privacy and data</a>, <a href="/docs/mcp/#what-ai-apps-may-see">What AI apps may see</a>, and <a href="/docs/compare/">how other tools handle this</a>.</p>
@@ -445,7 +451,7 @@ footer a { color: var(--color-text-muted); }
 
 <footer>
   <div class="inner">
-    <a class="brand" href="/" style="font-size:14px"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
+    <a class="brand" href="/" style="font-size:14px" aria-label="SayQL home"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
     <span>© 2026 Azenvoc LLP. SayQL Community Edition, a product of <a href="https://azenvoc.com">Azenvoc</a>.</span>
     <nav aria-label="Footer"><a href="/">Home</a><a href="https://github.com/azenvoc/sayql-releases/releases">Changelog</a><a href="https://github.com/azenvoc/sayql/discussions">Discussions</a><a href="https://github.com/azenvoc/sayql/blob/main/LICENSE">License</a><a href="https://github.com/azenvoc/sayql-releases/blob/main/PRIVACY.md">Privacy</a></nav>
   </div>

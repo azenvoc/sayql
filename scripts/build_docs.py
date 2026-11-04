@@ -95,7 +95,7 @@ def add_heading_ids(body: str) -> tuple[str, list[tuple[str, str, str]]]:
         seen[base] = seen.get(base, 0) + 1
         hid = base if seen[base] == 1 else f"{base}-{seen[base]}"
         found.append((level, text, hid))
-        return f'<{level} id="{hid}"><a class="anchor" href="#{hid}" aria-hidden="true">#</a>{inner}</{level}>'
+        return f'<{level} id="{hid}"><a class="anchor" href="#{hid}" aria-hidden="true" tabindex="-1">#</a>{inner}</{level}>'
 
     return HEADING.sub(repl, body), found
 

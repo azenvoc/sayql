@@ -55,7 +55,7 @@
   --color-border-strong: #b9c0ca;
   --color-text: #1d2125;
   --color-text-muted: #56606b;
-  --color-text-subtle: #8a939d;
+  --color-text-subtle: #626b77;
   --color-accent: #1f6feb;
   --color-accent-hover: #1a5fd0;
   --color-app-accent: #1f6feb;
@@ -63,7 +63,7 @@
   --color-ai: #7048e8;
   --color-ai-soft: #f1ecff;
   --hero-grid: 4.5%; --hero-glow: 13%; --hero-glow-ai: 6%;
-  --color-success: #1a7f37;
+  --color-success: #17723a;
   --color-success-soft: #e6f4ea;
   --color-warning: #9a6700;
   --color-warning-soft: #fff4d6;
@@ -100,7 +100,7 @@
     --color-border-strong: #474c55;
     --color-text: #e2e5e9;
     --color-text-muted: #a3aab4;
-    --color-text-subtle: #727a85;
+    --color-text-subtle: #959da8;
     --color-accent: #4a8dff;
     --color-accent-hover: #6aa2ff;
     --color-app-accent: #4a8dff;
@@ -144,7 +144,7 @@
   --color-border-strong: #474c55;
   --color-text: #e2e5e9;
   --color-text-muted: #a3aab4;
-  --color-text-subtle: #727a85;
+  --color-text-subtle: #959da8;
   --color-accent: #4a8dff;
   --color-accent-hover: #6aa2ff;
   --color-app-accent: #4a8dff;
@@ -786,7 +786,7 @@ section.block { padding: 80px 0 0; }
 </style>
 <!-- Vercel Web Analytics: page views only, no cookies, no personal data. -->
 <script defer src="/_vercel/insights/script.js"></script>
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "SayQL", "alternateName": "SayQL Community Edition", "description": "SayQL sits between AI agents and your database: Claude Code, Cursor and others get your schema and the numbers they need, not your rows, unless you say so. Ask in plain English too. Free, open source, read-only by default.", "url": "https://sayql.dev/", "image": "https://sayql.dev/og.png", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Windows, Linux", "downloadUrl": "https://github.com/azenvoc/sayql-releases/releases/latest", "license": "https://www.apache.org/licenses/LICENSE-2.0", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Person", "name": "Adith L S", "url": "https://github.com/dithzz"}, "publisher": {"@type": "Organization", "name": "Azenvoc", "url": "https://azenvoc.com", "email": "hello@azenvoc.com"}, "sameAs": ["https://github.com/azenvoc/sayql"]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "SayQL", "alternateName": "SayQL Community Edition", "description": "SayQL sits between AI agents and your database: Claude Code, Cursor and others get your schema and the numbers they need, not your rows, unless you say so. Ask in plain English too. Free, open source, read-only by default.", "url": "https://sayql.dev/", "image": "https://sayql.dev/og.png", "applicationCategory": "DeveloperApplication", "operatingSystem": "macOS, Windows, Linux", "downloadUrl": "https://github.com/azenvoc/sayql-releases/releases/latest", "license": "https://www.apache.org/licenses/LICENSE-2.0", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Azenvoc", "url": "https://azenvoc.com"}, "publisher": {"@type": "Organization", "name": "Azenvoc", "url": "https://azenvoc.com", "email": "hello@azenvoc.com"}, "sameAs": ["https://github.com/azenvoc/sayql"]}</script>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "name": "SayQL", "url": "https://sayql.dev/"}</script>
 <!-- faq-jsonld --><script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is SayQL?", "acceptedAnswer": {"@type": "Answer", "text": "A free, open-source desktop app that lets you and your AI apps query databases in plain English (text-to-SQL) without handing your data to the AI: it sees your schema, not your rows, unless you choose. It works with PostgreSQL, MySQL, SQLite and SQL Server and the AI you pick, including one that runs on your computer, and runs queries read-only. SayQL for teams adds a server you run, with rules for the AI and a record of every query."}}, {"@type": "Question", "name": "How is SayQL different from other AI database tools?", "acceptedAnswer": {"@type": "Answer", "text": "Many AI database tools send your query results to the AI model. SayQL gives AI apps your schema and counts by default, keeps the columns you choose away from them entirely, keeps every AI query read-only, and records what each app ran. See the side-by-side comparison, with every claim sourced."}}, {"@type": "Question", "name": "Do I need to know SQL?", "acceptedAnswer": {"@type": "Answer", "text": "No. The SQL is always in front of you, so you’ll pick it up along the way."}}, {"@type": "Question", "name": "What does the AI see?", "acceptedAnswer": {"@type": "Answer", "text": "Your question and your table and column names. When a query fails, the SQL and the error, with any values in it masked. Never the rows in your tables, unless you allow it per connection, for Investigate or for AI apps over MCP, and then only what you allow. With Ollama or LM Studio, nothing leaves your computer."}}, {"@type": "Question", "name": "Can it break my database?", "acceptedAnswer": {"@type": "Answer", "text": "Queries run read-only, and the database enforces it too. An UPDATE or DELETE always stops for your confirmation first."}}, {"@type": "Question", "name": "How do we govern our AI agents with SayQL?", "acceptedAnswer": {"@type": "Answer", "text": "With SayQL for teams, add each agent on your server's admin page: a name, the databases it may use and what it gets back from a query (counts and summaries by default, no row values). It connects over MCP with its own key, read-only; columns marked never send are withheld on the server, and every query it runs or tries is in the audit log under its name. Revoke the key and it stops at once. On your own computer, without a team server, Claude Code, Cursor and other MCP apps can also query through the SayQL app, under the limits you set per connection."}}, {"@type": "Question", "name": "What does it cost?", "acceptedAnswer": {"@type": "Answer", "text": "SayQL is free. You pay your AI provider for what you use with your own key, use the Claude Pro or Max plan you already have, or pay nothing with a local model. SayQL for teams, a server your company runs for shared connections and an audit log, is free for 30 days, then $149 a month for up to 10 people."}}, {"@type": "Question", "name": "Can I use SayQL without an AI key?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Use the Claude Pro or Max plan you already have, through your installed Claude Code; run a model on your computer with Ollama or LM Studio, at no cost; or use SayQL AI credits: prepaid Claude from SayQL, with no Anthropic account. With credits, your question and table names go through SayQL to Anthropic, and SayQL keeps only token counts."}}, {"@type": "Question", "name": "Where does my data go with SayQL for teams?", "acceptedAnswer": {"@type": "Answer", "text": "Nowhere near us. The server runs on your machines: passwords, queries and the audit log stay there, and the licence is checked offline. The one exception is SayQL AI credits, if your admin chooses them: AI requests then pass through SayQL on their way to Anthropic, and only token counts are kept."}}, {"@type": "Question", "name": "Can people sign in with Google, Microsoft or Okta?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, with SayQL for teams. Your admin connects the server to Google Workspace, Microsoft Entra ID, Okta or another OpenID Connect provider, and people sign in from the SayQL app with their company account instead of an invite code. Admins can come from a group. Sign-ins go from the browser to your provider and back to your server, never through SayQL, and it costs nothing extra."}}, {"@type": "Question", "name": "What happens when the trial ends?", "acceptedAnswer": {"@type": "Answer", "text": "Queries on team connections pause until an admin pastes a licence key on the admin page. Nothing is deleted, and everyone’s own SayQL keeps working as before."}}, {"@type": "Question", "name": "Why does my computer warn me on first launch?", "acceptedAnswer": {"@type": "Answer", "text": "Early-access builds aren’t code-signed with Apple or Microsoft yet. Confirm the first launch once and it opens normally after that. Updates are signed with SayQL’s own key."}}]}</script><!-- /faq-jsonld -->
 </head>
@@ -1171,7 +1171,7 @@ section.block { padding: 80px 0 0; }
       <h2>See it in action</h2>
       <p>A 99-second tour of the real app and team server. Sound on.</p>
     </div>
-    <video class="demo-video" controls preload="none" playsinline poster="/video/sayql-explainer-poster.jpg"
+    <video class="demo-video" controls preload="none" playsinline poster="/video/sayql-explainer-poster.webp"
       aria-label="SayQL explainer: Claude Code queries a database through SayQL and gets counts, not rows; a private column is refused; the app logs what each AI app ran and blocks one; people ask in plain English; an audit learns the database from its code and docs, and a note whose column was renamed is flagged with a fix; and a team server gives an agent its own key, table and row scope, and an audit log">
       <source src="/video/sayql-explainer.mp4" type="video/mp4">
     </video>
@@ -1194,8 +1194,8 @@ section.block { padding: 80px 0 0; }
       <p class="small tight">Not code-signed yet: confirm the first launch once (<a href="/docs/install/">how</a>). Updates are signed.</p>
     </div>
     <blockquote class="note">
-      <p>“AI agents are coming to every company's databases. I built SayQL so they get the answers they need, and never the data they don't.”</p>
-      <footer>Adith L S, creator of SayQL, <a href="https://azenvoc.com">Azenvoc</a></footer>
+      <p>“AI agents are coming to every company's databases. We built SayQL so they get the answers they need, and never the data they don't.”</p>
+      <footer>The SayQL team at <a href="https://azenvoc.com">Azenvoc</a></footer>
     </blockquote>
   </div>
 </section>
@@ -1423,7 +1423,7 @@ section.block { padding: 80px 0 0; }
 
 <footer class="site-footer">
   <div class="wrap">
-    <span class="by"><a class="brand" href="/"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a> by <a href="https://azenvoc.com">Azenvoc</a></span>
+    <span class="by"><a class="brand" href="/" aria-label="SayQL home"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a> by <a href="https://azenvoc.com">Azenvoc</a></span>
     <nav aria-label="Footer">
       <a href="#teams">Teams</a>
       <a href="#pricing">Pricing</a>

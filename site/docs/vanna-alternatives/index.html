@@ -27,7 +27,9 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<!-- Fonts load without blocking the first paint: system fonts show until Inter arrives. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap"></noscript>
 <script>
   try { var t = localStorage.getItem("sayql-site-theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
 </script>
@@ -55,7 +57,7 @@
   --color-border-strong: #b9c0ca;
   --color-text: #1d2125;
   --color-text-muted: #56606b;
-  --color-text-subtle: #8a939d;
+  --color-text-subtle: #626b77;
   --color-accent: #1f6feb;
   --color-accent-hover: #1a5fd0;
   --color-accent-soft: #e5efff;
@@ -103,7 +105,7 @@
     --color-border-strong: #474c55;
     --color-text: #e2e5e9;
     --color-text-muted: #a3aab4;
-    --color-text-subtle: #727a85;
+    --color-text-subtle: #959da8;
     --color-accent: #4a8dff;
     --color-accent-hover: #6aa2ff;
     --color-accent-soft: #1e2d48;
@@ -149,7 +151,7 @@
   --color-border-strong: #474c55;
   --color-text: #e2e5e9;
   --color-text-muted: #a3aab4;
-  --color-text-subtle: #727a85;
+  --color-text-subtle: #959da8;
   --color-accent: #4a8dff;
   --color-accent-hover: #6aa2ff;
   --color-accent-soft: #1e2d48;
@@ -186,6 +188,9 @@ html { scroll-padding-top: 84px; }
 body { margin: 0; background: var(--color-page); color: var(--color-text); font: 400 16px/1.7 var(--font-sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { color: var(--color-accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* Links in running text are underlined, so they don't rely on colour alone. */
+.page p a, .page li a, footer p a, footer span a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 2px; }
+.page p a, .page li a, .page td a, .help a, .callout a { color: var(--color-accent-hover); }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: var(--radius-md); }
 code { font: 500 0.86em/1.4 var(--font-mono); background: var(--color-surface-sunken); border: 1px solid var(--color-border-subtle); padding: 1px 5px; border-radius: var(--radius-md); overflow-wrap: anywhere; }
 pre { position: relative; margin: 14px 0; padding: 14px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow-x: auto; font: 400 13px/1.6 var(--font-mono); }
@@ -271,6 +276,7 @@ table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.
 th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--color-border-subtle); }
 th { font-weight: 600; color: var(--color-text-muted); background: var(--color-grid-header); white-space: nowrap; }
 tr:last-child td { border-bottom: none; }
+@media (max-width: 640px) { th { white-space: normal; } th, td { padding: 8px 10px; overflow-wrap: anywhere; } }
 /* Comparison tables: SayQL's column tinted, sources quiet. */
 table.compare tbody th { white-space: normal; min-width: 120px; }
 table.compare td:nth-child(2), table.compare thead th:nth-child(2) { background: color-mix(in srgb, var(--color-accent-soft) 60%, var(--color-surface)); }
@@ -385,7 +391,7 @@ footer a { color: var(--color-text-muted); }
         <svg class="theme-light-icon"><use href="#i-moon"/></svg>
         <svg class="theme-dark-icon"><use href="#i-sun"/></svg>
       </button>
-      <a class="btn" href="/download/"><svg><use href="#i-download"/></svg><span>Download</span></a>
+      <a class="btn" href="/download/" aria-label="Download SayQL"><svg><use href="#i-download"/></svg><span>Download</span></a>
     </div>
   </div>
 </header>
@@ -415,35 +421,35 @@ footer a { color: var(--color-text-muted); }
       <p class="lead">Vanna, the open-source Python text-to-SQL framework, was archived on 29 March 2026: its repository is read-only and gets no more updates <small><a href="https://github.com/vanna-ai/vanna/releases" rel="nofollow noopener">source</a></small>. The right replacement depends on what you used it for.</p>
 <div class="callout tip"><svg><use href="#i-info"/></svg><p>Checked on <b>4 November 2026</b> against each product's own docs, code and pricing; claims link to their source. SayQL is ours, and we say where others fit better. Spotted something out of date? Email <a href="mailto:hello@azenvoc.com?subject=Vanna%20alternatives">hello@azenvoc.com</a>.</p></div>
 
-<h2 id="if-you-embedded-text-to-sql-in-your-own-app"><a class="anchor" href="#if-you-embedded-text-to-sql-in-your-own-app" aria-hidden="true">#</a>If you embedded text-to-SQL in your own app</h2>
+<h2 id="if-you-embedded-text-to-sql-in-your-own-app"><a class="anchor" href="#if-you-embedded-text-to-sql-in-your-own-app" aria-hidden="true" tabindex="-1">#</a>If you embedded text-to-SQL in your own app</h2>
 <p>Vanna was mostly used as a library: a chat box in a product you build, for your own users.</p>
 <ul>
   <li><b>MCP Toolbox for Databases</b> (Google, open source, Apache 2.0) <small><a href="https://github.com/googleapis/mcp-toolbox/blob/main/LICENSE" rel="nofollow noopener">source</a></small>. A server you run that gives agents tools for 51 sources <small><a href="https://mcp-toolbox.dev/documentation/configuration/sources/" rel="nofollow noopener">source</a></small>. You can fix the SQL of each tool so the agent only fills in parameters <small><a href="https://mcp-toolbox.dev/integrations/postgres/tools/postgres-sql/" rel="nofollow noopener">source</a></small>, and fill parameters from the user's sign-in token to scope rows per user <small><a href="https://mcp-toolbox.dev/documentation/configuration/authentication/" rel="nofollow noopener">source</a></small>. It doesn't write SQL itself: your agent does. See <a href="/docs/sayql-vs-mcp-toolbox/">SayQL vs MCP Toolbox</a>.</li>
   <li><b>Keep Vanna, or a maintained fork.</b> The MIT licence lets you keep running and changing it <small><a href="https://github.com/vanna-ai/vanna/blob/main/LICENSE" rel="nofollow noopener">source</a></small>. You take on its maintenance, including security fixes.</li>
 </ul>
 
-<h2 id="if-your-team-used-it-to-ask-about-your-own-databases"><a class="anchor" href="#if-your-team-used-it-to-ask-about-your-own-databases" aria-hidden="true">#</a>If your team used it to ask about your own databases</h2>
+<h2 id="if-your-team-used-it-to-ask-about-your-own-databases"><a class="anchor" href="#if-your-team-used-it-to-ask-about-your-own-databases" aria-hidden="true" tabindex="-1">#</a>If your team used it to ask about your own databases</h2>
 <ul>
   <li><b>SayQL</b> (open source, Apache 2.0). A desktop app: ask in plain English and the SQL appears as you type, or let Claude Code, Cursor and other agents query through its MCP server. AI apps get your schema and counts by default, not rows; columns marked never send never reach the AI; every AI query is read-only and logged. A self-hosted team server adds shared connections and per-agent keys. See <a href="/docs/sayql-vs-vanna/">SayQL vs Vanna</a>.</li>
   <li><b>Chat2DB.</b> A database client with AI chat, charts and an MCP server, for 40+ databases <small><a href="https://github.com/OtterMind/Chat2DB" rel="nofollow noopener">source</a></small>. Its SQL tool returns up to 200 rows to the model by default <small><a href="https://github.com/OtterMind/Chat2DB/blob/main/chat2db-community-server/chat2db-community-web/src/main/java/ai/chat2db/community/web/api/adapter/ai/AiToolAdapter.java" rel="nofollow noopener">source</a></small>, and Community is source-available from 5.3.0 <small><a href="https://github.com/OtterMind/Chat2DB/blob/main/LICENSE" rel="nofollow noopener">source</a></small>. See <a href="/docs/sayql-vs-chat2db/">SayQL vs Chat2DB</a>.</li>
 </ul>
 
-<h2 id="if-you-want-a-full-database-tool-with-ai"><a class="anchor" href="#if-you-want-a-full-database-tool-with-ai" aria-hidden="true">#</a>If you want a full database tool with AI</h2>
+<h2 id="if-you-want-a-full-database-tool-with-ai"><a class="anchor" href="#if-you-want-a-full-database-tool-with-ai" aria-hidden="true" tabindex="-1">#</a>If you want a full database tool with AI</h2>
 <ul>
   <li><b>DBeaver.</b> More than 100 databases <small><a href="https://dbeaver.com/databases/" rel="nofollow noopener">source</a></small>, with AI chat and SQL generation; the AI gets table and column names by default <small><a href="https://dbeaver.com/docs/dbeaver/AI-Assistance-settings/" rel="nofollow noopener">source</a></small>. Community is open source; more AI providers and its MCP server are in paid editions <small><a href="https://dbeaver.com/docs/dbeaver/Model-Context-Protocol-Server/" rel="nofollow noopener">source</a></small>. See <a href="/docs/sayql-vs-dbeaver/">SayQL vs DBeaver</a>.</li>
   <li><b>DataGrip.</b> JetBrains' database IDE with AI Assistant, agents and a built-in MCP server <small><a href="https://www.jetbrains.com/help/datagrip/mcp-server.html" rel="nofollow noopener">source</a></small>; agents get a sample of query rows when allowed <small><a href="https://www.jetbrains.com/help/datagrip/settings-database-ai-tools.html" rel="nofollow noopener">source</a></small>. Free for non-commercial use <small><a href="https://blog.jetbrains.com/datagrip/2025/10/01/datagrip-is-now-free-for-non-commercial-use/" rel="nofollow noopener">source</a></small>. See <a href="/docs/sayql-vs-datagrip/">SayQL vs DataGrip</a>.</li>
 </ul>
 
-<h2 id="what-you-give-up-from-vanna"><a class="anchor" href="#what-you-give-up-from-vanna" aria-hidden="true">#</a>What you give up from Vanna</h2>
+<h2 id="what-you-give-up-from-vanna"><a class="anchor" href="#what-you-give-up-from-vanna" aria-hidden="true" tabindex="-1">#</a>What you give up from Vanna</h2>
 <p>Vanna could get more accurate by training on question–SQL pairs and saving successful queries <small><a href="https://github.com/vanna-ai/vanna/blob/main/README_LEGACY.md" rel="nofollow noopener">source</a></small>. None of the tools above do that the same way. SayQL's nearest equivalent is <a href="/docs/agent-mode/">database notes</a>: facts about your schema, such as what a status code means, that you approve and SayQL keeps true as the schema changes.</p>
 
-<h2 id="questions"><a class="anchor" href="#questions" aria-hidden="true">#</a>Questions</h2>
+<h2 id="questions"><a class="anchor" href="#questions" aria-hidden="true" tabindex="-1">#</a>Questions</h2>
 <section class="qa">
-<h3 id="is-vanna-still-maintained"><a class="anchor" href="#is-vanna-still-maintained" aria-hidden="true">#</a>Is Vanna still maintained?</h3>
+<h3 id="is-vanna-still-maintained"><a class="anchor" href="#is-vanna-still-maintained" aria-hidden="true" tabindex="-1">#</a>Is Vanna still maintained?</h3>
 <p>No. The vanna-ai/vanna repository was archived on 29 March 2026 and is read-only; its last release was 2.0.2 on 2 February 2026. <small><a href="https://github.com/vanna-ai/vanna/releases" rel="nofollow noopener">source</a></small></p>
-<h3 id="which-vanna-alternative-keeps-my-data-away-from-the-ai"><a class="anchor" href="#which-vanna-alternative-keeps-my-data-away-from-the-ai" aria-hidden="true">#</a>Which Vanna alternative keeps my data away from the AI?</h3>
+<h3 id="which-vanna-alternative-keeps-my-data-away-from-the-ai"><a class="anchor" href="#which-vanna-alternative-keeps-my-data-away-from-the-ai" aria-hidden="true" tabindex="-1">#</a>Which Vanna alternative keeps my data away from the AI?</h3>
 <p>SayQL gives AI apps your schema and counts by default, not rows, and refuses any query that could read a column you marked never send. Vanna 2.0 sends up to 1,000 characters of each result to the model. <small><a href="https://github.com/vanna-ai/vanna/blob/main/src/vanna/tools/run_sql.py" rel="nofollow noopener">source</a></small></p>
-<h3 id="is-there-a-vanna-alternative-with-an-mcp-server"><a class="anchor" href="#is-there-a-vanna-alternative-with-an-mcp-server" aria-hidden="true">#</a>Is there a Vanna alternative with an MCP server?</h3>
+<h3 id="is-there-a-vanna-alternative-with-an-mcp-server"><a class="anchor" href="#is-there-a-vanna-alternative-with-an-mcp-server" aria-hidden="true" tabindex="-1">#</a>Is there a Vanna alternative with an MCP server?</h3>
 <p>Yes: SayQL, MCP Toolbox for Databases, Chat2DB and DataGrip each have one; DBeaver's is in its paid editions. Vanna has no official MCP server. <small><a href="https://github.com/vanna-ai/vanna" rel="nofollow noopener">source</a></small></p>
 </section>
 
@@ -460,7 +466,7 @@ footer a { color: var(--color-text-muted); }
 
 <footer>
   <div class="inner">
-    <a class="brand" href="/" style="font-size:14px"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
+    <a class="brand" href="/" style="font-size:14px" aria-label="SayQL home"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
     <span>© 2026 Azenvoc LLP. SayQL Community Edition, a product of <a href="https://azenvoc.com">Azenvoc</a>.</span>
     <nav aria-label="Footer"><a href="/">Home</a><a href="https://github.com/azenvoc/sayql-releases/releases">Changelog</a><a href="https://github.com/azenvoc/sayql/discussions">Discussions</a><a href="https://github.com/azenvoc/sayql/blob/main/LICENSE">License</a><a href="https://github.com/azenvoc/sayql-releases/blob/main/PRIVACY.md">Privacy</a></nav>
   </div>

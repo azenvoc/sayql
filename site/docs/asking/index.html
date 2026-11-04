@@ -27,7 +27,9 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<!-- Fonts load without blocking the first paint: system fonts show until Inter arrives. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap"></noscript>
 <script>
   try { var t = localStorage.getItem("sayql-site-theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
 </script>
@@ -55,7 +57,7 @@
   --color-border-strong: #b9c0ca;
   --color-text: #1d2125;
   --color-text-muted: #56606b;
-  --color-text-subtle: #8a939d;
+  --color-text-subtle: #626b77;
   --color-accent: #1f6feb;
   --color-accent-hover: #1a5fd0;
   --color-accent-soft: #e5efff;
@@ -103,7 +105,7 @@
     --color-border-strong: #474c55;
     --color-text: #e2e5e9;
     --color-text-muted: #a3aab4;
-    --color-text-subtle: #727a85;
+    --color-text-subtle: #959da8;
     --color-accent: #4a8dff;
     --color-accent-hover: #6aa2ff;
     --color-accent-soft: #1e2d48;
@@ -149,7 +151,7 @@
   --color-border-strong: #474c55;
   --color-text: #e2e5e9;
   --color-text-muted: #a3aab4;
-  --color-text-subtle: #727a85;
+  --color-text-subtle: #959da8;
   --color-accent: #4a8dff;
   --color-accent-hover: #6aa2ff;
   --color-accent-soft: #1e2d48;
@@ -186,6 +188,9 @@ html { scroll-padding-top: 84px; }
 body { margin: 0; background: var(--color-page); color: var(--color-text); font: 400 16px/1.7 var(--font-sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { color: var(--color-accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* Links in running text are underlined, so they don't rely on colour alone. */
+.page p a, .page li a, footer p a, footer span a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 2px; }
+.page p a, .page li a, .page td a, .help a, .callout a { color: var(--color-accent-hover); }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: var(--radius-md); }
 code { font: 500 0.86em/1.4 var(--font-mono); background: var(--color-surface-sunken); border: 1px solid var(--color-border-subtle); padding: 1px 5px; border-radius: var(--radius-md); overflow-wrap: anywhere; }
 pre { position: relative; margin: 14px 0; padding: 14px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow-x: auto; font: 400 13px/1.6 var(--font-mono); }
@@ -271,6 +276,7 @@ table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.
 th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--color-border-subtle); }
 th { font-weight: 600; color: var(--color-text-muted); background: var(--color-grid-header); white-space: nowrap; }
 tr:last-child td { border-bottom: none; }
+@media (max-width: 640px) { th { white-space: normal; } th, td { padding: 8px 10px; overflow-wrap: anywhere; } }
 /* Comparison tables: SayQL's column tinted, sources quiet. */
 table.compare tbody th { white-space: normal; min-width: 120px; }
 table.compare td:nth-child(2), table.compare thead th:nth-child(2) { background: color-mix(in srgb, var(--color-accent-soft) 60%, var(--color-surface)); }
@@ -384,7 +390,7 @@ footer a { color: var(--color-text-muted); }
         <svg class="theme-light-icon"><use href="#i-moon"/></svg>
         <svg class="theme-dark-icon"><use href="#i-sun"/></svg>
       </button>
-      <a class="btn" href="/download/"><svg><use href="#i-download"/></svg><span>Download</span></a>
+      <a class="btn" href="/download/" aria-label="Download SayQL"><svg><use href="#i-download"/></svg><span>Download</span></a>
     </div>
   </div>
 </header>
@@ -421,12 +427,12 @@ footer a { color: var(--color-text-muted); }
   <li><b>Switch models:</b> click the model name next to the switch to pick another model, or another provider you've already set up, without opening Settings. In Quick mode it sets the model that writes SQL as you type; in Investigate, the one that runs the agent.</li>
 </ul>
 
-<h2 id="say-it"><a class="anchor" href="#say-it" aria-hidden="true">#</a>Say it</h2>
+<h2 id="say-it"><a class="anchor" href="#say-it" aria-hidden="true" tabindex="-1">#</a>Say it</h2>
 <p>Click the mic at the right of the Ask box, or press <kbd>⌘⇧M</kbd> / <kbd>Ctrl+Shift+M</kbd>, and say your question. A red dot and a level meter show it's listening. Click the mic or press the shortcut again when you're done; <kbd>esc</kbd> cancels.</p>
 <p>What you said becomes the question, after anything you'd typed and keeping any <code>/command</code>. The SQL appears as usual, and nothing runs until you press <kbd>↵</kbd>.</p>
 <p>Speech is turned into text on your computer, and audio is never sent anywhere. The first time, SayQL asks to download the speech model once (about 82 MB, from Hugging Face). Remove or redownload it in <b>Settings → Voice</b>. On macOS, allow SayQL in <b>System Settings → Privacy &amp; Security → Microphone</b> if you said no at first.</p>
 
-<h2 id="slash-commands"><a class="anchor" href="#slash-commands" aria-hidden="true">#</a>Slash commands</h2>
+<h2 id="slash-commands"><a class="anchor" href="#slash-commands" aria-hidden="true" tabindex="-1">#</a>Slash commands</h2>
 <p>Type <kbd>/</kbd> at the start of the Ask box to pick a command. Use <kbd>↑</kbd> <kbd>↓</kbd> to move, <kbd>↵</kbd> or <kbd>Tab</kbd> to pick and <kbd>esc</kbd> to close. The command shows as a chip; type the rest of your question after it. <kbd>⌫</kbd> at the start removes the chip.</p>
 <ul>
   <li><b>/agent</b>: investigate a question that needs several steps, and answer with the queries behind it. See <a href="/docs/agent-mode/">Investigate</a>.</li>
@@ -438,15 +444,15 @@ footer a { color: var(--color-text-muted); }
 </ul>
 <p>With <b>/explain</b>, <b>/fix</b> and <b>/improve</b>, <kbd>↵</kbd> does the command instead of running the query.</p>
 
-<h2 id="skills"><a class="anchor" href="#skills" aria-hidden="true">#</a>Skills</h2>
+<h2 id="skills"><a class="anchor" href="#skills" aria-hidden="true" tabindex="-1">#</a>Skills</h2>
 <p>A skill is an instruction you save once and add to any question with <kbd>/</kbd> and its name. For example, <b>/pii-safe</b> with "Never select email, phone or address columns". The instruction is sent to the AI with that question. Skills are text only: they hold no SQL, run nothing on their own, and don't change the read-only safety. Anything that could change data still asks first.</p>
 <p>Create, edit and delete skills in <b>Settings → Skills</b>, or pick <b>Create skill…</b> at the bottom of the <kbd>/</kbd> menu. Names use lowercase letters, numbers and dashes, and can't be a built-in command. Skills are saved on your computer.</p>
 <p>With no skills yet, <b>Settings → Skills</b> offers examples to start from: <b>/pii-safe</b>, <b>/this-month</b> and <b>/small</b>.</p>
 
-<h2 id="point-it-at-the-right-tables"><a class="anchor" href="#point-it-at-the-right-tables" aria-hidden="true">#</a>Point it at the right tables</h2>
+<h2 id="point-it-at-the-right-tables"><a class="anchor" href="#point-it-at-the-right-tables" aria-hidden="true" tabindex="-1">#</a>Point it at the right tables</h2>
 <p>Click a table in the navigator to give it to the AI as context. <kbd>⌘</kbd>-click (or <kbd>Ctrl</kbd>-click) adds more, and <kbd>⇧</kbd>-click picks a range. Picked tables show as a pill at the right end of the question line. The eye hides them from the AI without losing the selection; × clears them. <kbd>⌘</kbd>-click a picked table to remove it. This helps most in large databases.</p>
 
-<h2 id="fix-and-improve"><a class="anchor" href="#fix-and-improve" aria-hidden="true">#</a>Fix and Improve</h2>
+<h2 id="fix-and-improve"><a class="anchor" href="#fix-and-improve" aria-hidden="true" tabindex="-1">#</a>Fix and Improve</h2>
 <ul>
   <li><b>Fix:</b> when the database rejects a query SayQL wrote, the stronger model reads the error, corrects the SQL and runs it again, once. This doesn't happen for a selection or a script. If it still fails, click <b>Fix with AI</b> on the error, or edit the SQL.</li>
   <li><b>Explain:</b> <code>/explain</code> describes the current query in plain English, in a panel under the Ask box. Close it with ×.</li>
@@ -464,7 +470,7 @@ footer a { color: var(--color-text-muted); }
 
 <footer>
   <div class="inner">
-    <a class="brand" href="/" style="font-size:14px"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
+    <a class="brand" href="/" style="font-size:14px" aria-label="SayQL home"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
     <span>© 2026 Azenvoc LLP. SayQL Community Edition, a product of <a href="https://azenvoc.com">Azenvoc</a>.</span>
     <nav aria-label="Footer"><a href="/">Home</a><a href="https://github.com/azenvoc/sayql-releases/releases">Changelog</a><a href="https://github.com/azenvoc/sayql/discussions">Discussions</a><a href="https://github.com/azenvoc/sayql/blob/main/LICENSE">License</a><a href="https://github.com/azenvoc/sayql-releases/blob/main/PRIVACY.md">Privacy</a></nav>
   </div>

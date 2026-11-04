@@ -27,7 +27,9 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<!-- Fonts load without blocking the first paint: system fonts show until Inter arrives. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap"></noscript>
 <script>
   try { var t = localStorage.getItem("sayql-site-theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
 </script>
@@ -55,7 +57,7 @@
   --color-border-strong: #b9c0ca;
   --color-text: #1d2125;
   --color-text-muted: #56606b;
-  --color-text-subtle: #8a939d;
+  --color-text-subtle: #626b77;
   --color-accent: #1f6feb;
   --color-accent-hover: #1a5fd0;
   --color-accent-soft: #e5efff;
@@ -103,7 +105,7 @@
     --color-border-strong: #474c55;
     --color-text: #e2e5e9;
     --color-text-muted: #a3aab4;
-    --color-text-subtle: #727a85;
+    --color-text-subtle: #959da8;
     --color-accent: #4a8dff;
     --color-accent-hover: #6aa2ff;
     --color-accent-soft: #1e2d48;
@@ -149,7 +151,7 @@
   --color-border-strong: #474c55;
   --color-text: #e2e5e9;
   --color-text-muted: #a3aab4;
-  --color-text-subtle: #727a85;
+  --color-text-subtle: #959da8;
   --color-accent: #4a8dff;
   --color-accent-hover: #6aa2ff;
   --color-accent-soft: #1e2d48;
@@ -186,6 +188,9 @@ html { scroll-padding-top: 84px; }
 body { margin: 0; background: var(--color-page); color: var(--color-text); font: 400 16px/1.7 var(--font-sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { color: var(--color-accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* Links in running text are underlined, so they don't rely on colour alone. */
+.page p a, .page li a, footer p a, footer span a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 2px; }
+.page p a, .page li a, .page td a, .help a, .callout a { color: var(--color-accent-hover); }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: var(--radius-md); }
 code { font: 500 0.86em/1.4 var(--font-mono); background: var(--color-surface-sunken); border: 1px solid var(--color-border-subtle); padding: 1px 5px; border-radius: var(--radius-md); overflow-wrap: anywhere; }
 pre { position: relative; margin: 14px 0; padding: 14px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow-x: auto; font: 400 13px/1.6 var(--font-mono); }
@@ -271,6 +276,7 @@ table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.
 th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--color-border-subtle); }
 th { font-weight: 600; color: var(--color-text-muted); background: var(--color-grid-header); white-space: nowrap; }
 tr:last-child td { border-bottom: none; }
+@media (max-width: 640px) { th { white-space: normal; } th, td { padding: 8px 10px; overflow-wrap: anywhere; } }
 /* Comparison tables: SayQL's column tinted, sources quiet. */
 table.compare tbody th { white-space: normal; min-width: 120px; }
 table.compare td:nth-child(2), table.compare thead th:nth-child(2) { background: color-mix(in srgb, var(--color-accent-soft) 60%, var(--color-surface)); }
@@ -384,7 +390,7 @@ footer a { color: var(--color-text-muted); }
         <svg class="theme-light-icon"><use href="#i-moon"/></svg>
         <svg class="theme-dark-icon"><use href="#i-sun"/></svg>
       </button>
-      <a class="btn" href="/download/"><svg><use href="#i-download"/></svg><span>Download</span></a>
+      <a class="btn" href="/download/" aria-label="Download SayQL"><svg><use href="#i-download"/></svg><span>Download</span></a>
     </div>
   </div>
 </header>
@@ -413,9 +419,9 @@ footer a { color: var(--color-text-muted); }
       <p class="updated">Updated <time datetime="2026-11-03">3 November 2026</time></p>
       <p class="lead">SayQL connects straight from your computer to your database. There's no SayQL server in between.</p>
 <p>Click <b>New connection</b> in the top bar, pick the type, fill in the details and click <b>Test</b>, then <b>Save</b>. Passwords are stored in your system keychain.</p>
-<h2 id="production-connections"><a class="anchor" href="#production-connections" aria-hidden="true">#</a>Production connections</h2>
+<h2 id="production-connections"><a class="anchor" href="#production-connections" aria-hidden="true" tabindex="-1">#</a>Production connections</h2>
 <p>Tick <b>This is a production database</b> under <b>Production</b> in the connection's settings and it shows a red <b>PROD</b> badge in the navigator, on its tabs, in the top bar and in the status bar. It's a label only: it doesn't change how queries run.</p>
-<h2 id="connecting"><a class="anchor" href="#connecting" aria-hidden="true">#</a>Connecting</h2>
+<h2 id="connecting"><a class="anchor" href="#connecting" aria-hidden="true" tabindex="-1">#</a>Connecting</h2>
 <p>SayQL doesn't connect to anything on its own when it starts. The tabs you had open come back dimmed with <b>Not connected</b> and a <b>Connect</b> button (also in the navigator and the status bar). A connection opens when you click it in the navigator, click <b>Connect</b>, run a query or ask a question. AI apps over MCP are separate: <code>sayql-mcp</code> opens the connections they ask for, as before.</p>
 <p>Have a connection string? Paste it into <b>Connection string</b> at the top and SayQL fills in the rest, including the password. It reads URLs (<code>postgres://</code>, <code>mysql://</code>, <code>sqlserver://</code>), JDBC (<code>jdbc:postgresql://</code>, <code>jdbc:sqlserver://</code>) and key=value strings such as <code>Server=…;Initial Catalog=…</code>. The string isn't kept, and the password is saved to the keychain only when you click <b>Save</b>.</p>
 <div class="table-wrap"><table>
@@ -428,7 +434,7 @@ footer a { color: var(--color-text-muted); }
   </tbody>
 </table></div>
 
-<h2 id="tested-versions"><a class="anchor" href="#tested-versions" aria-hidden="true">#</a>Tested versions</h2>
+<h2 id="tested-versions"><a class="anchor" href="#tested-versions" aria-hidden="true" tabindex="-1">#</a>Tested versions</h2>
 <p>SayQL is tested against real servers of each of these versions, and a pull request can't land without
 the tests passing against one PostgreSQL, MySQL, MariaDB and SQL Server version.</p>
 <div class="table-wrap"><table>
@@ -444,7 +450,7 @@ the tests passing against one PostgreSQL, MySQL, MariaDB and SQL Server version.
 <p>Click <b>Cancel</b> to stop a slow query on the server. The full results, and every known limitation, are in
 <a href="https://github.com/azenvoc/sayql/blob/main/docs/DATABASE_COMPATIBILITY.md">Database compatibility</a>.</p>
 
-<h2 id="use-a-read-only-login"><a class="anchor" href="#use-a-read-only-login" aria-hidden="true">#</a>Use a read-only login</h2>
+<h2 id="use-a-read-only-login"><a class="anchor" href="#use-a-read-only-login" aria-hidden="true" tabindex="-1">#</a>Use a read-only login</h2>
 <p>SayQL runs queries read-only and asks before anything that changes data. A login that can only read
 makes your database enforce that too. MySQL and SQL Server can't fully enforce read-only for a login that
 could write, so a read-only login matters most there.</p>
@@ -454,16 +460,16 @@ could write, so a read-only login matters most there.</p>
   <li><b>SQL Server / Azure SQL:</b> a user in the <code>db_datareader</code> role.</li>
 </ul>
 
-<h2 id="every-database-on-the-server"><a class="anchor" href="#every-database-on-the-server" aria-hidden="true">#</a>Every database on the server</h2>
+<h2 id="every-database-on-the-server"><a class="anchor" href="#every-database-on-the-server" aria-hidden="true" tabindex="-1">#</a>Every database on the server</h2>
 <p>For server databases, the navigator lists every database your login can open, under <b>Databases</b>. Click one to open it. The <b>Database</b> field in the connection only sets which one opens first; leave it empty to use the server's default.</p>
 
-<h2 id="sql-server-tips"><a class="anchor" href="#sql-server-tips" aria-hidden="true">#</a>SQL Server tips</h2>
+<h2 id="sql-server-tips"><a class="anchor" href="#sql-server-tips" aria-hidden="true" tabindex="-1">#</a>SQL Server tips</h2>
 <ul>
   <li>Internal SQL Servers often use a self-signed certificate. If connecting fails with a certificate error, turn on <b>Trust server certificate</b>, but only for servers you know.</li>
   <li>If the login works in other tools but not here, set the database to <code>master</code> (or leave it empty) and pick your database from the navigator.</li>
 </ul>
 
-<h2 id="the-demo-database"><a class="anchor" href="#the-demo-database" aria-hidden="true">#</a>The demo database</h2>
+<h2 id="the-demo-database"><a class="anchor" href="#the-demo-database" aria-hidden="true" tabindex="-1">#</a>The demo database</h2>
 <p>SayQL comes with <b>Demo store</b>, a small SQLite shop with customers, orders and products, so you can try everything without connecting anything. Delete it with a right-click if you don't need it.</p>
       <nav class="pager" aria-label="Previous and next page"><a class="prev" href="/docs/ai-providers/"><small>← Previous</small><b>AI providers</b></a><a class="next" href="/docs/mcp/"><small>Next →</small><b>MCP for AI apps</b></a></nav>
       <p class="help">Something missing or unclear? Ask in <a href="https://github.com/azenvoc/sayql/discussions">Discussions</a>.</p>
@@ -477,7 +483,7 @@ could write, so a read-only login matters most there.</p>
 
 <footer>
   <div class="inner">
-    <a class="brand" href="/" style="font-size:14px"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
+    <a class="brand" href="/" style="font-size:14px" aria-label="SayQL home"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
     <span>© 2026 Azenvoc LLP. SayQL Community Edition, a product of <a href="https://azenvoc.com">Azenvoc</a>.</span>
     <nav aria-label="Footer"><a href="/">Home</a><a href="https://github.com/azenvoc/sayql-releases/releases">Changelog</a><a href="https://github.com/azenvoc/sayql/discussions">Discussions</a><a href="https://github.com/azenvoc/sayql/blob/main/LICENSE">License</a><a href="https://github.com/azenvoc/sayql-releases/blob/main/PRIVACY.md">Privacy</a></nav>
   </div>

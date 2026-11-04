@@ -27,7 +27,9 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<!-- Fonts load without blocking the first paint: system fonts show until Inter arrives. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap"></noscript>
 <script>
   try { var t = localStorage.getItem("sayql-site-theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
 </script>
@@ -55,7 +57,7 @@
   --color-border-strong: #b9c0ca;
   --color-text: #1d2125;
   --color-text-muted: #56606b;
-  --color-text-subtle: #8a939d;
+  --color-text-subtle: #626b77;
   --color-accent: #1f6feb;
   --color-accent-hover: #1a5fd0;
   --color-accent-soft: #e5efff;
@@ -103,7 +105,7 @@
     --color-border-strong: #474c55;
     --color-text: #e2e5e9;
     --color-text-muted: #a3aab4;
-    --color-text-subtle: #727a85;
+    --color-text-subtle: #959da8;
     --color-accent: #4a8dff;
     --color-accent-hover: #6aa2ff;
     --color-accent-soft: #1e2d48;
@@ -149,7 +151,7 @@
   --color-border-strong: #474c55;
   --color-text: #e2e5e9;
   --color-text-muted: #a3aab4;
-  --color-text-subtle: #727a85;
+  --color-text-subtle: #959da8;
   --color-accent: #4a8dff;
   --color-accent-hover: #6aa2ff;
   --color-accent-soft: #1e2d48;
@@ -186,6 +188,9 @@ html { scroll-padding-top: 84px; }
 body { margin: 0; background: var(--color-page); color: var(--color-text); font: 400 16px/1.7 var(--font-sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { color: var(--color-accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* Links in running text are underlined, so they don't rely on colour alone. */
+.page p a, .page li a, footer p a, footer span a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 2px; }
+.page p a, .page li a, .page td a, .help a, .callout a { color: var(--color-accent-hover); }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: var(--radius-md); }
 code { font: 500 0.86em/1.4 var(--font-mono); background: var(--color-surface-sunken); border: 1px solid var(--color-border-subtle); padding: 1px 5px; border-radius: var(--radius-md); overflow-wrap: anywhere; }
 pre { position: relative; margin: 14px 0; padding: 14px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow-x: auto; font: 400 13px/1.6 var(--font-mono); }
@@ -271,6 +276,7 @@ table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.
 th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--color-border-subtle); }
 th { font-weight: 600; color: var(--color-text-muted); background: var(--color-grid-header); white-space: nowrap; }
 tr:last-child td { border-bottom: none; }
+@media (max-width: 640px) { th { white-space: normal; } th, td { padding: 8px 10px; overflow-wrap: anywhere; } }
 /* Comparison tables: SayQL's column tinted, sources quiet. */
 table.compare tbody th { white-space: normal; min-width: 120px; }
 table.compare td:nth-child(2), table.compare thead th:nth-child(2) { background: color-mix(in srgb, var(--color-accent-soft) 60%, var(--color-surface)); }
@@ -384,7 +390,7 @@ footer a { color: var(--color-text-muted); }
         <svg class="theme-light-icon"><use href="#i-moon"/></svg>
         <svg class="theme-dark-icon"><use href="#i-sun"/></svg>
       </button>
-      <a class="btn" href="/download/"><svg><use href="#i-download"/></svg><span>Download</span></a>
+      <a class="btn" href="/download/" aria-label="Download SayQL"><svg><use href="#i-download"/></svg><span>Download</span></a>
     </div>
   </div>
 </header>
@@ -414,7 +420,7 @@ footer a { color: var(--color-text-muted); }
       <p class="lead">Some questions need looking around before one query can answer them: "who owns this tenant?", "why did signups drop last week?", "is status 3 cancelled or refunded?". Investigate works through them in read-only steps and answers with the queries it ran.</p>
 <p>Investigate was called agent mode before SayQL 0.4.9. Typing <code>/agent</code> still works.</p>
 
-<h2 id="start-an-investigation"><a class="anchor" href="#start-an-investigation" aria-hidden="true">#</a>Start an investigation</h2>
+<h2 id="start-an-investigation"><a class="anchor" href="#start-an-investigation" aria-hidden="true" tabindex="-1">#</a>Start an investigation</h2>
 <ul>
   <li>Switch the Ask box to <b>Investigate</b> (or press <kbd>⌘⇧A</kbd>, or type <code>/investigate</code>), type your question and press <kbd>↵</kbd>. With the box empty, it suggests a few questions to start with.</li>
   <li>The agent first shows a short <b>plan</b>. Change any line, then press <b>Go</b>.</li>
@@ -423,7 +429,7 @@ footer a { color: var(--color-text-muted); }
   <li>When a question has two reasonable meanings, the agent <b>asks you</b> with choices instead of guessing.</li>
 </ul>
 
-<h2 id="the-answer"><a class="anchor" href="#the-answer" aria-hidden="true">#</a>The answer</h2>
+<h2 id="the-answer"><a class="anchor" href="#the-answer" aria-hidden="true" tabindex="-1">#</a>The answer</h2>
 <ul>
   <li>Each sentence links to the steps it rests on. SayQL checks every number in the answer against the steps' results; a number it can't find is marked <b>not verified</b>.</li>
   <li>The agent checks its joins: a join that repeats rows before they are summed is flagged, and the agent is told to fix it.</li>
@@ -431,7 +437,7 @@ footer a { color: var(--color-text-muted); }
   <li><b>Open as query</b>, <b>Save as script</b>, <b>Rerun</b> (the same queries on fresh data, no AI) and <b>Ask a follow-up</b> work from the answer. To steer, open a step, choose <b>Edit and continue</b>, change its SQL, and the run continues from there.</li>
 </ul>
 
-<h2 id="database-notes"><a class="anchor" href="#database-notes" aria-hidden="true">#</a>Database notes</h2>
+<h2 id="database-notes"><a class="anchor" href="#database-notes" aria-hidden="true" tabindex="-1">#</a>Database notes</h2>
 <p>Notes are facts about a database that its schema can't tell, such as "the owner of a tenant is memberships.role = 'owner'" or "orders.status 3 = cancelled". They show under <b>Notes</b> in the Database Navigator (right-click to edit or delete), and the Ask box, Investigate and MCP apps all use them. A note can't hold values from your rows: one with an email, a number like a phone, or a masked value is refused.</p>
 <p>At the end of a run the agent may suggest notes, and fixes to saved notes it found wrong. They show under the answer with <b>Accept</b> and <b>Dismiss</b>, and wait with the other suggestions under <b>Notes → Suggested notes and fixes</b>.</p>
 
@@ -446,7 +452,7 @@ footer a { color: var(--color-text-muted); }
 <p>The database's own notes count too. SayQL reads the comments on tables and columns (<code>COMMENT ON</code> in PostgreSQL, <code>COMMENT</code> in MySQL and MariaDB, <code>MS_Description</code> in SQL Server, and <code>--</code> comments beside a column in SQLite's <code>CREATE TABLE</code>) and the CHECK constraints, and shows them to the AI with the schema, up to 200 characters each. They come from the database, so they're always current, and a change to one is noticed like any other schema change. Nothing needs to be turned on, and no row values are read.</p>
 <p>A doubtful note shows a warning sign in the navigator, and a banner names it. Open it to see why, the suggested fix, its check and its earlier versions. Use the fix, edit the note, or choose <b>It's still true</b>.</p>
 
-<h2 id="what-the-ai-sees"><a class="anchor" href="#what-the-ai-sees" aria-hidden="true">#</a>What the AI sees</h2>
+<h2 id="what-the-ai-sees"><a class="anchor" href="#what-the-ai-sees" aria-hidden="true" tabindex="-1">#</a>What the AI sees</h2>
 <p>Investigate is <b>off on every connection</b> until you turn it on. The first <code>/investigate</code> on a connection asks what it may see of query results there (<b>What the AI may see of query results</b>); change it later with <b>Change</b> under the Ask box, or by right-clicking the connection and choosing <b>Investigate settings</b>. The choices use the same words as <a href="/docs/mcp/#what-ai-apps-may-see">what AI apps get back</a>, which is set separately; the dialog shows that one too.</p>
 <div class="table-wrap"><table>
   <thead><tr><th>Setting</th><th>What the AI sees of each result</th></tr></thead>
@@ -464,7 +470,7 @@ footer a { color: var(--color-text-muted); }
   <li>With Ollama or LM Studio, nothing leaves your computer.</li>
 </ul>
 
-<h2 id="safety-and-limits"><a class="anchor" href="#safety-and-limits" aria-hidden="true">#</a>Safety and limits</h2>
+<h2 id="safety-and-limits"><a class="anchor" href="#safety-and-limits" aria-hidden="true" tabindex="-1">#</a>Safety and limits</h2>
 <p>Every agent query goes through the same read-only checks as the rest of SayQL, one statement at a time, and the database enforces read-only where it can. A query that would read all of a very large table without a filter is refused until the agent checks its plan. Each run has limits on steps, queries, time per query, time per run and tokens; change them in <b>Settings → Investigate</b>, where you can also pick the model that runs the agent (by default your expert model). Connect with a read-only database login for production.</p>
       <nav class="pager" aria-label="Previous and next page"><a class="prev" href="/docs/license/"><small>← Previous</small><b>License</b></a><a class="next" href="/docs/teams/"><small>Next →</small><b>SayQL for teams</b></a></nav>
       <p class="help">Something missing or unclear? Ask in <a href="https://github.com/azenvoc/sayql/discussions">Discussions</a>.</p>
@@ -478,7 +484,7 @@ footer a { color: var(--color-text-muted); }
 
 <footer>
   <div class="inner">
-    <a class="brand" href="/" style="font-size:14px"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
+    <a class="brand" href="/" style="font-size:14px" aria-label="SayQL home"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
     <span>© 2026 Azenvoc LLP. SayQL Community Edition, a product of <a href="https://azenvoc.com">Azenvoc</a>.</span>
     <nav aria-label="Footer"><a href="/">Home</a><a href="https://github.com/azenvoc/sayql-releases/releases">Changelog</a><a href="https://github.com/azenvoc/sayql/discussions">Discussions</a><a href="https://github.com/azenvoc/sayql/blob/main/LICENSE">License</a><a href="https://github.com/azenvoc/sayql-releases/blob/main/PRIVACY.md">Privacy</a></nav>
   </div>

@@ -27,7 +27,9 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<!-- Fonts load without blocking the first paint: system fonts show until Inter arrives. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap"></noscript>
 <script>
   try { var t = localStorage.getItem("sayql-site-theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
 </script>
@@ -55,7 +57,7 @@
   --color-border-strong: #b9c0ca;
   --color-text: #1d2125;
   --color-text-muted: #56606b;
-  --color-text-subtle: #8a939d;
+  --color-text-subtle: #626b77;
   --color-accent: #1f6feb;
   --color-accent-hover: #1a5fd0;
   --color-accent-soft: #e5efff;
@@ -103,7 +105,7 @@
     --color-border-strong: #474c55;
     --color-text: #e2e5e9;
     --color-text-muted: #a3aab4;
-    --color-text-subtle: #727a85;
+    --color-text-subtle: #959da8;
     --color-accent: #4a8dff;
     --color-accent-hover: #6aa2ff;
     --color-accent-soft: #1e2d48;
@@ -149,7 +151,7 @@
   --color-border-strong: #474c55;
   --color-text: #e2e5e9;
   --color-text-muted: #a3aab4;
-  --color-text-subtle: #727a85;
+  --color-text-subtle: #959da8;
   --color-accent: #4a8dff;
   --color-accent-hover: #6aa2ff;
   --color-accent-soft: #1e2d48;
@@ -186,6 +188,9 @@ html { scroll-padding-top: 84px; }
 body { margin: 0; background: var(--color-page); color: var(--color-text); font: 400 16px/1.7 var(--font-sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { color: var(--color-accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* Links in running text are underlined, so they don't rely on colour alone. */
+.page p a, .page li a, footer p a, footer span a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 2px; }
+.page p a, .page li a, .page td a, .help a, .callout a { color: var(--color-accent-hover); }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: var(--radius-md); }
 code { font: 500 0.86em/1.4 var(--font-mono); background: var(--color-surface-sunken); border: 1px solid var(--color-border-subtle); padding: 1px 5px; border-radius: var(--radius-md); overflow-wrap: anywhere; }
 pre { position: relative; margin: 14px 0; padding: 14px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow-x: auto; font: 400 13px/1.6 var(--font-mono); }
@@ -271,6 +276,7 @@ table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.
 th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--color-border-subtle); }
 th { font-weight: 600; color: var(--color-text-muted); background: var(--color-grid-header); white-space: nowrap; }
 tr:last-child td { border-bottom: none; }
+@media (max-width: 640px) { th { white-space: normal; } th, td { padding: 8px 10px; overflow-wrap: anywhere; } }
 /* Comparison tables: SayQL's column tinted, sources quiet. */
 table.compare tbody th { white-space: normal; min-width: 120px; }
 table.compare td:nth-child(2), table.compare thead th:nth-child(2) { background: color-mix(in srgb, var(--color-accent-soft) 60%, var(--color-surface)); }
@@ -384,7 +390,7 @@ footer a { color: var(--color-text-muted); }
         <svg class="theme-light-icon"><use href="#i-moon"/></svg>
         <svg class="theme-dark-icon"><use href="#i-sun"/></svg>
       </button>
-      <a class="btn" href="/download/"><svg><use href="#i-download"/></svg><span>Download</span></a>
+      <a class="btn" href="/download/" aria-label="Download SayQL"><svg><use href="#i-download"/></svg><span>Download</span></a>
     </div>
   </div>
 </header>
@@ -422,11 +428,11 @@ footer a { color: var(--color-text-muted); }
   <li><b>Open script</b> opens one of your saved scripts, unrun.</li>
 </ul>
 <p>The schema the assistant gets includes the <a href="/docs/agent-mode/">database notes</a> you saved, so it knows what codes mean and how tables relate.</p>
-<h2 id="never-send-columns"><a class="anchor" href="#never-send-columns" aria-hidden="true">#</a>Never-send columns</h2>
+<h2 id="never-send-columns"><a class="anchor" href="#never-send-columns" aria-hidden="true" tabindex="-1">#</a>Never-send columns</h2>
 <p>Columns you marked <b>never send</b> in a connection's agent settings stay private over MCP too, and <code>describe_schema</code> marks them <code>[never sent to AI]</code>. Write an entry as <code>table.column</code> for one table, or <code>column</code> for that column in every table. A query that could read one in any form is refused before it runs: naming it (also in <code>WHERE</code>, <code>ORDER BY</code> or <code>COUNT</code>), a whole row as one value (<code>row_to_json(c)</code>, <code>c::text</code>), <code>*</code> inside a subquery or CTE, a column alias list, a set operation that could rename it, a sort by its position (<code>ORDER BY 3</code>, <code>ORDER BY +3</code>), or MySQL's <code>PROCEDURE ANALYSE()</code>. When SayQL can't tell, it refuses and asks the assistant to name the columns it needs. A plain <code>SELECT *</code> runs, with those columns withheld. Their comments, enum values and CHECK constraints are left out of the schema the AI sees.</p>
 <p>On PostgreSQL, SayQL also asks the database for the query's plan first (<code>EXPLAIN</code>, which doesn't run it), so it follows views and renamed columns to the table they come from. On MySQL, SQL Server and SQLite it reads the SQL, so a view that renames a never-send column isn't followed: add the view's column to the list too. Functions defined in your database that read such a column aren't followed on any database.</p>
 <p>Whatever the setting, AI apps can't call functions that read the server's files or reach outside the database (<code>pg_read_file</code>, <code>pg_ls_dir</code>, large objects, <code>dblink</code>, the <code>http</code> extension (<code>http_get</code>, <code>http_post</code>…), Amazon RDS's <code>aws_s3</code> and <code>aws_lambda</code>, <code>load_file</code>, <code>OPENROWSET</code>, and the like), even when the saved login could. A login with only the rights it needs is still the best protection.</p>
-<h2 id="table-usage"><a class="anchor" href="#table-usage" aria-hidden="true">#</a>Table usage</h2>
+<h2 id="table-usage"><a class="anchor" href="#table-usage" aria-hidden="true" tabindex="-1">#</a>Table usage</h2>
 <p>After each table, <code>describe_schema</code> says how much it is used, from the database's own statistics, so the assistant can tell a live table from an abandoned one, for example <code>usage: 12.3k reads, 0 writes, last write 2026-03-12</code>. One line above the tables gives the period the figures cover ("since 2026-01-01", or "since the server started on …"): the counters reset when the server restarts or fails over, and differ on each replica. They are counts and dates, never row values.</p>
 <ul>
   <li><b>PostgreSQL:</b> reads (sequential and index scans), written rows and live rows from <code>pg_stat_user_tables</code>, and when the table was last analyzed; the period starts when the database's statistics were reset, else when the server started.</li>
@@ -435,12 +441,12 @@ footer a { color: var(--color-text-muted); }
   <li><b>SQLite</b> keeps no such statistics, so nothing is shown.</li>
 </ul>
 <p>It's one extra query per <code>describe_schema</code>, stopped after 5 seconds. If the database user can't read the statistics (or they're turned off), one line says usage statistics are unavailable.</p>
-<h2 id="notes-suggested-by-ai-apps"><a class="anchor" href="#notes-suggested-by-ai-apps" aria-hidden="true">#</a>Notes suggested by AI apps</h2>
+<h2 id="notes-suggested-by-ai-apps"><a class="anchor" href="#notes-suggested-by-ai-apps" aria-hidden="true" tabindex="-1">#</a>Notes suggested by AI apps</h2>
 <p>When an assistant learns a lasting fact about a database (a table that's no longer used and what replaced it, what a status code means, how two tables relate), it can call <code>suggest_note</code> with the note (up to 300 characters) and its evidence (up to 600), such as "no references in api/ since commit a1b2c3; usage: 0 writes since 2026-01-01". Notes describe the database, never the data in it. Status codes and enum names (<code>1=Pending</code>, <code>status IN (2,3)</code>), SQL, file paths (<code>migrations/2026_03_01_merge_orders.sql</code>), dates, units and short commit hashes are fine; a note or evidence that looks like a value from your rows is refused: an email, a phone, card, ID or account number, a UUID or other long id, a number of six or more digits or with thousands separators, a money amount, or what looks like a person's name. The same check applies to notes you write and notes Investigate suggests.</p>
 <p>A suggestion isn't a note until you accept it. A database's suggestions show under <b>Notes → Suggested notes and fixes</b> in the navigator, with a count; all of them are in <b>Settings → AI apps → Suggestions</b>, whose tab shows how many are waiting. The count is also on <b>AI apps</b> in the Settings sidebar and on the settings (gear) button, which opens straight to Suggestions while any are waiting. Each shows the app, the note and the evidence, with <b>Accept</b> (it's saved like a note you wrote, so the Ask box, Investigate and every AI app see it from then on) and <b>Dismiss</b>. Up to 50 suggestions wait per connection, a note already saved or suggested is refused, and each suggestion is in the agent activity log.</p>
 <p>An assistant can also correct a note you saved. <code>describe_schema</code> lists the saved notes with a short id each, such as <code>[n_1a2b3c4d]</code>. A suggestion with <code>replaces</code> set to that id proposes new text for the note: it shows as <b>Replaces:</b> with the old text struck through, and <b>Replace note</b> changes the note's text. With <code>remove: true</code> as well, it proposes deleting the note, with why as its text: it shows as <b>Remove note:</b> and <b>Remove note</b> deletes it. <b>Dismiss</b> leaves the note as it is. Only notes of the same database can be named.</p>
 <p>A suggestion can also carry a <code>check</code>: read-only SQL returning one row and one column, true while the note holds. Once accepted, SayQL runs it to keep the note honest (see <a href="/docs/agent-mode/#notes-stay-true">How notes stay true</a>). <code>describe_schema</code> marks each note with how sure SayQL is of it: <i>checked</i>, or <i>may be out of date</i> with the reason, such as a column it names that was dropped or renamed. Assistants are told the schema wins when a note disagrees with it. SayQL suggests fixes of its own too, signed <b>SayQL</b>, when a schema change breaks a note.</p>
-<h2 id="audit-teach-sayql-your-database"><a class="anchor" href="#audit-teach-sayql-your-database" aria-hidden="true">#</a>Audit: teach SayQL your database</h2>
+<h2 id="audit-teach-sayql-your-database"><a class="anchor" href="#audit-teach-sayql-your-database" aria-hidden="true" tabindex="-1">#</a>Audit: teach SayQL your database</h2>
 <p>Your code knows things your schema doesn't: which tables are retired, what a status code means, which columns join without a foreign key. The audit lets a coding agent that works in your project, such as Claude Code or Cursor, read the database through SayQL, check it against your code, and suggest notes for you to approve.</p>
 <ol>
   <li><b>Connect your coding agent</b> (see <a href="#connect-your-coding-agent">Connect your coding agent</a>).</li>
@@ -467,7 +473,7 @@ footer a { color: var(--color-text-muted); }
 <p><b>Which AI sees what.</b> The code and documents it reads, SayQL's schema and notes, and the audit instructions go to your AI provider, as they would with any coding agent. With SayQL AI credits that's through SayQL's service to Anthropic, which keeps token counts, never prompts or answers; with a local model nothing leaves your computer. The key goes to OpenCode in its environment only: never on its command line, in a file or in what SayQL shows.</p>
 <p>Until a connection has been audited, the navigator shows <b>Teach SayQL this database</b> under the open database, with your coding agent to pick, its setup, how to run the audit in it for that connection and <b>Copy audit prompt</b>; its × hides it for good. The same steps show on the <b>Suggestions</b> tab while none are waiting.</p>
 <p>Passwords and writes never go through MCP. SayQL brings its window to the front and marks what came from an AI app, e.g. <i>From Claude (MCP)</i>.</p>
-<h2 id="what-ai-apps-may-see"><a class="anchor" href="#what-ai-apps-may-see" aria-hidden="true">#</a>What AI apps may see</h2>
+<h2 id="what-ai-apps-may-see"><a class="anchor" href="#what-ai-apps-may-see" aria-hidden="true" tabindex="-1">#</a>What AI apps may see</h2>
 <p>In <b>Settings → AI apps → Access</b>, the <b>Connections</b> table has a row per saved connection. Choose what an AI app gets back from a query under <b>What AI apps get back</b>:</p>
 <ul>
   <li><b>Nothing (names and row counts only):</b> only how many rows a query returned, and its column names.</li>
@@ -478,7 +484,7 @@ footer a { color: var(--color-text-muted); }
 <p>Columns marked <b>never send</b> stay out at every level, for AI apps and for Investigate alike (it's one list per connection). They show as chips in the same row; <b>Edit</b> opens a list of your tables to pick them from (the same list Investigate uses, without turning Investigate on or off). Database errors can quote values, so below <b>All rows</b> (and at <b>All rows</b> for a query on a table with never-send columns) the assistant gets a fixed description of the error instead of the database's message: a syntax error and where, a column or table that doesn't exist (named only when the name is in its own SQL), a value that couldn't be converted, and so on.</p>
 <p>These levels decide what SayQL sends back, and they keep your rows from reaching an AI app by accident. They don't make a determined agent harmless: a row count or a sum is a fact about your rows, and an agent set on it can turn a value into a count (<code>WHERE email LIKE 'a%'</code>). <b>Never send</b> is the firm line: SayQL refuses any query that could read those columns. For data an AI app must not learn at all, mark it never send, or leave the connection out.</p>
 
-<h2 id="agent-activity-and-blocking-an-app"><a class="anchor" href="#agent-activity-and-blocking-an-app" aria-hidden="true">#</a>Agent activity and blocking an app</h2>
+<h2 id="agent-activity-and-blocking-an-app"><a class="anchor" href="#agent-activity-and-blocking-an-app" aria-hidden="true" tabindex="-1">#</a>Agent activity and blocking an app</h2>
 <p>The <b>Activity</b> tab lists what AI apps did through SayQL on this computer: when, which app, the connection, the SQL, and whether it ran (with the row count) or was refused and why. Filter it by app, by connection, or to refused queries only, and click a row to see its full SQL. Listing connections, databases and scripts, reading the schema, and handing work to you (with the SQL an app opened for you) are listed too. It keeps the SQL and counts, never rows: errors are kept only in their fixed form, and suggested notes wait in SayQL rather than in the log. The log is a file in SayQL's folder; <b>Clear the log</b> deletes it.</p>
 <p>On the <b>Access</b> tab, <b>Apps</b> lists each app SayQL has seen, with whether it's allowed or blocked, when it was last seen and a <b>Block</b> button. A blocked app is refused everything until you click <b>Allow</b>. A block goes by the name the app reports when it connects, which nothing checks: it stops an app like Cursor, not software on your computer that reports another name, so it isn't a security boundary.</p>
 <p>To keep out apps you haven't chosen, turn on <b>Only allow apps I've approved</b> at the top of <b>Apps</b>. Turning it on approves every app already listed that isn't blocked, so the apps you use now keep working. After that, an app you haven't approved is refused everything, logged as refused (<i>not approved</i>), and listed as <b>Waiting for approval</b> with <b>Approve</b> and <b>Block</b>; the app is told to ask you to approve it under <b>Settings → AI apps → Access</b>. A blocked app stays blocked even if it was approved. Approval goes by the reported name too, so it keeps out unknown apps but isn't a security boundary against software that lies about its name.</p>
@@ -488,7 +494,7 @@ footer a { color: var(--color-text-muted); }
 <div class="callout tip"><svg><use href="#i-info"/></svg><p><b>For a company,</b> govern agents centrally instead: on a <a href="/docs/teams/#govern-your-ai-agents">SayQL server</a>, an admin gives each agent its own key, the databases, tables and rows it may read, and what it may see. Private columns are withheld on the server, and every agent query is in the team's audit log.</p></div>
 <p>How this compares with other database MCP servers and AI SQL clients: <a href="/docs/sayql-vs-mcp-toolbox/">SayQL vs MCP Toolbox for Databases</a>, <a href="/docs/sayql-vs-chat2db/">SayQL vs Chat2DB</a>, and <a href="/docs/compare/">all tools side by side</a>.</p>
 
-<h2 id="connect-your-coding-agent"><a class="anchor" href="#connect-your-coding-agent" aria-hidden="true">#</a>Connect your coding agent</h2>
+<h2 id="connect-your-coding-agent"><a class="anchor" href="#connect-your-coding-agent" aria-hidden="true" tabindex="-1">#</a>Connect your coding agent</h2>
 <p>Open <b>Settings → AI apps</b> and, at the top of the <b>Access</b> tab, <b>Connect an app</b> (open and highlighted until an app has connected, one line after that). The first-run setup ends with a shortcut here too. Pick <b>Your coding agent</b>: it shows the exact command, link or config for that agent, with the path to <code>sayql-mcp</code> on your computer filled in. <b>Teach SayQL this database</b> has the same list. SayQL picks one for you to start with: the agent you chose last time, else one it finds installed (it only checks for the app or command, and runs nothing), else the app that last connected, else Claude Code.</p>
 <div class="table-wrap"><table>
   <thead><tr><th>Agent</th><th>Connect</th><th>Run the audit</th></tr></thead>
@@ -523,7 +529,7 @@ footer a { color: var(--color-text-muted); }
 
 <footer>
   <div class="inner">
-    <a class="brand" href="/" style="font-size:14px"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
+    <a class="brand" href="/" style="font-size:14px" aria-label="SayQL home"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
     <span>© 2026 Azenvoc LLP. SayQL Community Edition, a product of <a href="https://azenvoc.com">Azenvoc</a>.</span>
     <nav aria-label="Footer"><a href="/">Home</a><a href="https://github.com/azenvoc/sayql-releases/releases">Changelog</a><a href="https://github.com/azenvoc/sayql/discussions">Discussions</a><a href="https://github.com/azenvoc/sayql/blob/main/LICENSE">License</a><a href="https://github.com/azenvoc/sayql-releases/blob/main/PRIVACY.md">Privacy</a></nav>
   </div>

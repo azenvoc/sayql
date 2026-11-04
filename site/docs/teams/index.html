@@ -27,7 +27,9 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<!-- Fonts load without blocking the first paint: system fonts show until Inter arrives. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap"></noscript>
 <script>
   try { var t = localStorage.getItem("sayql-site-theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
 </script>
@@ -55,7 +57,7 @@
   --color-border-strong: #b9c0ca;
   --color-text: #1d2125;
   --color-text-muted: #56606b;
-  --color-text-subtle: #8a939d;
+  --color-text-subtle: #626b77;
   --color-accent: #1f6feb;
   --color-accent-hover: #1a5fd0;
   --color-accent-soft: #e5efff;
@@ -103,7 +105,7 @@
     --color-border-strong: #474c55;
     --color-text: #e2e5e9;
     --color-text-muted: #a3aab4;
-    --color-text-subtle: #727a85;
+    --color-text-subtle: #959da8;
     --color-accent: #4a8dff;
     --color-accent-hover: #6aa2ff;
     --color-accent-soft: #1e2d48;
@@ -149,7 +151,7 @@
   --color-border-strong: #474c55;
   --color-text: #e2e5e9;
   --color-text-muted: #a3aab4;
-  --color-text-subtle: #727a85;
+  --color-text-subtle: #959da8;
   --color-accent: #4a8dff;
   --color-accent-hover: #6aa2ff;
   --color-accent-soft: #1e2d48;
@@ -186,6 +188,9 @@ html { scroll-padding-top: 84px; }
 body { margin: 0; background: var(--color-page); color: var(--color-text); font: 400 16px/1.7 var(--font-sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { color: var(--color-accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* Links in running text are underlined, so they don't rely on colour alone. */
+.page p a, .page li a, footer p a, footer span a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 2px; }
+.page p a, .page li a, .page td a, .help a, .callout a { color: var(--color-accent-hover); }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: var(--radius-md); }
 code { font: 500 0.86em/1.4 var(--font-mono); background: var(--color-surface-sunken); border: 1px solid var(--color-border-subtle); padding: 1px 5px; border-radius: var(--radius-md); overflow-wrap: anywhere; }
 pre { position: relative; margin: 14px 0; padding: 14px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow-x: auto; font: 400 13px/1.6 var(--font-mono); }
@@ -271,6 +276,7 @@ table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.
 th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--color-border-subtle); }
 th { font-weight: 600; color: var(--color-text-muted); background: var(--color-grid-header); white-space: nowrap; }
 tr:last-child td { border-bottom: none; }
+@media (max-width: 640px) { th { white-space: normal; } th, td { padding: 8px 10px; overflow-wrap: anywhere; } }
 /* Comparison tables: SayQL's column tinted, sources quiet. */
 table.compare tbody th { white-space: normal; min-width: 120px; }
 table.compare td:nth-child(2), table.compare thead th:nth-child(2) { background: color-mix(in srgb, var(--color-accent-soft) 60%, var(--color-surface)); }
@@ -384,7 +390,7 @@ footer a { color: var(--color-text-muted); }
         <svg class="theme-light-icon"><use href="#i-moon"/></svg>
         <svg class="theme-dark-icon"><use href="#i-sun"/></svg>
       </button>
-      <a class="btn" href="/download/"><svg><use href="#i-download"/></svg><span>Download</span></a>
+      <a class="btn" href="/download/" aria-label="Download SayQL"><svg><use href="#i-download"/></svg><span>Download</span></a>
     </div>
   </div>
 </header>
@@ -414,7 +420,7 @@ footer a { color: var(--color-text-muted); }
       <p class="lead">SayQL for teams is the governance layer for AI agents on your databases, and for the people who use them. Each agent gets its own key, only the databases you choose and only the data you allow, and every query is on record. Your company runs its own SayQL server: it holds the team's database connections, so nobody needs the database passwords, enforces what the AI may see, withholds the columns your admin marks never-send from everyone (their values never leave the server), and keeps an audit log of every query, from people and from Investigate.</p>
 <div class="callout"><svg><use href="#i-info"/></svg><p><b>Not using a team?</b> Nothing changes. Without signing in, SayQL never contacts a team server and works exactly as before.</p></div>
 
-<h2 id="set-up-a-team-server"><a class="anchor" href="#set-up-a-team-server" aria-hidden="true">#</a>Set up a team server</h2>
+<h2 id="set-up-a-team-server"><a class="anchor" href="#set-up-a-team-server" aria-hidden="true" tabindex="-1">#</a>Set up a team server</h2>
 <p>For the person setting up SayQL for a team. You need a machine with Docker that can reach your database: a small cloud server (1 GB of memory is plenty, on AWS, Google Cloud, Azure, DigitalOcean, Hetzner or similar) or a machine in your office. On it, run:</p>
 <pre><code>curl -fsSL https://sayql.dev/install | sh</code></pre>
 <ul>
@@ -462,7 +468,7 @@ footer a { color: var(--color-text-muted); }
 </ul>
 <p>Run the installer again after any fix: it checks again and says what's still wrong. The checks ask sayql.dev how your machine looks from the internet, sending only the domain name; nothing is stored. To skip them, add <code>SAYQL_NO_CHECK=1</code> before <code>sh</code>.</p>
 
-<h2 id="govern-your-ai-agents"><a class="anchor" href="#govern-your-ai-agents" aria-hidden="true">#</a>Govern your AI agents</h2>
+<h2 id="govern-your-ai-agents"><a class="anchor" href="#govern-your-ai-agents" aria-hidden="true" tabindex="-1">#</a>Govern your AI agents</h2>
 <p>For admins. Claude Code, Cursor and your own bots can query your databases through the server, over MCP, under rules you set per agent.</p>
 <ul>
   <li>On the admin page, open <b>Agents</b> and click <b>Add agent</b>. Give it a name, tick the connections it may use, and choose what it gets back from a query: only the row count and column names, <b>counts and summaries</b> (the default: no row values), or all rows.</li>
@@ -484,7 +490,7 @@ footer a { color: var(--color-text-muted); }
 </ul>
 <p>The free app keeps its own notes on your computer (see <a href="/docs/agent-mode/#notes-stay-true">How notes stay true</a>). Shared knowledge is part of the Team plan; a team server without a licence or trial answers its routes with "no licence".</p>
 
-<h2 id="sign-in"><a class="anchor" href="#sign-in" aria-hidden="true">#</a>Sign in</h2>
+<h2 id="sign-in"><a class="anchor" href="#sign-in" aria-hidden="true" tabindex="-1">#</a>Sign in</h2>
 <ul>
   <li>Your team admin sends you an invite link, usually starting with <code>https://sayql.dev/join</code>. Open it and click <b>Open in SayQL</b>; if you don't have SayQL yet, the page links to the download. The server and code stay in the link: sayql.dev never sees them.</li>
   <li>SayQL opens <b>Sign in to your team</b> filled in. Check the server is your company's, then click <b>Sign in</b>. Nothing is sent before you do.</li>
@@ -494,7 +500,7 @@ footer a { color: var(--color-text-muted); }
   <li><b>Settings → Team</b> shows the server, your email and the team's plan and licence. <b>Sign out</b> ends the sign-in on the server and removes it from this computer.</li>
 </ul>
 
-<h2 id="team-connections"><a class="anchor" href="#team-connections" aria-hidden="true">#</a>Team connections</h2>
+<h2 id="team-connections"><a class="anchor" href="#team-connections" aria-hidden="true" tabindex="-1">#</a>Team connections</h2>
 <p>The team's connections appear in the Database Navigator under <b>Team</b>. They work like your own: the Ask box, the editor and Investigate all use them. A few things differ:</p>
 <ul>
   <li><b>Read-only.</b> Your team's server runs only queries that read data. A statement that would change data is refused before it reaches the database.</li>
@@ -502,13 +508,13 @@ footer a { color: var(--color-text-muted); }
   <li><b>Audited.</b> Each query is recorded in the server's audit log with where it came from (Ask box, editor or agent) and, from the Ask box or Investigate, the question it answers. Results are never stored.</li>
 </ul>
 
-<h2 id="rules-set-by-your-team-admin"><a class="anchor" href="#rules-set-by-your-team-admin" aria-hidden="true">#</a>Rules set by your team admin</h2>
+<h2 id="rules-set-by-your-team-admin"><a class="anchor" href="#rules-set-by-your-team-admin" aria-hidden="true" tabindex="-1">#</a>Rules set by your team admin</h2>
 <ul>
   <li><b>What Investigate may see.</b> Your admin sets the most the AI may see of results on each team connection. You can choose less in <b>Investigate settings</b>, not more; the options above it are marked <b>Set by your team admin</b>.</li>
   <li><b>Never-send columns.</b> Columns your admin marks never send are added to the connection's list and can't be removed. Investigate refuses queries that use them, and the server leaves them out of every result (the Results panel says how many were withheld).</li>
 </ul>
 
-<h2 id="team-ai"><a class="anchor" href="#team-ai" aria-hidden="true">#</a>Team AI</h2>
+<h2 id="team-ai"><a class="anchor" href="#team-ai" aria-hidden="true" tabindex="-1">#</a>Team AI</h2>
 <p>Your team admin can also give the team one company AI key, with monthly limits. Then, on team connections, the Ask box, fixes, Improve and Investigate use your team's AI through your team's server, and you don't need an AI key of your own for them. Your own connections keep using your own AI provider and key.</p>
 <p>A team without its own AI key can use <b>SayQL AI credits</b>: a prepaid credit key from SayQL instead of a company key (admin page → <b>AI</b>: provider Anthropic, base URL <code>https://sayql.dev/api/ai</code>). Requests then pass through SayQL's service on their way to Anthropic; SayQL keeps only the model and token counts, never the prompt or the answer. Usage is charged at Anthropic's published API prices plus 20%, from a balance you top up in advance; the admin page's <b>AI</b> tab shows what's left and warns below $5. Buy credit under <a href="/#pricing">Pricing</a>: the key is emailed within a minute, and buying again with the same email tops up the same key.</p>
 <ul>
@@ -516,7 +522,7 @@ footer a { color: var(--color-text-muted); }
   <li><b>Settings → Team</b> shows who provides the AI and how much you and your team have used this month against the limits. When a limit is reached, AI requests on team connections stop until the 1st of the next month, and SayQL says so.</li>
 </ul>
 
-<h2 id="messages-you-may-see"><a class="anchor" href="#messages-you-may-see" aria-hidden="true">#</a>Messages you may see</h2>
+<h2 id="messages-you-may-see"><a class="anchor" href="#messages-you-may-see" aria-hidden="true" tabindex="-1">#</a>Messages you may see</h2>
 <div class="table-wrap"><table>
   <thead><tr><th>Message</th><th>What to do</th></tr></thead>
   <tbody>
@@ -534,7 +540,7 @@ footer a { color: var(--color-text-muted); }
 
 <p>Choosing a tool for your team? See how SayQL compares with <a href="/docs/sayql-vs-dbeaver/">DBeaver</a>, <a href="/docs/sayql-vs-datagrip/">DataGrip</a> and <a href="/docs/sayql-vs-mcp-toolbox/">MCP Toolbox for Databases</a>, or <a href="/docs/compare/">all tools side by side</a>.</p>
 
-<h2 id="privacy"><a class="anchor" href="#privacy" aria-hidden="true">#</a>Privacy</h2>
+<h2 id="privacy"><a class="anchor" href="#privacy" aria-hidden="true" tabindex="-1">#</a>Privacy</h2>
 <p>When you're signed in, queries on team connections and the questions they answer go to your team's server, which your company runs, and are recorded in its audit log. Your own connections, and anything you do on them, never go there.</p>
 <p>With team AI on, AI requests on team connections (your question, the schema and, in Investigate if allowed, masked rows) also go to your company's SayQL server, which forwards them to your company's AI provider and stores only token counts. Nothing reaches SayQL itself. Without team AI, questions on team connections go to the AI provider you chose in Settings, as on your own connections.</p>
       <nav class="pager" aria-label="Previous and next page"><a class="prev" href="/docs/agent-mode/"><small>← Previous</small><b>Investigate</b></a><a class="next" href="/docs/postgresql-plain-english/"><small>Next →</small><b>Ask PostgreSQL questions in plain English</b></a></nav>
@@ -549,7 +555,7 @@ footer a { color: var(--color-text-muted); }
 
 <footer>
   <div class="inner">
-    <a class="brand" href="/" style="font-size:14px"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
+    <a class="brand" href="/" style="font-size:14px" aria-label="SayQL home"><svg class="wordmark" width="55" height="20" aria-hidden="true"><use href="#i-wordmark"/></svg></a>
     <span>© 2026 Azenvoc LLP. SayQL Community Edition, a product of <a href="https://azenvoc.com">Azenvoc</a>.</span>
     <nav aria-label="Footer"><a href="/">Home</a><a href="https://github.com/azenvoc/sayql-releases/releases">Changelog</a><a href="https://github.com/azenvoc/sayql/discussions">Discussions</a><a href="https://github.com/azenvoc/sayql/blob/main/LICENSE">License</a><a href="https://github.com/azenvoc/sayql-releases/blob/main/PRIVACY.md">Privacy</a></nav>
   </div>

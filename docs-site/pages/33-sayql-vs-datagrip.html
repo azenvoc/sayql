@@ -38,11 +38,11 @@
 
 <h2>How SayQL handles AI access</h2>
 <ul>
-  <li><b>Counts, not rows, by default.</b> For each connection you choose what AI apps see of results: nothing, counts and summaries, masked rows or all rows. <a href="/docs/mcp/">More</a></li>
-  <li><b>Columns that never reach the AI.</b> Mark a column never send and any query that could read it is refused, and it's withheld from results. <a href="/docs/mcp/">More</a></li>
-  <li><b>Read-only, enforced.</b> Every statement is checked before it runs and runs in a read-only transaction; AI apps can't change data. <a href="/docs/running-queries/">More</a></li>
-  <li><b>A record of what AI ran.</b> See every query each AI app ran, and block an app in one click. On the team server, one log covers every person and agent. <a href="/docs/teams/">More</a></li>
-  <li><b>Per-agent keys on your own server.</b> The self-hosted team server gives each agent its own key, databases, tables and rows. <a href="/docs/teams/">More</a></li>
+  <li><b>Counts, not rows, by default.</b> For each connection you choose what AI apps see of results: nothing, counts and summaries, masked rows or all rows. See <a href="/docs/mcp/#what-ai-apps-may-see">what AI apps may see</a>.</li>
+  <li><b>Columns that never reach the AI.</b> Mark a column never send and any query that could read it is refused, and it's withheld from results. See <a href="/docs/mcp/#never-send-columns">never-send columns</a>.</li>
+  <li><b>Read-only, enforced.</b> Every statement is checked before it runs and runs in a read-only transaction; AI apps can't change data. See <a href="/docs/running-queries/">how queries run safely</a>.</li>
+  <li><b>A record of what AI ran.</b> See every query each AI app ran, and block an app in one click. On the team server, one log covers every person and agent. See <a href="/docs/mcp/#agent-activity-and-blocking-an-app">agent activity</a>.</li>
+  <li><b>Per-agent keys on your own server.</b> The self-hosted team server gives each agent its own key, databases, tables and rows. See <a href="/docs/teams/">SayQL for teams</a>.</li>
 </ul>
 
 <h2>Questions</h2>
