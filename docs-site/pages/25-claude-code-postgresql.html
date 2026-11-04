@@ -7,10 +7,10 @@
 
 <h2>Set it up</h2>
 <ol class="steps">
-  <li><b>Install SayQL</b> from the <a href="/download/">download page</a>. It's free and open source.</li>
-  <li><b>Add your PostgreSQL connection</b> in SayQL. Use a <a href="/docs/databases/#use-a-read-only-login">read-only login</a> if you can (a role with <code>CONNECT</code>, <code>USAGE</code> on the schema and <code>SELECT</code> on its tables), so the database enforces it too.</li>
-  <li><b>Connect Claude Code.</b> Open <b>Settings → AI apps</b>, then <b>Connect an app</b> on the <b>Access</b> tab, and pick Claude Code. SayQL shows the command with the path filled in, which looks like <code>claude mcp add --scope user sayql -- &lt;path&gt;</code>. Run it once in a terminal.</li>
-  <li><b>Ask.</b> In Claude Code, ask about your data: "which tables are still in use, and how many orders came in this month?" It lists your connections, reads the schema and runs read-only queries through SayQL.</li>
+  <li><div><b>Install SayQL</b> from the <a href="/download/">download page</a>. It's free and open source.</div></li>
+  <li><div><b>Add your PostgreSQL connection</b> in SayQL. Use a <a href="/docs/databases/#use-a-read-only-login">read-only login</a> if you can (a role with <code>CONNECT</code>, <code>USAGE</code> on the schema and <code>SELECT</code> on its tables), so the database enforces it too.</div></li>
+  <li><div><b>Connect Claude Code.</b> Open <b>Settings → AI apps</b>, then <b>Connect an app</b> on the <b>Access</b> tab, and pick Claude Code. SayQL shows the command with the path filled in, which looks like <code>claude mcp add --scope user sayql -- &lt;path&gt;</code>. Run it once in a terminal.</div></li>
+  <li><div><b>Ask.</b> In Claude Code, ask about your data: "which tables are still in use, and how many orders came in this month?" It lists your connections, reads the schema and runs read-only queries through SayQL.</div></li>
 </ol>
 
 <h2>Choose what Claude Code sees</h2>

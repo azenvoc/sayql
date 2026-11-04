@@ -63,6 +63,11 @@ def load_pages() -> list[dict]:
             if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", meta.get(key, "")):
                 raise SystemExit(f"{path.name}: the header needs {key}: YYYY-MM-DD")
         body = raw[m.end():]
+        # A steps list is a two-column grid (number, content): content outside one <div> per step
+        # becomes a column of its own, one word per line.
+        for steps in re.findall(r'<ol class="steps">(.*?)</ol>', body, re.S):
+            if re.search(r"<li>(?!<div>)", steps):
+                raise SystemExit(f'{path.name}: wrap each step of <ol class="steps"> in <li><div>…</div></li>')
         pages.append({**meta, "order": int(meta["order"]), "body": body, "url": url_of(meta["slug"]), "qa": questions(body)})
     return sorted(pages, key=lambda p: p["order"])
 

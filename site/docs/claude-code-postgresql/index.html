@@ -283,7 +283,8 @@ table.compare small a { color: var(--color-text-subtle); }
 .page:has(table.compare-wide) { max-width: 1140px; }
 table.compare-wide { font-size: 13.5px; }
 table.compare-wide th, table.compare-wide td { padding: 10px 12px; }
-/* Too narrow for seven columns: each question becomes a block, one line per tool. */
+/* Too narrow for the columns (seven below 1100px, three on phones): each row becomes a block, one
+   line per tool, named by the cell's data-label. */
 @media (max-width: 1100px) {
   table.compare-wide thead { display: none; }
   table.compare-wide tr { display: block; border-bottom: 1px solid var(--color-border); }
@@ -293,6 +294,16 @@ table.compare-wide th, table.compare-wide td { padding: 10px 12px; }
   table.compare-wide td::before { content: attr(data-label); font-weight: 600; color: var(--color-text); }
   table.compare-wide tr:last-child td { border-bottom: 1px solid var(--color-border-subtle); }
   table.compare-wide tr:last-child td:last-child { border-bottom: none; }
+}
+@media (max-width: 640px) {
+  table.compare thead { display: none; }
+  table.compare tr { display: block; border-bottom: 1px solid var(--color-border); }
+  table.compare tr:last-child { border-bottom: none; }
+  table.compare tbody th { display: block; border-bottom: 1px solid var(--color-border-subtle); }
+  table.compare td { display: grid; grid-template-columns: minmax(72px, 28%) minmax(0, 1fr); gap: 10px; overflow-wrap: anywhere; }
+  table.compare td::before { content: attr(data-label); font-weight: 600; color: var(--color-text); }
+  table.compare tr:last-child td { border-bottom: 1px solid var(--color-border-subtle); }
+  table.compare tr:last-child td:last-child { border-bottom: none; }
 }
 .callout { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; margin: 18px 0; padding: 12px 14px; border-radius: var(--radius-lg); border: 1px solid var(--color-border); background: var(--color-surface); font-size: 15px; }
 .callout svg { width: 18px; height: 18px; margin-top: 4px; }
@@ -408,10 +419,10 @@ footer a { color: var(--color-text-muted); }
 
 <h2 id="set-it-up"><a class="anchor" href="#set-it-up" aria-hidden="true">#</a>Set it up</h2>
 <ol class="steps">
-  <li><b>Install SayQL</b> from the <a href="/download/">download page</a>. It's free and open source.</li>
-  <li><b>Add your PostgreSQL connection</b> in SayQL. Use a <a href="/docs/databases/#use-a-read-only-login">read-only login</a> if you can (a role with <code>CONNECT</code>, <code>USAGE</code> on the schema and <code>SELECT</code> on its tables), so the database enforces it too.</li>
-  <li><b>Connect Claude Code.</b> Open <b>Settings → AI apps</b>, then <b>Connect an app</b> on the <b>Access</b> tab, and pick Claude Code. SayQL shows the command with the path filled in, which looks like <code>claude mcp add --scope user sayql -- &lt;path&gt;</code>. Run it once in a terminal.</li>
-  <li><b>Ask.</b> In Claude Code, ask about your data: "which tables are still in use, and how many orders came in this month?" It lists your connections, reads the schema and runs read-only queries through SayQL.</li>
+  <li><div><b>Install SayQL</b> from the <a href="/download/">download page</a>. It's free and open source.</div></li>
+  <li><div><b>Add your PostgreSQL connection</b> in SayQL. Use a <a href="/docs/databases/#use-a-read-only-login">read-only login</a> if you can (a role with <code>CONNECT</code>, <code>USAGE</code> on the schema and <code>SELECT</code> on its tables), so the database enforces it too.</div></li>
+  <li><div><b>Connect Claude Code.</b> Open <b>Settings → AI apps</b>, then <b>Connect an app</b> on the <b>Access</b> tab, and pick Claude Code. SayQL shows the command with the path filled in, which looks like <code>claude mcp add --scope user sayql -- &lt;path&gt;</code>. Run it once in a terminal.</div></li>
+  <li><div><b>Ask.</b> In Claude Code, ask about your data: "which tables are still in use, and how many orders came in this month?" It lists your connections, reads the schema and runs read-only queries through SayQL.</div></li>
 </ol>
 
 <h2 id="choose-what-claude-code-sees"><a class="anchor" href="#choose-what-claude-code-sees" aria-hidden="true">#</a>Choose what Claude Code sees</h2>

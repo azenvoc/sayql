@@ -283,7 +283,8 @@ table.compare small a { color: var(--color-text-subtle); }
 .page:has(table.compare-wide) { max-width: 1140px; }
 table.compare-wide { font-size: 13.5px; }
 table.compare-wide th, table.compare-wide td { padding: 10px 12px; }
-/* Too narrow for seven columns: each question becomes a block, one line per tool. */
+/* Too narrow for the columns (seven below 1100px, three on phones): each row becomes a block, one
+   line per tool, named by the cell's data-label. */
 @media (max-width: 1100px) {
   table.compare-wide thead { display: none; }
   table.compare-wide tr { display: block; border-bottom: 1px solid var(--color-border); }
@@ -293,6 +294,16 @@ table.compare-wide th, table.compare-wide td { padding: 10px 12px; }
   table.compare-wide td::before { content: attr(data-label); font-weight: 600; color: var(--color-text); }
   table.compare-wide tr:last-child td { border-bottom: 1px solid var(--color-border-subtle); }
   table.compare-wide tr:last-child td:last-child { border-bottom: none; }
+}
+@media (max-width: 640px) {
+  table.compare thead { display: none; }
+  table.compare tr { display: block; border-bottom: 1px solid var(--color-border); }
+  table.compare tr:last-child { border-bottom: none; }
+  table.compare tbody th { display: block; border-bottom: 1px solid var(--color-border-subtle); }
+  table.compare td { display: grid; grid-template-columns: minmax(72px, 28%) minmax(0, 1fr); gap: 10px; overflow-wrap: anywhere; }
+  table.compare td::before { content: attr(data-label); font-weight: 600; color: var(--color-text); }
+  table.compare tr:last-child td { border-bottom: 1px solid var(--color-border-subtle); }
+  table.compare tr:last-child td:last-child { border-bottom: none; }
 }
 .callout { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; margin: 18px 0; padding: 12px 14px; border-radius: var(--radius-lg); border: 1px solid var(--color-border); background: var(--color-surface); font-size: 15px; }
 .callout svg { width: 18px; height: 18px; margin-top: 4px; }

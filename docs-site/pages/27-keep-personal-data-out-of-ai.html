@@ -6,9 +6,9 @@
 
 <h2>Three levels of protection</h2>
 <ol class="steps">
-  <li><b>Counts, not rows.</b> Per connection, choose what AI apps see of results: nothing, counts and summaries, masked rows, or all rows. <a href="/docs/agent-mode/">Investigate</a>, SayQL's multi-step mode, has its own setting: nothing (the default), counts and summaries, or up to 20 masked rows, and can ask you before each send.</li>
-  <li><b>Masked rows.</b> When rows help, <b>Rows, masked</b> replaces likely personal data (emails, phones, names, IDs) with tokens such as <code>‹email-1›</code>. It's best effort: a free-text column can hold anything.</li>
-  <li><b>Never send.</b> The firm line. Mark a column, such as <code>customers.email</code> or <code>patients.ssn</code>, and any query that could read it in any form is refused before it runs, at every level, for AI apps and Investigate alike. Its comments and allowed values are left out of the schema too.</li>
+  <li><div><b>Counts, not rows.</b> Per connection, choose what AI apps see of results: nothing, counts and summaries, masked rows, or all rows. <a href="/docs/agent-mode/">Investigate</a>, SayQL's multi-step mode, has its own setting: nothing (the default), counts and summaries, or up to 20 masked rows, and can ask you before each send.</div></li>
+  <li><div><b>Masked rows.</b> When rows help, <b>Rows, masked</b> replaces likely personal data (emails, phones, names, IDs) with tokens such as <code>‹email-1›</code>. It's best effort: a free-text column can hold anything.</div></li>
+  <li><div><b>Never send.</b> The firm line. Mark a column, such as <code>customers.email</code> or <code>patients.ssn</code>, and any query that could read it in any form is refused before it runs, at every level, for AI apps and Investigate alike. Its comments and allowed values are left out of the schema too.</div></li>
 </ol>
 
 <h2>Skills for the Ask box</h2>
