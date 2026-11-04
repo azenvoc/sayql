@@ -596,14 +596,14 @@ section.block { padding: 80px 0 0; }
 }
 
 /* free + download */
-.free { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: start; }
+.free { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: stretch; }
 .free .actions { margin-top: 28px; }
 .small { margin-top: 16px; font-size: 13px; color: var(--color-text-subtle); max-width: 34em; }
 .small a { text-decoration: underline; text-underline-offset: 2px; }
-.note { margin: 0; padding: 4px 0 4px 24px; border-left: 2px solid var(--color-border); color: var(--color-text-muted); }
+.note { margin: 0; padding: 4px 0 4px 24px; border-left: 2px solid var(--color-border); color: var(--color-text-muted); display: flex; flex-direction: column; justify-content: space-between; gap: 24px; }
 .note footer { margin-top: 12px; font-size: 14px; color: var(--color-text-subtle); }
 /* The credit: SayQL's mark linked to Azenvoc's, beside who wrote the quote. */
-.note .credit { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin-top: 16px; }
+.note .credit { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin-top: 0; }
 .credit-lockup { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-surface); color: var(--color-text); }
 .credit-lockup:hover { border-color: var(--color-border-strong); text-decoration: none; }
 .credit-mark { width: 24px; height: 24px; }
