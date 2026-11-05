@@ -1,9 +1,10 @@
-<!-- order: 25 | slug: claude-code-postgresql | title: Connect Claude Code to PostgreSQL safely | group: Guides | published: 2026-11-04 | updated: 2026-11-04 | seo: Connect Claude Code to PostgreSQL safely (read-only, no rows) | description: Give Claude Code your PostgreSQL schema and the numbers it needs, not your rows: read-only queries through SayQL's MCP server, every query logged. -->
+<!-- order: 25 | slug: claude-code-postgresql | title: Connect Claude Code to PostgreSQL safely | group: Guides | published: 2026-11-04 | updated: 2026-11-05 | seo: Connect Claude Code to PostgreSQL safely (read-only, no rows) | description: Give Claude Code your PostgreSQL schema and the numbers it needs, not your rows: read-only queries through SayQL's MCP server, every query logged. -->
 <p class="lead">You can let Claude Code query your PostgreSQL database without giving it your rows or a way to change data. SayQL sits in between as an MCP server: Claude Code gets the schema and, by default, counts and summaries.</p>
 <p>It works the same for MySQL, MariaDB, SQLite and SQL Server, and for production databases, which is where it matters most.</p>
 
 <h2>Why not give Claude Code a database URL?</h2>
 <p>A connection string in your project lets the agent run anything that login can: read every row into its context, which goes to the AI provider, and change data if the login can write. SayQL keeps the password in your keychain, checks every statement before it runs, and decides what Claude Code sees of each result.</p>
+<p>Already gave it one? <a href="/docs/ai-leaked-database-password/">Check what your AI saw, and what to do about it</a>.</p>
 
 <h2>Set it up</h2>
 <ol class="steps">
