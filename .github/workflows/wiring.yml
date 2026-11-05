@@ -1,0 +1,29 @@
+# A pull request says how its change reaches the rest of SayQL: the description's Wiring section
+# has each item ticked or marked "n/a:" with a reason (AGENTS.md, "Wiring a feature in"). It runs
+# again when the description is edited, without rebuilding everything the way ci.yml would.
+name: Wiring
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  wiring:
+    # Dependabot's version bumps have no template to fill in.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      # The description goes in through the environment, never into the script's text.
+      - name: Every Wiring item is ticked or explained
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: node scripts/check-pr-wiring.mjs
