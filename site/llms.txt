@@ -41,6 +41,7 @@ Made by Azenvoc (https://azenvoc.com). Download: https://sayql.dev/download/ · 
 - [Connect Claude Code to PostgreSQL safely](https://sayql.dev/docs/claude-code-postgresql/): Give Claude Code your PostgreSQL schema and the numbers it needs, not your rows: read-only queries through SayQL's MCP server, every query logged.
 - [Give Cursor read-only access to your database](https://sayql.dev/docs/cursor-read-only-database/): Let Cursor's agent query your database read-only through SayQL's MCP server: schema and counts by default, never your passwords or private columns.
 - [Keep personal data out of AI prompts](https://sayql.dev/docs/keep-personal-data-out-of-ai/): Use AI on your database without sending emails, phones or other personal data to the model: counts by default, masked rows, never-send columns.
+- [Your AI saw your database password](https://sayql.dev/docs/ai-leaked-database-password/): Found database passwords, keys or customer data in your Claude Code or Codex history? Clean up first, then connect AI to your database without handing it the password.
 
 ## Compare
 
