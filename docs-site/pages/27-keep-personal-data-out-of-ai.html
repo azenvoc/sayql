@@ -1,4 +1,4 @@
-<!-- order: 27 | slug: keep-personal-data-out-of-ai | title: Keep personal data out of AI prompts | group: Guides | published: 2026-11-04 | updated: 2026-11-04 | seo: Keep PII out of AI prompts when AI queries your database | description: Use AI on your database without sending emails, phones or other personal data to the model: counts by default, masked rows, never-send columns. -->
+<!-- order: 27 | slug: keep-personal-data-out-of-ai | title: Keep personal data out of AI prompts | group: Guides | published: 2026-11-04 | updated: 2026-11-05 | seo: Keep PII out of AI prompts when AI queries your database | description: Use AI on your database without sending emails, phones or other personal data to the model: counts by default, masked rows, never-send columns. -->
 <p class="lead">AI can help with your database without your customers' personal data ever reaching the model. SayQL gives the AI your schema and the numbers it needs, and keeps chosen columns out entirely.</p>
 
 <h2>What the AI sees by default</h2>
@@ -19,5 +19,8 @@
 
 <h2>For a company</h2>
 <p>On the self-hosted <a href="/docs/teams/">SayQL server</a>, never-send columns are withheld on the server for every person and agent, and every query is in one audit log. Your data stays on your network.</p>
+
+<h2>Has personal data already reached an AI?</h2>
+<p>If an agent has run queries with your own database login, the rows that came back are in its session history and went to the AI provider. <a href="/docs/ai-leaked-database-password/">Check what your AI saw</a> with a free scan that runs on your machine.</p>
 
 <p>More: <a href="/docs/privacy/">Privacy and data</a>, <a href="/docs/mcp/#what-ai-apps-may-see">What AI apps may see</a>, and <a href="/docs/compare/">how other tools handle this</a>.</p>

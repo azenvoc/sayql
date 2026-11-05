@@ -1,4 +1,4 @@
-<!-- order: 23 | slug: safe-production-queries | title: Let your team query production safely | group: Guides | published: 2026-10-22 | updated: 2026-10-29 | description: Let your team, and their AI agents, query production safely. Read-only by default; agents get counts, not rows, unless you allow more. -->
+<!-- order: 23 | slug: safe-production-queries | title: Let your team query production safely | group: Guides | published: 2026-10-22 | updated: 2026-11-05 | description: Let your team, and their AI agents, query production safely. Read-only by default; agents get counts, not rows, unless you allow more. -->
 <p class="lead">SayQL lets your team query production safely. Support, ops, PMs and analysts ask in plain English, without being SQL experts.</p>
 
 <h2>Get started</h2>
@@ -22,4 +22,5 @@
   <li><b>On one computer:</b> in <b>Settings → AI apps</b>, choose per connection what agents get back (the default is counts and summaries, not rows) and which columns are never sent. The <b>Activity</b> tab shows what each one ran, and you can block an app or let in only apps you approve. See <a href="/docs/mcp/">MCP for AI apps</a>.</li>
   <li><b>For a team:</b> on a <a href="/docs/teams/#govern-your-ai-agents">SayQL server</a>, give each agent its own key and only the databases, tables and rows it needs (for example <code>orders</code> where <code>tenant_id = 42</code>). Never-send columns are withheld on the server, and every agent query, refusals included, is in the audit log.</li>
 </ul>
+<p>If agents have already had production logins, <a href="/docs/ai-leaked-database-password/">check what they saw</a> before you switch.</p>
 <p>More in <a href="/docs/running-queries/">Run queries safely</a> and <a href="/docs/privacy/">Privacy and data</a>.</p>
