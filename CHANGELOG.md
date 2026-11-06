@@ -5,6 +5,8 @@ All notable changes to SayQL are listed here. Downloads are on the
 
 ## Unreleased
 
+## 0.7.0 (2026-11-09)
+
 ### Access on team servers
 
 - **Your team's server decides which databases you can use,** with team server 0.6.0. SayQL asks again when it comes
