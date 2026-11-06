@@ -24,6 +24,7 @@ export {
   auditStale,
   copyAuditPrompt,
   lastAudit,
+  otherAudits,
   useAudits,
 } from "./audit";
 export type { AuditTarget } from "./audit";

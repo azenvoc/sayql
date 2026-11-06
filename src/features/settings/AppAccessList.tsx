@@ -22,6 +22,7 @@ import {
   auditStale,
   copyAuditPrompt,
   lastAudit,
+  otherAudits,
   saveAgentAccess,
   useAudits,
 } from "../agent";
@@ -123,7 +124,8 @@ export function AppAccessList({
             <tbody>
               {local.map((c) => {
                 const a = access[c.id];
-                const audited = lastAudit(audits, c.id);
+                // The row's Run audit is for the default database, so that's what it reports.
+                const audited = lastAudit(audits, c);
                 return (
                   <tr key={c.id}>
                     <td>
@@ -179,6 +181,11 @@ export function AppAccessList({
                     <td>
                       <div className={styles.audit}>
                         <span>{auditAge(audited)}</span>
+                        {otherAudits(audits, c).map((o) => (
+                          <span key={o.database} className={styles.detail}>
+                            {o.database}: {auditAge(o.at)}
+                          </span>
+                        ))}
                         {auditStale(audited) && (
                           <span
                             className={styles.nudge}

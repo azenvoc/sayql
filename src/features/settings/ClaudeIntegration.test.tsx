@@ -234,7 +234,10 @@ it("shows an unapproved app as waiting, with Approve and Block", async () => {
 it("shows when each connection was last audited, nudges, and copies the audit prompt", async () => {
   const writeText = vi.fn(() => Promise.resolve());
   Object.assign(navigator, { clipboard: { writeText } });
-  const two = [...connections, { id: "c2", name: "Warehouse", kind: "postgres" } as never];
+  const two = [
+    ...connections,
+    { id: "c2", name: "Warehouse", kind: "postgres", database: "sales" } as never,
+  ];
   audits = [
     { connectionId: "c2", database: "sales", app: "Cursor", at: Date.now() - 3 * 86_400_000 },
   ];
@@ -251,6 +254,24 @@ it("shows when each connection was last audited, nudges, and copies the audit pr
   await waitFor(() => expect(writeText).toHaveBeenCalledWith("Audit c1"));
   expect(auditPrompt).toHaveBeenCalledWith("c1", null);
   expect(await screen.findByText("Copied")).toBeTruthy();
+});
+
+it("doesn't count an audit of one database for the rest of the server", async () => {
+  const server = { id: "c2", name: "Shared server", kind: "mssql", database: "" } as never;
+  audits = [
+    { connectionId: "c2", database: "tenant_a", app: "Cursor", at: Date.now() - 3 * 86_400_000 },
+  ];
+  render(
+    <ClaudeIntegration
+      connections={[server]}
+      provider={provider}
+      suggestions={api([])}
+      tab="access"
+    />,
+  );
+  expect(await screen.findByText("tenant_a: 3 days ago")).toBeTruthy();
+  expect(screen.getByText("Never")).toBeTruthy();
+  expect(screen.getByText("Run an audit")).toBeTruthy();
 });
 
 it("teaches the audit when no suggestions wait, with step 1 done once an app connected", async () => {

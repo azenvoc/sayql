@@ -7,6 +7,7 @@ import {
   KnowledgeSources,
   auditAge,
   lastAudit,
+  otherAudits,
   privacySummary,
   useAgentAccess,
   useAudits,
@@ -18,6 +19,8 @@ import styles from "./ConnectionOverview.module.css";
 export interface ConnectionOverviewProps {
   connection: ConnectionConfig;
   connections: ConnectionConfig[];
+  /** The database open in the active tab, when this is its connection. */
+  database?: string | null;
   /** Its schema, when it's the open connection and connected. */
   schema: Schema | null;
   /** Its notes, when it's the open connection. */
@@ -58,7 +61,8 @@ export function ConnectionOverview(p: ConnectionOverviewProps) {
   }, [c.id, team]);
 
   const summary = access ? privacySummary(access, p.provider) : null;
-  const audited = lastAudit(audits, c.id);
+  const audited = lastAudit(audits, c, p.database);
+  const others = otherAudits(audits, c, p.database);
   const appNames = [...new Set((apps ?? []).map((e) => e.app))];
   const refused = (apps ?? []).filter((e) => e.status === "refused").length;
   const columns = p.schema?.tables.reduce((n, t) => n + t.columns.length, 0) ?? 0;
@@ -151,7 +155,15 @@ export function ConnectionOverview(p: ConnectionOverviewProps) {
             )}
             {!c.team && (
               <>
-                <p className={styles.muted}>Last audit: {auditAge(audited).toLowerCase()}</p>
+                <p className={styles.muted}>
+                  Last audit{p.database ? ` of ${p.database}` : ""}:{" "}
+                  {auditAge(audited).toLowerCase()}
+                </p>
+                {others.map((o) => (
+                  <p key={o.database} className={styles.muted}>
+                    {o.database}: {auditAge(o.at).toLowerCase()}
+                  </p>
+                ))}
                 <div className={styles.actions}>
                   <AuditButton target={{ connectionId: c.id, name: c.name, database: null }} />
                 </div>

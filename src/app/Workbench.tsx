@@ -241,7 +241,9 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
   const [hiddenDoubts, setHiddenDoubts] = useState<string[]>([]);
   // Notes AI apps suggested over MCP; an accepted one (here or in Settings) is a new note.
   const noteSuggestions = useNoteSuggestions();
-  const suggestionsHere = noteSuggestions.suggestions.filter((s) => suggestionFor(s, target));
+  const suggestionsHere = noteSuggestions.suggestions.filter((s) =>
+    suggestionFor(s, target, target && conn.connection(target.connectionId)?.database),
+  );
   useEffect(() => {
     const bump = () => setNotesVersion((v) => v + 1);
     window.addEventListener(SUGGESTIONS_CHANGED, bump);
@@ -255,7 +257,7 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
     !!active &&
     !active.id.startsWith("team:") &&
     !teachHidden &&
-    lastAudit(audits, active.id) === null;
+    lastAudit(audits, active, target?.database) === null;
   const agentAccessConnection = dialog?.kind === "agentAccess" ? dialog.connection.id : null;
   const dialogAccess = useAgentAccess(agentAccessConnection);
   // Get started: a checklist under the navigator until it's done or hidden.
@@ -970,6 +972,7 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
           connections={conn.connections}
           schema={dialog.connection.id === active?.id && targetConnected ? schema : null}
           notes={dialog.connection.id === active?.id ? notes.length : null}
+          database={dialog.connection.id === active?.id ? (target?.database ?? null) : null}
           provider={destinationFor(dialog.connection.id)}
           onClose={() => setDialog(null)}
           onEdit={
