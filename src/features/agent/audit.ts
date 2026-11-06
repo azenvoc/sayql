@@ -22,10 +22,56 @@ export function auditCommand(target?: AuditTarget | null): string {
   return `/mcp__sayql__audit${promptArgs(target)}`;
 }
 
-/** When the connection was last audited (any of its databases), or null. */
-export function lastAudit(audits: AuditRun[], connectionId: string): number | null {
-  const times = audits.filter((a) => a.connectionId === connectionId).map((a) => a.at);
+/** A connection, as far as saying which of its databases something is about needs. */
+type SavedConnection = { id: string; database: string };
+
+/**
+ * The database notes, suggestions and audits are kept under: the one named, else the connection's
+ * default. So a tab with no database named and one naming the default are the same place. Must
+ * match `notes_database` in src-tauri/src/audit/mod.rs.
+ */
+export function notesDatabase(
+  database: string | null | undefined,
+  connectionDefault: string | null | undefined,
+): string | null {
+  return database?.trim() || connectionDefault?.trim() || null;
+}
+
+/**
+ * When this database was last audited, or null: `database` when named, else the connection's
+ * default. Auditing one database of a server says nothing about the others.
+ */
+export function lastAudit(
+  audits: AuditRun[],
+  connection: SavedConnection,
+  database: string | null = null,
+): number | null {
+  const place = notesDatabase(database, connection.database);
+  const times = audits
+    .filter(
+      (a) =>
+        a.connectionId === connection.id &&
+        notesDatabase(a.database, connection.database) === place,
+    )
+    .map((a) => a.at);
   return times.length ? Math.max(...times) : null;
+}
+
+/** The other databases of a connection that were audited, most recent first. */
+export function otherAudits(
+  audits: AuditRun[],
+  connection: SavedConnection,
+  database: string | null = null,
+): { database: string; at: number }[] {
+  const place = notesDatabase(database, connection.database);
+  return audits
+    .flatMap((a) => {
+      const name = notesDatabase(a.database, connection.database);
+      return a.connectionId === connection.id && name && name !== place
+        ? [{ database: name, at: a.at }]
+        : [];
+    })
+    .sort((a, b) => b.at - a.at);
 }
 
 /** "Never", "today", "yesterday", "3 days ago", "2 months ago". */
