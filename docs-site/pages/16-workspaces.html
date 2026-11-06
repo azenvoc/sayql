@@ -1,0 +1,39 @@
+<!-- order: 16 | slug: workspaces | title: Workspaces and groups | group: Using SayQL | published: 2026-11-09 | updated: 2026-11-09 | description: Keep each company's databases apart in SayQL, group the ones that belong together, and limit each AI app to one company or one project. -->
+<p class="lead">If you work with several companies or clients, a <b>workspace</b> keeps each one's databases apart, and a <b>group</b> keeps the databases of one project together. An AI app sees one workspace, or one group in it, and nothing else. Both are free, and work on your own computer.</p>
+<div class="callout"><svg><use href="#i-info"/></svg><p><b>Only one company?</b> Nothing changes. Everything you've saved is in a workspace called Personal, and the rail only shows once you add a second workspace.</p></div>
+
+<h2>Workspaces</h2>
+<p>To add your first one, click <b>New workspace</b> at the top of the Database Navigator. After that, each workspace has a tile on the rail at the left edge of the window: click one to switch, or right-click it to rename or delete it.</p>
+<ul>
+  <li>A workspace shows its own connections, groups, saved scripts and tabs.</li>
+  <li><b>Switching doesn't stop anything.</b> A query or Investigate run in another workspace keeps going, and its tab is there when you come back.</li>
+  <li>AI provider keys, skills, blocked apps and your preferences are shared by every workspace.</li>
+  <li>Deleting a workspace asks whether to move its connections to another one or delete them. Personal can't be deleted.</li>
+</ul>
+
+<h2>Groups</h2>
+<p>A group holds the databases that belong together, such as one client project. Click <b>New group</b> in the navigator, then right-click a connection and choose <b>Move to…</b>. To put just one database of a server in a group, right-click it and choose <b>Move to group…</b>. Deleting a group never deletes its connections.</p>
+
+<h2 id="ai-apps">What AI apps can see</h2>
+<p>An AI app sees one workspace, chosen when you set it up. <b>An app set up without a workspace sees Personal only</b>, so moving a connection out of Personal hides it from apps set up the old way. Add one entry per company in the app's MCP settings. <b>Settings → AI apps → Access</b> shows the command for each workspace and group:</p>
+<pre><code>claude mcp add sayql-acme -- sayql-mcp --workspace acme
+claude mcp add sayql-portside -- sayql-mcp --workspace acme --group portside</code></pre>
+<p>You can also set <code>SAYQL_WORKSPACE</code> and <code>SAYQL_GROUP</code> in the app's environment. If the workspace or group doesn't exist, the server won't start, and says why.</p>
+<ul>
+  <li>Something outside the limit gets the same reply as something that doesn't exist, so an app can't tell it's there.</li>
+  <li>Inside the limit, each connection's own rules still apply: <a href="/docs/mcp/#what-ai-apps-may-see">what AI apps may see</a>, never-send columns, masking and read-only.</li>
+  <li>Audits you run from SayQL use the workspace of the connection being audited.</li>
+</ul>
+<div class="callout"><svg><use href="#i-info"/></svg><p><b>What this protects against.</b> It limits what an AI app can reach through the SayQL entry you set up for it. It isn't a wall on your computer: software running as you, including an AI agent allowed to run shell commands, could start <code>sayql-mcp</code> with another workspace or read SayQL's files. For a hard boundary, give each company its own database login, or its own computer account.</p></div>
+
+<h2 id="shared-servers">A server shared with other companies</h2>
+<p>One server can hold several companies' databases. Save it once in each workspace. In the connection form, under <b>Databases this workspace can use</b>, choose <b>Only the ones I pick</b> and list them.</p>
+<ul>
+  <li>Only those databases show in the navigator, and AI apps get the same reply for any other as for one that doesn't exist.</li>
+  <li>Investigate, note checks and AI apps can't run a query that names another database, such as <code>other.dbo.customers</code> on SQL Server or <code>other.customers</code> on MySQL, or that reads the server's list of databases.</li>
+  <li>Queries you run yourself in the editor can still use whatever your login allows.</li>
+</ul>
+<div class="callout"><svg><use href="#i-info"/></svg><p><b>Only a separate login guarantees separation.</b> With one login for several companies, the list stops mistakes and well-behaved AI apps, but not everything: on SQL Server, a view or synonym in an allowed database can point at another one, and SayQL can't see that from the query. For real separation, give each company its own database login, with access to its databases only. Then the database itself refuses the rest.</p></div>
+
+<h2>Teams</h2>
+<p>Your team's connections appear in one workspace, Personal unless you choose another under <b>Settings → Team</b>, and you can put them in your own groups. That only organises them on your computer. <a href="/docs/teams/">Agents on a team server</a> use their own keys and the rules your admin sets.</p>

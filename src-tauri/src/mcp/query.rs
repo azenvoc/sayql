@@ -7,7 +7,9 @@ use super::*;
 impl SayqlServer {
     /// Runs a read-only query for an AI app and returns what the connection lets it see.
     pub(super) async fn query(&self, p: QueryParams, log: &mut Activity) -> Result<String, String> {
-        let target = Target::new(p.connection_id, p.database);
+        let target = self.target_in_reach(&p.connection_id, p.database).await?;
+        log.database.clone_from(&target.database);
+        let limit = self.limit_for(&target.connection_id)?;
         let access = self.access(&target.connection_id)?;
         log.may_see = Some(access.apps);
         let pool = self
@@ -17,7 +19,9 @@ impl SayqlServer {
             .map_err(|e| e.to_string())?;
         // Columns the user marked never to send to an AI are refused in any form, and withheld
         // when a query returns them anyway (SELECT *); see never_send.rs.
-        let guard = self.checked(&pool, &p.sql, &access.never_send, log).await?;
+        let guard = self
+            .checked(&pool, &p.sql, &access.never_send, &limit, log)
+            .await?;
         let mut never = Masker::new(&access.never_send);
         let r = gate::run(
             &pool,
@@ -49,9 +53,10 @@ impl SayqlServer {
         pool: &db::DbPool,
         sql: &str,
         never_send: &[String],
+        limit: &crate::safety::databases::DbLimit,
         log: &mut Activity,
     ) -> Result<Guard, String> {
-        gate::prepare(pool, sql, never_send, gate::MCP)
+        gate::prepare(pool, sql, never_send, limit, gate::MCP)
             .await
             .map_err(|r| match r {
                 Refusal::Write => refused(log, "could change data", WRITE_REFUSED.into()),
@@ -61,6 +66,7 @@ impl SayqlServer {
                     "more than one statement",
                     "Run one statement at a time.".into(),
                 ),
+                Refusal::Database(why) => refused(log, "database not available here", why.into()),
                 Refusal::NeverSend(f) => {
                     // SayQL's own refusal, or the database rejecting the plan (an error in the SQL).
                     log.status = if f.full == f.safe { "refused" } else { "error" }.into();

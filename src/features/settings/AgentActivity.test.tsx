@@ -9,6 +9,9 @@ const LONG =
 let log: McpActivity[] = [];
 const fresh = (): McpActivity[] => [
   {
+    database: null,
+    workspace: null,
+    group: null,
     at: 3,
     app: "Cursor",
     tool: "run_query",
@@ -21,6 +24,9 @@ const fresh = (): McpActivity[] => [
     rows: null,
   },
   {
+    database: null,
+    workspace: null,
+    group: null,
     at: 2,
     app: "Claude Code",
     tool: "run_query",
@@ -33,6 +39,9 @@ const fresh = (): McpActivity[] => [
     maySee: null,
   },
   {
+    database: null,
+    workspace: null,
+    group: null,
     at: 1,
     app: "Claude Code",
     tool: "run_query",

@@ -5,6 +5,7 @@
 use super::model::{Block, Llm, Msg, Role, ToolMode, Turn, Usage};
 use super::{checks, prompt, tools};
 use crate::db::{self, DbPool, Kind, QueryResult};
+use crate::safety::databases::DbLimit;
 use crate::safety::gate::{self, Refusal};
 use crate::safety::mask::{Masker, ResultSummary};
 use crate::safety::readonly;
@@ -42,6 +43,8 @@ pub struct RunInput {
     pub focus: Vec<String>,
     pub skill: Option<String>,
     pub access: AgentAccess,
+    /// The databases this connection may use (see safety/databases.rs).
+    pub databases: DbLimit,
     pub limits: AgentSettings,
     /// The tab's earlier run, for follow-ups and steering.
     pub history: Option<History>,
@@ -857,8 +860,13 @@ impl Run<'_> {
             );
         };
         self.steps[i].sql = Some(check.sql.clone());
-        let run =
-            crate::notes::run_check(self.pool, &check.sql, &self.input.access.never_send).await;
+        let run = crate::notes::run_check(
+            self.pool,
+            &check.sql,
+            &self.input.access.never_send,
+            &self.input.databases,
+        )
+        .await;
         if let Some(home) = &self.input.notes_home
             && let Ok(Some(updated)) = home.store.record_check(&note.id, run.clone())
         {
@@ -939,13 +947,20 @@ impl Run<'_> {
         // The AI query gate with agent mode's options (see safety/gate.rs): one statement, no
         // writes (a team server refuses writes itself and audits the attempt, so it gets to see
         // them), and never-send columns in any form and functions that read server files.
-        let guard = gate::prepare(self.pool, &real, &self.input.access.never_send, gate::AGENT)
-            .await
-            .map_err(|r| match r {
-                Refusal::Statements => "Run one statement at a time.".to_string(),
-                Refusal::Write => readonly::AGENT_WRITE_REFUSED.to_string(),
-                Refusal::NeverSend(f) => self.masker.remask_text(&f.safe),
-            })?;
+        let guard = gate::prepare(
+            self.pool,
+            &real,
+            &self.input.access.never_send,
+            &self.input.databases,
+            gate::AGENT,
+        )
+        .await
+        .map_err(|r| match r {
+            Refusal::Statements => "Run one statement at a time.".to_string(),
+            Refusal::Write => readonly::AGENT_WRITE_REFUSED.to_string(),
+            Refusal::Database(why) => why.to_string(),
+            Refusal::NeverSend(f) => self.masker.remask_text(&f.safe),
+        })?;
         self.withheld = guard.withheld;
         Ok(real)
     }

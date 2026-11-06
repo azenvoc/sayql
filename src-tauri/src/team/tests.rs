@@ -713,6 +713,26 @@ fn misshapen(_: &str, path: &str, _: &Value) -> (u16, Value) {
     }
 }
 
+/// Every caller of the AI query gate gets the database limit, on any pool, and nothing reaches
+/// the server.
+#[tokio::test]
+async fn the_gate_refuses_a_query_outside_the_database_limit_before_the_server_sees_it() {
+    use crate::safety::databases::DbLimit;
+    use crate::safety::gate::{self, Refusal};
+    let f = fake(misshapen).await;
+    let team = crate::db::DbPool::Team(pool(&f.url, "c_short"));
+    let limit = DbLimit::new(Some(vec!["acme".into()]), vec![]);
+    for opts in [gate::MCP, gate::AGENT, gate::NOTE_CHECK] {
+        let refused = gate::prepare(&team, "SELECT datname FROM pg_database", &[], &limit, opts);
+        assert!(matches!(refused.await, Err(Refusal::Database(_))));
+    }
+    let check = crate::notes::run_check(&team, "SELECT count(*) > 0 FROM pg_database", &[], &limit);
+    assert_eq!(
+        check.await.error.as_deref(),
+        Some(crate::safety::databases::REFUSED)
+    );
+}
+
 /// Code downstream reads cells by position (a note's check reads `rows[0][0]`), so a reply
 /// whose rows are wider or narrower than its columns used to abort the app.
 #[tokio::test]
@@ -729,6 +749,7 @@ async fn replies_whose_rows_dont_match_their_columns_are_refused() {
         &crate::db::DbPool::Team(pool(&f.url, "c_short")),
         "select true",
         &[],
+        &Default::default(),
     )
     .await;
     assert!(

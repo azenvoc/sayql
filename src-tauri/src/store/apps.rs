@@ -57,6 +57,15 @@ pub struct Activity {
     /// What the connection let AI apps see at the time.
     #[serde(default)]
     pub may_see: Option<AppResults>,
+    /// The database a query ran in, when it named or resolved one.
+    #[serde(default)]
+    pub database: Option<String>,
+    /// The workspace this `sayql-mcp` serves.
+    #[serde(default)]
+    pub workspace: Option<String>,
+    /// The group this `sayql-mcp` is limited to.
+    #[serde(default)]
+    pub group: Option<String>,
 }
 
 impl Activity {
@@ -72,6 +81,9 @@ impl Activity {
             detail: None,
             rows: None,
             may_see: None,
+            database: None,
+            workspace: None,
+            group: None,
         }
     }
 }

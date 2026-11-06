@@ -6,7 +6,12 @@ import type { NewTab } from "../tabs";
 export interface HandoffActions {
   connection: (id: string) => ConnectionConfig | null;
   /** Shows the New connection dialog, filled in, with `note` on top. */
-  openConnectionDialog: (config: ConnectionConfig, note: string) => void;
+  openConnectionDialog: (
+    config: ConnectionConfig,
+    note: string,
+    /** The workspace and group the asking AI app serves. */
+    place: { workspaceId: string | null; groupId: string | null },
+  ) => void;
   openTab: (target: Target, init: NewTab) => void;
   /** Opens a saved script (or shows its open tab); false when there's no such script. */
   openScript: (id: string) => boolean;
@@ -52,7 +57,10 @@ export function applyHandoff(h: Handoff, a: HandoffActions): void {
   }
   const note = handoffNote(h.source);
   if (h.type === "newConnection") {
-    a.openConnectionDialog(draftToConnection(h), note);
+    a.openConnectionDialog(draftToConnection(h), note, {
+      workspaceId: h.workspace,
+      groupId: h.group,
+    });
     return;
   }
   if (h.type === "openScript") {

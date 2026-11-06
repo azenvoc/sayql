@@ -1283,3 +1283,303 @@ fn the_server_uses_the_app_id_it_is_given_when_it_names_a_folder() {
         assert_eq!(app_id(Some(bad.into())), "com.sayql.app", "{bad}");
     }
 }
+
+/// Two companies saved side by side: `acme` in Acme, in its group Portside, and `harbor`, with a
+/// note, a script and a list of allowed databases, in Harbor. A server is limited to one of them.
+fn two_companies(scope: Scope) -> SayqlServer {
+    let dir = std::env::temp_dir().join(format!("sayql-mcp-scope-{}", uuid::Uuid::new_v4()));
+    let state = AppState::new(dir.clone(), dir).unwrap();
+    let mut server = sqlite_conn("server", "shared server");
+    server.kind = Kind::Mssql;
+    server.host = "sql.example.com".into();
+    state
+        .store
+        .save_connections(&[
+            sqlite_conn("old", "From before workspaces"),
+            sqlite_conn("acme", "Acme billing"),
+            sqlite_conn("harbor", "Harbor claims"),
+            server,
+        ])
+        .unwrap();
+    state
+        .store
+        .update_layout(|l| {
+            l.create_workspace("Acme")?;
+            l.create_workspace("Harbor")?;
+            l.create_group("acme", "Portside")?;
+            l.create_group("acme", "Meridian")?;
+            l.move_connection("acme", "acme", Some("portside"))?;
+            l.move_connection("harbor", "harbor", None)?;
+            l.move_connection("server", "acme", Some("meridian"))?;
+            l.set_allowed_databases("server", Some(vec!["acme_orders".into()]));
+            Ok(())
+        })
+        .unwrap();
+    state
+        .store
+        .update_scripts(|list| {
+            list.push(crate::store::Script {
+                id: "harbor-script".into(),
+                name: "Claims by payer".into(),
+                connection_id: "harbor".into(),
+                database: None,
+                question: String::new(),
+                sql: "SELECT 1".into(),
+                updated_at: 0,
+            });
+            list.push(crate::store::Script {
+                id: "orphan".into(),
+                name: "From a deleted connection".into(),
+                connection_id: "deleted".into(),
+                database: None,
+                question: String::new(),
+                sql: "SELECT 2".into(),
+                updated_at: 0,
+            });
+            Ok(())
+        })
+        .unwrap();
+    SayqlServer::new(state).with_scope(scope)
+}
+
+fn acme_scope(group: Option<&str>) -> Scope {
+    Scope {
+        workspace: "acme".into(),
+        group: group.map(str::to_string),
+    }
+}
+
+/// Everything a tool replies about a connection: the reply for one in another workspace must be
+/// the reply for one that isn't saved, so an app can't learn it exists.
+async fn replies_about(server: &SayqlServer, id: &str) -> Vec<String> {
+    let show = |r: Result<String, String>| match r {
+        Ok(text) => format!("ok: {text}"),
+        Err(text) => format!("err: {text}"),
+    };
+    let connection_id = id.to_string();
+    let mut log = Activity::new("Test", "run_query");
+    let mut out = vec![
+        show(
+            server
+                .databases(ConnectionParams {
+                    connection_id: connection_id.clone(),
+                })
+                .await,
+        ),
+        show(
+            server
+                .describe(SchemaParams {
+                    connection_id: connection_id.clone(),
+                    database: None,
+                    search: None,
+                })
+                .await,
+        ),
+        show(
+            server
+                .query(
+                    QueryParams {
+                        connection_id: connection_id.clone(),
+                        database: None,
+                        sql: "SELECT 1".into(),
+                        max_rows: None,
+                        offset: None,
+                    },
+                    &mut log,
+                )
+                .await,
+        ),
+        show(
+            server
+                .export(
+                    ExportParams {
+                        connection_id: connection_id.clone(),
+                        database: None,
+                        sql: "SELECT 1".into(),
+                        file_name: None,
+                    },
+                    &mut log,
+                )
+                .await,
+        ),
+        show(server.suggest(
+            "Test",
+            SuggestNoteParams {
+                connection_id: connection_id.clone(),
+                database: None,
+                text: "orders is unused".into(),
+                evidence: "no reads in api/".into(),
+                replaces: None,
+                remove: None,
+                check: None,
+            },
+        )),
+        show(server.scripts(Some(id))),
+        show(server.query_connection(id, None).map(|c| c.name)),
+    ];
+    let mut args = Map::new();
+    args.insert("connection".into(), json!(id));
+    out.push(show(server.audit_prompt("Test", Some(&args))));
+    // Some replies quote the id they were given; compare them with it taken out.
+    out.iter_mut()
+        .for_each(|reply| *reply = reply.replace(id, "<id>"));
+    out
+}
+
+#[tokio::test]
+async fn a_connection_in_another_workspace_replies_exactly_like_one_that_does_not_exist() {
+    for scope in [
+        Scope::default(),
+        acme_scope(None),
+        acme_scope(Some("portside")),
+    ] {
+        let server = two_companies(scope.clone());
+        assert_eq!(
+            replies_about(&server, "harbor").await,
+            replies_about(&server, "nope").await,
+            "{scope:?}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn a_connection_in_another_group_replies_exactly_like_one_that_does_not_exist() {
+    let server = two_companies(acme_scope(Some("portside")));
+    assert_eq!(
+        replies_about(&server, "server").await,
+        replies_about(&server, "nope").await
+    );
+}
+
+#[test]
+fn an_app_set_up_without_a_workspace_sees_personal_only() {
+    let list = two_companies(Scope::default()).connections().unwrap();
+    assert!(list.contains("From before workspaces"), "{list}");
+    assert!(!list.contains("Acme"), "{list}");
+    assert!(!list.contains("Harbor"), "{list}");
+}
+
+#[test]
+fn a_workspace_sees_its_own_connections_and_says_where_they_are() {
+    let list = two_companies(acme_scope(None)).connections().unwrap();
+    let list: Value = serde_json::from_str(&list).unwrap();
+    let names: Vec<&str> = list
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["name"].as_str().unwrap())
+        .collect();
+    assert_eq!(names, ["Acme billing", "shared server"]);
+    assert_eq!(list[0]["workspace"], json!("Acme"));
+    assert_eq!(list[0]["group"], json!("Portside"));
+    // A list's first database stands in for a default that isn't on it.
+    assert_eq!(list[1]["default_database"], json!("acme_orders"));
+}
+
+#[test]
+fn a_group_sees_only_its_own_connections() {
+    let list = two_companies(acme_scope(Some("portside")))
+        .connections()
+        .unwrap();
+    assert!(list.contains("Acme billing"), "{list}");
+    assert!(!list.contains("shared server"), "{list}");
+}
+
+#[test]
+fn personal_listing_keeps_its_old_shape() {
+    let list = two_companies(Scope::default()).connections().unwrap();
+    let list: Value = serde_json::from_str(&list).unwrap();
+    assert!(list[0].get("workspace").is_none());
+    assert!(list[0].get("group").is_none());
+}
+
+#[test]
+fn scripts_of_other_workspaces_and_deleted_connections_are_not_listed() {
+    let server = two_companies(Scope::default());
+    let list = server.scripts(None).unwrap();
+    assert!(!list.contains("Claims by payer"), "{list}");
+    assert!(!list.contains("From a deleted connection"), "{list}");
+    let harbor = two_companies(Scope {
+        workspace: "harbor".into(),
+        group: None,
+    });
+    assert!(harbor.scripts(None).unwrap().contains("Claims by payer"));
+}
+
+#[tokio::test]
+async fn a_database_outside_the_list_gets_the_same_reply_whether_or_not_it_exists() {
+    let server = two_companies(acme_scope(None));
+    let reply = |name: &str| {
+        let server = &server;
+        let name = name.to_string();
+        async move {
+            server
+                .target_in_reach("server", Some(name.clone()))
+                .await
+                .unwrap_err()
+                .replace(&name, "<name>")
+        }
+    };
+    assert_eq!(reply("harbor_claims").await, reply("no_such_db").await);
+    let opened = server
+        .target_in_reach("server", Some("ACME_ORDERS".into()))
+        .await
+        .unwrap();
+    assert_eq!(opened.database.as_deref(), Some("ACME_ORDERS"));
+    // Unnamed, it opens the list's database, never the login's own default.
+    let opened = server.target_in_reach("server", None).await.unwrap();
+    assert_eq!(opened.database.as_deref(), Some("acme_orders"));
+}
+
+#[test]
+fn a_database_outside_the_list_can_not_be_opened_or_noted() {
+    let server = two_companies(acme_scope(None));
+    assert!(
+        server
+            .query_connection("server", Some("harbor_claims"))
+            .is_err()
+    );
+    assert!(
+        server
+            .query_connection("server", Some("acme_orders"))
+            .is_ok()
+    );
+    let note = |database: &str| {
+        server.suggest(
+            "Test",
+            SuggestNoteParams {
+                connection_id: "server".into(),
+                database: Some(database.into()),
+                text: "orders is unused".into(),
+                evidence: "no reads in api/".into(),
+                replaces: None,
+                remove: None,
+                check: None,
+            },
+        )
+    };
+    assert!(note("harbor_claims").is_err());
+    assert!(note("acme_orders").is_ok());
+}
+
+#[test]
+fn an_unreadable_layout_refuses_rather_than_showing_everything() {
+    let server = two_companies(acme_scope(None));
+    let dir = server.state.store.dir().to_path_buf();
+    std::fs::write(dir.join("layout.json"), "{oops").unwrap();
+    let mut state = AppState::new(dir.clone(), dir).unwrap();
+    state.store = state.store.without_repair();
+    let server = SayqlServer::new(state).with_scope(acme_scope(None));
+    assert_eq!(server.connections().unwrap_err(), SETTINGS_UNREADABLE);
+    assert_eq!(server.scripts(None).unwrap_err(), SETTINGS_UNREADABLE);
+    assert_eq!(server.limit_for("acme").unwrap_err(), SETTINGS_UNREADABLE);
+}
+
+#[test]
+fn the_log_says_which_workspace_and_group_a_call_came_through() {
+    let server = two_companies(acme_scope(Some("portside")));
+    server.log_call("Test", "list_connections", "", "", &Ok(String::new()));
+    let log = server.state.store.app_activity(1).unwrap();
+    assert_eq!(log[0].workspace.as_deref(), Some("acme"));
+    assert_eq!(log[0].group.as_deref(), Some("portside"));
+}

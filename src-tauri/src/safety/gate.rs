@@ -2,7 +2,8 @@
 //! agent mode and note checks), and run with a time limit and a redacted error when it fails.
 //!
 //! `prepare` refuses what may not run (more than one statement, a statement that could change
-//! data, never-send columns and functions that read server files); `run` runs it, stopping it
+//! data, a database outside the connection's list, never-send columns and functions that read
+//! server files); `run` runs it, stopping it
 //! on the server after the time limit, and keeps both forms of a failure (the database's own
 //! message and `safety::redact::safe_error`'s). Each caller picks what the AI gets.
 //!
@@ -18,6 +19,7 @@
 //! `prepare`, since that is what runs; the gate checks the SQL exactly as it will run.
 
 use crate::db::{self, DbPool, QueryResult};
+use crate::safety::databases::{self, DbLimit};
 use crate::safety::never_send::{self, Guard};
 use crate::safety::readonly::{self, QueryFailure};
 use std::time::Duration;
@@ -58,6 +60,8 @@ pub enum Refusal {
     Statements,
     /// The statement could change data.
     Write,
+    /// It names a database outside the connection's list, or reads the list of databases.
+    Database(&'static str),
     /// The never-send or forbidden-function check refused it (`full == safe`), or the database
     /// rejected its plan (an error in the SQL; show `safe`).
     NeverSend(QueryFailure),
@@ -69,6 +73,7 @@ pub async fn prepare(
     pool: &DbPool,
     sql: &str,
     never_send: &[String],
+    limit: &DbLimit,
     opts: Options,
 ) -> Result<Guard, Refusal> {
     if opts.one_statement && crate::ai::agent::checks::statements(sql) > 1 {
@@ -78,6 +83,7 @@ pub async fn prepare(
     if (opts.refuse_writes_on_team || !team) && !db::is_read_only(sql, pool.kind()) {
         return Err(Refusal::Write);
     }
+    databases::check(pool.kind(), sql, limit).map_err(Refusal::Database)?;
     // Columns the user marked never to send to an AI are refused in any form (whole rows,
     // renames, views on Postgres), and so are functions that read server files: see never_send.rs.
     never_send::check(pool, sql, never_send)
@@ -111,34 +117,48 @@ mod tests {
         let two = "SELECT 1; SELECT 2";
         // Only agent mode refuses more than one statement before the read-only check.
         assert!(matches!(
-            prepare(&pool, two, &none, AGENT).await,
+            prepare(&pool, two, &none, &DbLimit::default(), AGENT).await,
             Err(Refusal::Statements)
         ));
         for opts in [MCP, NOTE_CHECK] {
             assert!(!matches!(
-                prepare(&pool, two, &none, opts).await,
+                prepare(&pool, two, &none, &DbLimit::default(), opts).await,
                 Err(Refusal::Statements)
             ));
         }
         // Writes are refused on a pool that isn't a team server's, for every caller.
         for opts in [MCP, AGENT, NOTE_CHECK] {
             assert!(matches!(
-                prepare(&pool, "DELETE FROM users", &none, opts).await,
+                prepare(&pool, "DELETE FROM users", &none, &DbLimit::default(), opts).await,
                 Err(Refusal::Write)
             ));
         }
         let never = vec!["users.email".to_string()];
         for opts in [MCP, AGENT, NOTE_CHECK] {
             assert!(matches!(
-                prepare(&pool, "SELECT email FROM users", &never, opts).await,
+                prepare(
+                    &pool,
+                    "SELECT email FROM users",
+                    &never,
+                    &DbLimit::default(),
+                    opts
+                )
+                .await,
                 Err(Refusal::NeverSend(_))
             ));
             assert!(
-                prepare(&pool, "SELECT count(*) FROM users", &never, opts)
-                    .await
-                    .is_ok()
+                prepare(
+                    &pool,
+                    "SELECT count(*) FROM users",
+                    &never,
+                    &DbLimit::default(),
+                    opts
+                )
+                .await
+                .is_ok()
             );
         }
+        // A limit doesn't apply to a SQLite file; the limit's own tests are in databases.rs.
         let r = run(
             &pool,
             "SELECT count(*) FROM users",

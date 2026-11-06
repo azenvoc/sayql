@@ -20,6 +20,7 @@ use crate::schema::Schema;
 use crate::state::{AppState, Target};
 use crate::store::agent::{AgentAccess, AppResults};
 use crate::store::apps::{Activity, AppGate, NOT_APPROVED, UNKNOWN_APP};
+use crate::store::layout::Scope;
 use crate::store::suggestions::Change;
 use rmcp::handler::server::{router::tool::ToolRouter, wrapper::Parameters};
 use rmcp::model::{
@@ -42,6 +43,7 @@ mod export;
 mod notes;
 mod prompt;
 mod query;
+mod scope;
 mod shape;
 
 use prompt::audit_prompt_info;
@@ -87,7 +89,9 @@ queries; text whose source SayQL can't trace, after UNION, VALUES or JSON access
 they are). Below `all`, database error messages are replaced by a fixed description of the error, since they can \
 quote values. Below `all`, answer with queries whose counts, sums or averages answer \
 the question, and use open_query when the user wants to see rows: they see them in SayQL, you don't. \
-export_csv works only where the user allows `all`.";
+export_csv works only where the user allows `all`. This server serves one workspace, or one group in it: \
+the user's other connections and databases aren't available here, and queries that name another database or read the \
+server's list of databases are refused.";
 
 /// What `run_query` says along with a result the AI app may not see in full.
 const OFF_NOTE: &str = "The user lets AI apps see only row counts and column names on this connection. \
@@ -225,6 +229,8 @@ struct OpenQueryParams {
 #[derive(Clone)]
 pub struct SayqlServer {
     state: Arc<AppState>,
+    /// What this server serves; see scope.rs.
+    scope: Scope,
     tool_router: ToolRouter<Self>,
 }
 
@@ -233,8 +239,15 @@ impl SayqlServer {
     pub fn new(state: AppState) -> Self {
         SayqlServer {
             state: Arc::new(state),
+            scope: Scope::default(),
             tool_router: Self::tool_router(),
         }
+    }
+
+    /// The server limited to a workspace, or one group in it.
+    pub fn with_scope(mut self, scope: Scope) -> Self {
+        self.scope = scope;
+        self
     }
 
     #[tool(description = "List the database connections saved in SayQL (no passwords).")]
@@ -370,7 +383,7 @@ impl SayqlServer {
                 .scripts()
                 .map_err(|e| e.to_string())?
                 .into_iter()
-                .find(|s| s.id == script_id)
+                .find(|s| s.id == script_id && self.script_in_reach(s).unwrap_or(false))
                 .ok_or_else(|| {
                     format!("No saved script has id {script_id:?}; use one from list_scripts.")
                 })?;
@@ -406,6 +419,11 @@ impl SayqlServer {
     ) -> Result<String, String> {
         let app = self.gate(&ctx, "add_connection")?;
         let result = connection_draft(p)
+            .map(|draft| handoff::ConnectionDraft {
+                workspace: Some(self.scope.workspace.clone()),
+                group: self.scope.group.clone(),
+                ..draft
+            })
             .and_then(|draft| self.hand_off(Action::NewConnection(draft), &ctx))
             .map(|_| {
                 "Opened SayQL's New connection dialog with these details. The user enters the password there, \
@@ -435,16 +453,7 @@ impl SayqlServer {
                 p.title.as_deref(),
                 p.question.as_deref(),
             )?;
-            let conn = self
-                .state
-                .store
-                .connection(&draft.connection_id)
-                .map_err(|_| {
-                    format!(
-                        "No saved connection has id {:?}; use one from list_connections.",
-                        draft.connection_id
-                    )
-                })?;
+            let conn = self.query_connection(&draft.connection_id, draft.database.as_deref())?;
             self.hand_off(Action::OpenQuery(draft), &ctx)?;
             Ok(format!(
                 "Opened a new SayQL tab on {:?} with the SQL. Nothing ran: the user reviews it and clicks Run.",
@@ -531,16 +540,44 @@ fn handoff_label(info: &Implementation) -> Option<String> {
 
 impl SayqlServer {
     fn connections(&self) -> Result<String, String> {
+        let layout = self.layout()?;
         let mut list = Vec::new();
         for c in self.state.store.connections().map_err(|e| e.to_string())? {
+            let Some(limit) = layout.reach(&self.scope, &c.id) else {
+                continue;
+            };
             let place = if c.kind == Kind::Sqlite {
                 c.file.clone()
             } else {
                 c.host.clone()
             };
             let may_see = self.access(&c.id)?.apps;
-            list.push(json!({ "id": c.id, "name": c.name, "kind": c.kind, "dialect": c.kind.dialect(), "location": place,
-                    "default_database": c.database, "ai_may_see": may_see }));
+            // Never a default database this connection can't use here.
+            let default_database = if limit.is_open() || limit.allows(&c.database) {
+                c.database.clone()
+            } else {
+                limit.first().unwrap_or_default().to_string()
+            };
+            let mut item = serde_json::Map::new();
+            item.insert("id".into(), json!(c.id));
+            item.insert("name".into(), json!(c.name));
+            item.insert("kind".into(), json!(c.kind));
+            item.insert("dialect".into(), json!(c.kind.dialect()));
+            item.insert("location".into(), json!(place));
+            item.insert("default_database".into(), json!(default_database));
+            item.insert("ai_may_see".into(), json!(may_see));
+            if self.scope.workspace != crate::store::layout::PERSONAL
+                && let Some(w) = layout
+                    .workspaces
+                    .iter()
+                    .find(|w| w.id == self.scope.workspace)
+            {
+                item.insert("workspace".into(), json!(w.name));
+            }
+            if let Some(group) = layout.group_name_of(&c.id) {
+                item.insert("group".into(), json!(group));
+            }
+            list.push(item);
         }
         Ok(json!(list).to_string())
     }
@@ -552,7 +589,7 @@ impl SayqlServer {
         let connections = self.state.store.connections().map_err(|e| e.to_string())?;
         let mut list = Vec::new();
         for s in self.state.store.scripts().map_err(|e| e.to_string())? {
-            if connection_id.is_some_and(|id| s.connection_id != id) {
+            if connection_id.is_some_and(|id| s.connection_id != id) || !self.script_in_reach(&s)? {
                 continue;
             }
             let saved = connections.iter().find(|c| c.id == s.connection_id);
@@ -582,19 +619,71 @@ impl SayqlServer {
         Ok(json!(list).to_string())
     }
 
+    /// The connection `open_query` puts SQL on, when it's saved and in reach.
+    fn query_connection(
+        &self,
+        connection_id: &str,
+        database: Option<&str>,
+    ) -> Result<db::ConnConfig, String> {
+        let unknown = || {
+            format!("No saved connection has id {connection_id:?}; use one from list_connections.")
+        };
+        let conn = self
+            .state
+            .store
+            .connection(connection_id)
+            .map_err(|_| unknown())?;
+        let limit = self.limit_for(connection_id).map_err(|e| {
+            if e == SETTINGS_UNREADABLE {
+                e
+            } else {
+                unknown()
+            }
+        })?;
+        if let Some(database) = database
+            && conn.kind != Kind::Sqlite
+            && !limit.allows(database)
+        {
+            return Err(scope::no_database(database));
+        }
+        Ok(conn)
+    }
+
+    /// Whether this server may show a saved script: its connection is saved and in reach, and
+    /// its database isn't outside the limit. A script whose connection was deleted has no
+    /// workspace to be in, so it isn't shown.
+    fn script_in_reach(&self, s: &crate::store::Script) -> Result<bool, String> {
+        match self.limit_for(&s.connection_id) {
+            Ok(limit) => Ok(s.database.as_deref().is_none_or(|d| limit.allows(d))),
+            Err(e) if e == SETTINGS_UNREADABLE => Err(e),
+            Err(_) => Ok(false),
+        }
+    }
+
     async fn databases(&self, p: ConnectionParams) -> Result<String, String> {
+        let limit = self.limit_for(&p.connection_id)?;
         let pool = self
             .state
             .target_pool(&Target::default_of(&p.connection_id))
             .await
             .map_err(|e| e.to_string())?;
         match db::list_databases(&pool).await.map_err(|e| e.to_string())? {
-            Some(list) => Ok(json!(list).to_string()),
+            Some(mut list) => {
+                list.databases.retain(|d| limit.allows(d));
+                if list.current.as_deref().is_some_and(|c| !limit.allows(c)) {
+                    list.current = list.databases.first().cloned();
+                }
+                Ok(json!(list).to_string())
+            }
             None => Ok("This is a SQLite file: it is a single database; omit `database`.".into()),
         }
     }
 
-    async fn describe(&self, p: SchemaParams) -> Result<String, String> {
+    async fn describe(&self, mut p: SchemaParams) -> Result<String, String> {
+        p.database = self
+            .target_in_reach(&p.connection_id, p.database)
+            .await?
+            .database;
         // With their short ids, so an app can suggest replacing or removing one.
         let notes = self.state.store.notes_text_with_refs(
             &p.connection_id,
@@ -627,7 +716,7 @@ impl SayqlServer {
 
     fn gate_app(&self, app: String, tool: &str) -> Result<String, String> {
         let refuse = |detail: &str| {
-            let _ = self.state.store.log_app_activity(Activity {
+            self.write_log(Activity {
                 status: "refused".into(),
                 detail: Some(detail.into()),
                 ..Activity::new(&app, tool)
@@ -673,7 +762,7 @@ impl SayqlServer {
         if result.is_err() {
             log.status = "error".into();
         }
-        let _ = self.state.store.log_app_activity(log);
+        self.write_log(log);
     }
 
     /// A log entry for a query or export on `connection_id`.
@@ -704,7 +793,7 @@ impl SayqlServer {
                 log.detail = Some(e.chars().take(160).collect());
             }
         }
-        let _ = self.state.store.log_app_activity(log);
+        self.write_log(log);
     }
 
     /// The connection's agent and AI app settings, or the defaults when none are saved (AI apps
@@ -824,6 +913,9 @@ fn app_id(from_env: Option<String>) -> String {
         .unwrap_or_else(|| APP_ID.to_string())
 }
 
+/// The variable that tells a server started by the app which workspace to serve.
+pub(crate) const WORKSPACE_VAR: &str = scope::WORKSPACE_VAR;
+
 /// What a process that starts this server passes it: this app's identifier ([`APP_ID_VAR`]).
 pub(crate) fn launch_env() -> (&'static str, &'static str) {
     (APP_ID_VAR, crate::store::secrets::service())
@@ -848,7 +940,11 @@ pub async fn serve_stdio() -> Result<(), Box<dyn std::error::Error>> {
     let mut state = AppState::new(config_dir, data_dir)?;
     // The app owns its files: this process never moves or replaces one it can't read.
     state.store = state.store.without_repair();
-    let server = SayqlServer::new(state);
+    // Which workspace is a choice made once, at setup, so a mistake stops here with what to do.
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let scope = scope::scope_from(&args, |k| std::env::var(k).ok())?;
+    scope::check_scope(&state.store.layout()?, &scope)?;
+    let server = SayqlServer::new(state).with_scope(scope);
     server
         .serve(rmcp::transport::stdio())
         .await?

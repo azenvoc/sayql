@@ -46,6 +46,15 @@
 
   /* motion */
   --duration-fast: 120ms;
+
+  /* a workspace's tile: the same in both themes, always with white text */
+  --color-workspace-0: #56606b;
+  --color-workspace-1: #1f6feb;
+  --color-workspace-2: #1a7f37;
+  --color-workspace-3: #b8312f;
+  --color-workspace-4: #7048e8;
+  --color-workspace-5: #9a6700;
+  --color-workspace-6: #0b7285;
 }
 
 :root,

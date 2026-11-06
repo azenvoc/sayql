@@ -271,6 +271,8 @@ struct Sources {
     database: Option<String>,
     prompt: String,
     sayql_mcp: PathBuf,
+    /// The audited connection's workspace, which the MCP server must serve.
+    workspace: String,
 }
 
 /// Whether `app` may use SayQL now, as its MCP server would decide.
@@ -325,6 +327,7 @@ async fn prepare_sources(
         &listed,
     );
     prompt.push_str(runner::run_notes(headless));
+    let workspace = state.store.layout()?.workspace_of(&conn.id).to_string();
     let sayql_mcp = crate::mcp::binary_path()?;
     if !sayql_mcp.exists() {
         return Err(format!(
@@ -342,6 +345,7 @@ async fn prepare_sources(
         database,
         prompt,
         sayql_mcp,
+        workspace,
     })
 }
 
@@ -415,7 +419,7 @@ async fn prepare(
     };
     std::fs::write(
         &files.mcp_config,
-        runner::mcp_config_json(&sources.sayql_mcp),
+        runner::mcp_config_json(&sources.sayql_mcp, &sources.workspace),
     )?;
     std::fs::write(&files.settings, runner::SETTINGS_JSON)?;
     Ok(Prepared {
@@ -558,7 +562,7 @@ async fn give_prompt(child: &mut Tree, prompt: &str) {
 
 /// The environment SayQL's MCP server gets inside an OpenCode run: the person's real home and
 /// app folders (OpenCode itself has a private home), so it finds SayQL's files and the keychain.
-fn mcp_env() -> Vec<(String, String)> {
+fn mcp_env(workspace: &str) -> Vec<(String, String)> {
     let mut out = Vec::new();
     let mut put = |k: &str, v: Option<PathBuf>| {
         if let Some(v) = v {
@@ -584,6 +588,7 @@ fn mcp_env() -> Vec<(String, String)> {
     );
     let (key, id) = crate::mcp::launch_env();
     out.push((key.to_string(), id.to_string()));
+    out.push((crate::mcp::WORKSPACE_VAR.to_string(), workspace.to_string()));
     out
 }
 
@@ -678,7 +683,7 @@ async fn start_opencode(
             )
             .into());
         }
-        let env_for_mcp = mcp_env();
+        let env_for_mcp = mcp_env(&sources.workspace);
         let config = opencode::config_json(&opencode::RunConfig {
             model: &model,
             sayql_mcp: &sources.sayql_mcp,

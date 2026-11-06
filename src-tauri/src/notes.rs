@@ -8,6 +8,7 @@
 
 use crate::db::DbPool;
 use crate::error::AppResult;
+use crate::safety::databases::DbLimit;
 use crate::safety::gate::{self, Refusal};
 use crate::schema::Schema;
 use crate::schema::anchors::{self, Change, Snapshot};
@@ -177,7 +178,12 @@ const CHECK_TIME: Duration = Duration::from_secs(5);
 /// only and stay off never-send columns (as every query the AI runs), and return one row with
 /// one column that is true or false (1 or 0); anything else is an error, so a check can't be
 /// used to read data.
-pub async fn run_check(pool: &DbPool, sql: &str, never_send: &[String]) -> CheckRun {
+pub async fn run_check(
+    pool: &DbPool,
+    sql: &str,
+    never_send: &[String],
+    limit: &DbLimit,
+) -> CheckRun {
     let at = now_ms();
     // The person sees the database's message; an AI only its safe form (it can quote values).
     let fail_with = |full: &str, safe: &str| CheckRun {
@@ -189,10 +195,11 @@ pub async fn run_check(pool: &DbPool, sql: &str, never_send: &[String]) -> Check
     let fail = |e: String| fail_with(&e, &e);
     // The AI query gate with a note check's options (see safety/gate.rs): a team server
     // refuses writes itself and audits them.
-    match gate::prepare(pool, sql, never_send, gate::NOTE_CHECK).await {
+    match gate::prepare(pool, sql, never_send, limit, gate::NOTE_CHECK).await {
         Ok(_) => {}
         // NOTE_CHECK doesn't refuse more statements itself; the read-only check does.
         Err(Refusal::Write | Refusal::Statements) => return fail("A check can only read.".into()),
+        Err(Refusal::Database(why)) => return fail(why.into()),
         Err(Refusal::NeverSend(f)) => return fail(first_line(&f.safe)),
     }
     match gate::run(pool, sql, 2, CHECK_TIME, &CancellationToken::new()).await {
@@ -275,7 +282,8 @@ pub async fn check_note(store: &Store, pool: &DbPool, id: &str) -> AppResult<Opt
         return Ok(None);
     };
     let never_send = store.agent_access(&note.connection_id)?.never_send;
-    let run = run_check(pool, &sql, &never_send).await;
+    let limit = store.layout()?.limit_of(&note.connection_id);
+    let run = run_check(pool, &sql, &never_send, &limit).await;
     store.record_check(id, run)
 }
 
@@ -494,14 +502,20 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let pool = tenant_fixture::sqlite(&dir.join("tenant.sqlite")).await;
         let none: Vec<String> = vec![];
-        let ok = run_check(&pool, "SELECT count(*) > 0 FROM users", &none).await;
+        let ok = run_check(
+            &pool,
+            "SELECT count(*) > 0 FROM users",
+            &none,
+            &DbLimit::default(),
+        )
+        .await;
         assert_eq!((ok.ok, ok.error), (Some(true), None));
         for (sql, why) in [
             ("SELECT id, email FROM users", "one row with one column"),
             ("SELECT email FROM users LIMIT 1", "true or false"),
             ("DELETE FROM users", "only read"),
         ] {
-            let r = run_check(&pool, sql, &none).await;
+            let r = run_check(&pool, sql, &none, &DbLimit::default()).await;
             assert!(
                 r.ok.is_none() && r.error.as_deref().unwrap().contains(why),
                 "{sql}: {r:?}"
@@ -512,6 +526,7 @@ mod tests {
             &pool,
             "SELECT count(*) > 0 FROM users WHERE email LIKE '%a%'",
             &never,
+            &DbLimit::default(),
         )
         .await;
         assert!(
@@ -529,7 +544,13 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("sayql-checks-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&dir).unwrap();
         let pool = tenant_fixture::sqlite(&dir.join("tenant.sqlite")).await;
-        let r = run_check(&pool, "SELECT count(nope) > 0 FROM users", &[]).await;
+        let r = run_check(
+            &pool,
+            "SELECT count(nope) > 0 FROM users",
+            &[],
+            &DbLimit::default(),
+        )
+        .await;
         // The person sees SQLite's own message; the AI the fixed description of its kind.
         assert!(
             r.error.as_deref().unwrap().contains("no such column"),
