@@ -24,6 +24,8 @@ export interface StatusBarProps {
   provider: { label: string; local: boolean } | null;
   /** Opens the connection's Investigate settings, which also set what AI apps get. */
   onPrivacy: () => void;
+  /** With several workspaces: what AI apps set up for this one can see. */
+  aiScope?: { workspaceName: string; onOpen: () => void };
 }
 
 /**
@@ -70,6 +72,7 @@ export function StatusBar({
   onFeedback,
   provider,
   onPrivacy,
+  aiScope,
 }: StatusBarProps) {
   const columns = schema?.tables.reduce((n, t) => n + t.columns.length, 0) ?? 0;
   const state =
@@ -94,6 +97,17 @@ export function StatusBar({
         <ProdBadge connection={active} />
       </span>
       {active && <PrivacyChip connectionId={active.id} provider={provider} onClick={onPrivacy} />}
+      {aiScope && (
+        <button
+          type="button"
+          className={styles.privacy}
+          title={`AI apps set up for ${aiScope.workspaceName} can't see your other workspaces. Click to manage.`}
+          onClick={aiScope.onOpen}
+        >
+          <Plug size={11} />
+          AI apps: {aiScope.workspaceName} only
+        </button>
+      )}
       {active && !connected && (
         <Button
           size="sm"

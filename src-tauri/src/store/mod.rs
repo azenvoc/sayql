@@ -8,6 +8,7 @@ pub mod audits;
 pub mod code_sources;
 pub mod digest;
 mod jsonl;
+pub mod layout;
 mod lock;
 pub mod my_activity;
 pub mod note_values;

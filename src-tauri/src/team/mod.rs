@@ -130,6 +130,9 @@ pub struct TeamConnection {
     pub never_send: Vec<String>,
     #[serde(default)]
     pub notes: String,
+    /// The server groups it's in, by name; none from a server without them.
+    #[serde(default)]
+    pub groups: Vec<String>,
 }
 
 impl TeamConnection {
@@ -340,7 +343,8 @@ pub fn error_text(code: &str, message: &str) -> String {
         "licence_expired" => "Your team's SayQL licence has expired, so queries can't run. Ask your team admin to renew it.".into(),
         "seat_limit" => "Your team has no free seats on its SayQL licence. Ask your team admin to free one or add more.".into(),
         "forbidden" => or("Your team admin hasn't given you access to this."),
-        "not_found" => or("Your team's server doesn't have this any more. It may have been removed by your team admin."),
+        // The server says the same for "removed" and "you've no access", on purpose.
+        "not_found" => "You don't have access to this on your team's server, or it was removed. Ask your team admin.".into(),
         "timeout" => or("The query took too long on your team's server, so it was stopped."),
         _ => or("Your team's SayQL server couldn't do that."),
     }

@@ -14,8 +14,32 @@ export const commands = {
 	appReady: () => __TAURI_INVOKE<void>("app_ready"),
 	/**  Startup: saved connections and settings. Adds the demo database on first launch. */
 	init: () => __TAURI_INVOKE<InitView_Serialize>("init"),
-	/**  Creates (empty id) or updates a connection. `password: None` keeps the saved password. */
-	saveConnection: (config: ConnConfig_Deserialize, password: string | null) => __TAURI_INVOKE<ConnConfig_Serialize>("save_connection", { config, password }),
+	getLayout: () => __TAURI_INVOKE<Layout_Serialize>("get_layout"),
+	createWorkspace: (name: string) => __TAURI_INVOKE<Layout_Serialize>("create_workspace", { name }),
+	renameWorkspace: (id: string, name: string) => __TAURI_INVOKE<Layout_Serialize>("rename_workspace", { id, name }),
+	/**
+	 *  Removes a workspace. Its connections move to `move_to`, or with `None` are deleted the same
+	 *  way as deleting one connection (password, notes, access).
+	 */
+	deleteWorkspace: (id: string, moveTo: string | null) => __TAURI_INVOKE<Layout_Serialize>("delete_workspace", { id, moveTo }),
+	createGroup: (workspaceId: string, name: string) => __TAURI_INVOKE<Layout_Serialize>("create_group", { workspaceId, name }),
+	renameGroup: (id: string, name: string) => __TAURI_INVOKE<Layout_Serialize>("rename_group", { id, name }),
+	/**  Removes a group. Its connections and databases stay, with no group. */
+	deleteGroup: (id: string) => __TAURI_INVOKE<Layout_Serialize>("delete_group", { id }),
+	moveConnection: (id: string, workspaceId: string, groupId: string | null) => __TAURI_INVOKE<Layout_Serialize>("move_connection", { id, workspaceId, groupId }),
+	/**  Puts one database of a connection in a group, or back with its connection (`None`). */
+	setDatabaseGroup: (id: string, database: string, groupId: string | null) => __TAURI_INVOKE<Layout_Serialize>("set_database_group", { id, database, groupId }),
+	setTeamWorkspace: (workspaceId: string) => __TAURI_INVOKE<Layout_Serialize>("set_team_workspace", { workspaceId }),
+	/**
+	 *  Every database a connection's login can open, for choosing which ones it may use. Takes the
+	 *  form's details, since a new connection isn't saved yet.
+	 */
+	serverDatabases: (config: ConnConfig_Deserialize, password: string | null) => __TAURI_INVOKE<DatabaseList_Serialize | null>("server_databases", { config, password }),
+	/**
+	 *  Creates (empty id) or updates a connection. `password: None` keeps the saved password. Its
+	 *  place is saved first, so an AI app never sees it in the wrong workspace, or with no list.
+	 */
+	saveConnection: (config: ConnConfig_Deserialize, password: string | null, placement: SavePlacement_Deserialize | null) => __TAURI_INVOKE<ConnConfig_Serialize>("save_connection", { config, password, placement }),
 	/**  Removes the saved connection and its password. The database itself is not touched. */
 	deleteConnection: (id: string) => __TAURI_INVOKE<null>("delete_connection", { id }),
 	testConnection: (config: ConnConfig_Deserialize, password: string | null) => __TAURI_INVOKE<string>("test_connection", { config, password }),
@@ -294,7 +318,7 @@ export const AI_RESET_EVENT = "ai://reset" as const;
 
 export const AUDIT_EVENT = "audit://event" as const;
 
-export const COMMAND_ARGS = {"accept_note_suggestion":["id"],"add_knowledge_files":["id"],"add_knowledge_folder":["id"],"add_knowledge_repo":["id","url","branch","subdir","token","tokenUser"],"add_knowledge_url":["id","url","crawl"],"agent_access":["id"],"app_info":[],"app_ready":[],"approve_mcp_app":["name"],"audit_agents":[],"audit_model":[],"audit_payment":[],"audit_prompt":["id","database"],"cancel_audit":["runId"],"cancel_generation":["slot"],"cancel_query":["runId"],"check_claude_plan":[],"check_note":["id"],"check_notes":["id","database"],"check_update":[],"choose_model":["provider","model","purpose"],"clear_mcp_activity":[],"clear_my_activity":[],"confirm_note":["id"],"credits_balance":[],"delete_connection":["id"],"delete_note":["id"],"delete_script":["id"],"delete_skill":["slug"],"dismiss_note_suggestion":["id"],"finish_onboarding":[],"generate_sql":["id","database","question","reqId","slot","task","focusTables","skill"],"init":[],"install_update":[],"installed_coding_agents":[],"knowledge_sources":["id"],"list_databases":["id"],"list_models":["provider","baseUrl","apiKey"],"list_note_suggestions":[],"list_notes":["id","database"],"list_scripts":[],"list_shared_notes":["id"],"list_skills":[],"mcp_activity":["limit"],"mcp_apps":[],"mcp_audits":[],"mcp_setup":[],"my_activity":["connectionId","limit"],"open_audit_in_terminal":["agent","id","database"],"open_database":["id","database"],"open_install_link":["url"],"refresh_knowledge_source":["id","sourceId"],"refresh_schema":["id","database"],"remove_knowledge_source":["id","sourceId"],"reply_agent":["runId","reply"],"run_query":["id","database","sql","allowWrite","runId","source","question"],"save_agent_access":["id","access"],"save_agent_settings":["agentModel","agent"],"save_connection":["config","password"],"save_note":["note"],"save_script":["script"],"save_settings":["provider","typingModel","expertModel","baseUrl","apiKey","workspaceId"],"save_skill":["skill","original"],"set_audit_model":["model"],"set_audit_payment":["payment"],"set_mcp_app_blocked":["name","blocked"],"set_mcp_only_approved":["on"],"start_agent":["id","database","question","runId","slot","focusTables","skill","followUp","auto"],"start_audit":["runId","agent","id","database"],"stop_agent":["runId"],"suggest_note":["id","text","check"],"take_handoffs":[],"team_ai":[],"team_connections":[],"team_sign_in":["server","code"],"team_sign_out":[],"team_sso_finish":["code"],"team_sso_start":["server"],"team_status":[],"test_connection":["config","password"],"voice_cancel":[],"voice_cancel_download":[],"voice_delete_model":[],"voice_download":[],"voice_start":[],"voice_status":[],"voice_stop":["prompt"]} as const;
+export const COMMAND_ARGS = {"accept_note_suggestion":["id"],"add_knowledge_files":["id"],"add_knowledge_folder":["id"],"add_knowledge_repo":["id","url","branch","subdir","token","tokenUser"],"add_knowledge_url":["id","url","crawl"],"agent_access":["id"],"app_info":[],"app_ready":[],"approve_mcp_app":["name"],"audit_agents":[],"audit_model":[],"audit_payment":[],"audit_prompt":["id","database"],"cancel_audit":["runId"],"cancel_generation":["slot"],"cancel_query":["runId"],"check_claude_plan":[],"check_note":["id"],"check_notes":["id","database"],"check_update":[],"choose_model":["provider","model","purpose"],"clear_mcp_activity":[],"clear_my_activity":[],"confirm_note":["id"],"create_group":["workspaceId","name"],"create_workspace":["name"],"credits_balance":[],"delete_connection":["id"],"delete_group":["id"],"delete_note":["id"],"delete_script":["id"],"delete_skill":["slug"],"delete_workspace":["id","moveTo"],"dismiss_note_suggestion":["id"],"finish_onboarding":[],"generate_sql":["id","database","question","reqId","slot","task","focusTables","skill"],"get_layout":[],"init":[],"install_update":[],"installed_coding_agents":[],"knowledge_sources":["id"],"list_databases":["id"],"list_models":["provider","baseUrl","apiKey"],"list_note_suggestions":[],"list_notes":["id","database"],"list_scripts":[],"list_shared_notes":["id"],"list_skills":[],"mcp_activity":["limit"],"mcp_apps":[],"mcp_audits":[],"mcp_setup":[],"move_connection":["id","workspaceId","groupId"],"my_activity":["connectionId","limit"],"open_audit_in_terminal":["agent","id","database"],"open_database":["id","database"],"open_install_link":["url"],"refresh_knowledge_source":["id","sourceId"],"refresh_schema":["id","database"],"remove_knowledge_source":["id","sourceId"],"rename_group":["id","name"],"rename_workspace":["id","name"],"reply_agent":["runId","reply"],"run_query":["id","database","sql","allowWrite","runId","source","question"],"save_agent_access":["id","access"],"save_agent_settings":["agentModel","agent"],"save_connection":["config","password","placement"],"save_note":["note"],"save_script":["script"],"save_settings":["provider","typingModel","expertModel","baseUrl","apiKey","workspaceId"],"save_skill":["skill","original"],"server_databases":["config","password"],"set_audit_model":["model"],"set_audit_payment":["payment"],"set_database_group":["id","database","groupId"],"set_mcp_app_blocked":["name","blocked"],"set_mcp_only_approved":["on"],"set_team_workspace":["workspaceId"],"start_agent":["id","database","question","runId","slot","focusTables","skill","followUp","auto"],"start_audit":["runId","agent","id","database"],"stop_agent":["runId"],"suggest_note":["id","text","check"],"take_handoffs":[],"team_ai":[],"team_connections":[],"team_sign_in":["server","code"],"team_sign_out":[],"team_sso_finish":["code"],"team_sso_start":["server"],"team_status":[],"test_connection":["config","password"],"voice_cancel":[],"voice_cancel_download":[],"voice_delete_model":[],"voice_download":[],"voice_start":[],"voice_status":[],"voice_stop":["prompt"]} as const;
 
 export const MAX_SOURCES_FREE = 3 as const;
 
@@ -379,6 +403,12 @@ export type Activity_Deserialize = {
 	rows?: number | null,
 	/**  What the connection let AI apps see at the time. */
 	maySee?: AppResults | null,
+	/**  The database a query ran in, when it named or resolved one. */
+	database?: string | null,
+	/**  The workspace this `sayql-mcp` serves. */
+	workspace?: string | null,
+	/**  The group this `sayql-mcp` is limited to. */
+	group?: string | null,
 };
 
 /**  One thing an AI app did, or tried, over MCP. */
@@ -400,6 +430,12 @@ export type Activity_Serialize = {
 	rows: number | null,
 	/**  What the connection let AI apps see at the time. */
 	maySee: AppResults | null,
+	/**  The database a query ran in, when it named or resolved one. */
+	database: string | null,
+	/**  The workspace this `sayql-mcp` serves. */
+	workspace: string | null,
+	/**  The group this `sayql-mcp` is limited to. */
+	group: string | null,
 };
 
 /**
@@ -884,6 +920,10 @@ export type ConnectionDraft_Deserialize = {
 	ssl?: boolean | null,
 	/**  SQL Server: "Trust server certificate". */
 	trustCert?: boolean | null,
+	/**  The workspace to save it in: the one the asking AI app serves. `None`: the open one. */
+	workspace?: string | null,
+	/**  The group to save it in: the one the asking AI app is limited to. */
+	group?: string | null,
 };
 
 /**  The New connection form's fields, minus the password. */
@@ -900,6 +940,17 @@ export type ConnectionDraft_Serialize = {
 	ssl: boolean | null,
 	/**  SQL Server: "Trust server certificate". */
 	trustCert: boolean | null,
+	/**  The workspace to save it in: the one the asking AI app serves. `None`: the open one. */
+	workspace: string | null,
+	/**  The group to save it in: the one the asking AI app is limited to. */
+	group: string | null,
+};
+
+/**  One database of a connection, placed in a group of its own. */
+export type DatabaseGroup = {
+	connectionId: string,
+	database: string,
+	groupId: string,
 };
 
 export type DatabaseList = DatabaseList_Serialize | DatabaseList_Deserialize;
@@ -979,6 +1030,12 @@ export type ForeignKey = {
 	ref_column: string,
 };
 
+export type Group = {
+	id: string,
+	workspaceId: string,
+	name: string,
+};
+
 /**  What the app shows, and which AI app asked (its MCP client name), if known. */
 export type Handoff = Handoff_Serialize | Handoff_Deserialize;
 
@@ -997,11 +1054,13 @@ export type InitView = InitView_Serialize | InitView_Deserialize;
 export type InitView_Deserialize = {
 	connections: ConnConfig_Deserialize[],
 	settings: SettingsView_Deserialize,
+	layout: Layout_Deserialize,
 };
 
 export type InitView_Serialize = {
 	connections: ConnConfig_Serialize[],
 	settings: SettingsView_Serialize,
+	layout: Layout_Serialize,
 };
 
 /**  Whether a provider needs an API key. */
@@ -1048,6 +1107,26 @@ export type KnowledgeSource_Serialize = {
 	lastCommit: string | null,
 	/**  Why the last fetch or check failed; `None` when it worked. */
 	error: string | null,
+};
+
+export type Layout = Layout_Serialize | Layout_Deserialize;
+
+export type Layout_Deserialize = {
+	workspaces?: Workspace_Deserialize[],
+	groups?: Group[],
+	placement?: { [key in string]: Placement_Deserialize },
+	databaseGroups?: DatabaseGroup[],
+	/**  The workspace the team account's connections appear in. `None`: Personal. */
+	teamWorkspace?: string | null,
+};
+
+export type Layout_Serialize = {
+	workspaces: Workspace_Serialize[],
+	groups: Group[],
+	placement: { [key in string]: Placement_Serialize },
+	databaseGroups: DatabaseGroup[],
+	/**  The workspace the team account's connections appear in. `None`: Personal. */
+	teamWorkspace: string | null,
 };
 
 /**  Where the `sayql-mcp` server binary is, for connecting Claude to SayQL. */
@@ -1259,6 +1338,25 @@ export type Note_Serialize = {
 	history?: Revision_Serialize[],
 };
 
+/**  Where one connection sits. */
+export type Placement = Placement_Serialize | Placement_Deserialize;
+
+/**  Where one connection sits. */
+export type Placement_Deserialize = {
+	workspaceId: string,
+	groupId?: string | null,
+	/**  The databases this connection may use. `None`: all of them. */
+	allowedDatabases?: string[] | null,
+};
+
+/**  Where one connection sits. */
+export type Placement_Serialize = {
+	workspaceId: string,
+	groupId: string | null,
+	/**  The databases this connection may use. `None`: all of them. */
+	allowedDatabases: string[] | null,
+};
+
 /**  What Settings shows after checking Claude Code: installed, recent enough and signed in. */
 export type PlanCheck = PlanCheck_Serialize | PlanCheck_Deserialize;
 
@@ -1388,6 +1486,27 @@ export type Revision_Serialize = {
 	text: string,
 	at: number,
 	source: string,
+};
+
+/**  Where a connection being saved goes, and which databases it may use. */
+export type SavePlacement = SavePlacement_Serialize | SavePlacement_Deserialize;
+
+/**  Where a connection being saved goes, and which databases it may use. */
+export type SavePlacement_Deserialize = {
+	/**  For a new connection. */
+	workspaceId?: string | null,
+	groupId?: string | null,
+	/**  `None`: every database on the server. */
+	allowedDatabases?: string[] | null,
+};
+
+/**  Where a connection being saved goes, and which databases it may use. */
+export type SavePlacement_Serialize = {
+	/**  For a new connection. */
+	workspaceId: string | null,
+	groupId: string | null,
+	/**  `None`: every database on the server. */
+	allowedDatabases: string[] | null,
 };
 
 export type Schema = Schema_Serialize | Schema_Deserialize;
@@ -1740,6 +1859,8 @@ export type TeamInfo = {
 	/**  The database's name on the server, for display. */
 	database: string,
 	notes: string,
+	/**  The server groups it's in, by name, shown read-only under Team. */
+	groups: string[],
 };
 
 /**  A SayQL Team invite: the "Sign in to your team" dialog, filled in. The person confirms it. */
@@ -1836,5 +1957,21 @@ export type VoiceStatus = {
 	downloading: boolean,
 	/**  Download size, for the first-use prompt. */
 	modelBytes: number,
+};
+
+export type Workspace = Workspace_Serialize | Workspace_Deserialize;
+
+export type Workspace_Deserialize = {
+	id: string,
+	name: string,
+	/**  Which `--color-workspace-N` its tile uses. */
+	color?: number,
+};
+
+export type Workspace_Serialize = {
+	id: string,
+	name: string,
+	/**  Which `--color-workspace-N` its tile uses. */
+	color: number,
 };
 

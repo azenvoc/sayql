@@ -120,6 +120,7 @@ impl Answerer for Agent {
                 never_send: Vec::new(),
                 ..Default::default()
             },
+            databases: Default::default(),
             limits: AgentSettings {
                 skip_plan: true,
                 ..Default::default()

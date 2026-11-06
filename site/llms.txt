@@ -16,6 +16,7 @@ Made by Azenvoc (https://azenvoc.com). Download: https://sayql.dev/download/ · 
 - [Navigator](https://sayql.dev/docs/navigator/): Browse connections, databases and tables, and pick tables for the AI.
 - [Investigate](https://sayql.dev/docs/agent-mode/): Let SayQL investigate a question in several read-only steps and answer with the queries behind it, and control exactly what it may send to the AI.
 - [SayQL for teams](https://sayql.dev/docs/teams/): Govern AI agents on your databases: each agent its own key and rules, private columns withheld, every query on record, on a server your company runs.
+- [Workspaces and groups](https://sayql.dev/docs/workspaces/): Keep each company's databases apart in SayQL, group the ones that belong together, and limit each AI app to one company or one project.
 
 ## Configure
 

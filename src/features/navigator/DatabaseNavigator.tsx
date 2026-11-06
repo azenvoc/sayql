@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, type MouseEvent } from "react";
 import {
-  LayoutDashboard,
   Bot,
+  Building2,
   CircleCheck,
   Copy,
   Database,
@@ -9,9 +9,13 @@ import {
   FileCode2,
   FilePlus2,
   Folder,
+  FolderInput,
   FolderOpen,
+  FolderPlus,
   Hash,
   KeyRound,
+  Layers,
+  LayoutDashboard,
   Link2,
   Pencil,
   Plug,
@@ -48,6 +52,23 @@ import { countRowsSql, qualifiedName, tableRef, templateSql, type SqlTemplate } 
 import styles from "./DatabaseNavigator.module.css";
 
 export interface DatabaseNavigatorProps {
+  /** The open workspace's groups. */
+  groups?: { id: string; name: string }[];
+  /** Signed in to a team server, so an empty Team list means something. */
+  teamSignedIn?: boolean;
+  groupOf?: (connectionId: string) => string | null;
+  /** The single databases placed in a group. */
+  databasesIn?: (groupId: string) => { connectionId: string; database: string }[];
+  isPlacedApart?: (connectionId: string, database: string) => boolean;
+  /** Opens one database of a connection, from its group. */
+  onOpenAt?: (connectionId: string, database: string) => void;
+  onNewGroup?: () => void;
+  onRenameGroup?: (id: string, name: string) => void;
+  onDeleteGroup?: (id: string) => void;
+  /** Set while Personal is the only workspace, when there's no rail to add one from. */
+  onNewWorkspace?: () => void;
+  onMove?: (c: ConnectionConfig) => void;
+  onMoveDatabase?: (c: ConnectionConfig, database: string) => void;
   connections: ConnectionConfig[];
   activeId: string | null;
   /** The server's databases per connection; `null` for SQLite, absent while loading. */
@@ -187,7 +208,17 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
   const menu = useContextMenu();
   const copy = (text: string) => void navigator.clipboard?.writeText(text);
 
-  const connectionMenu = (c: ConnectionConfig): MenuEntry[] => {
+  const connectionMenu = (c: ConnectionConfig): MenuEntry[] => [
+    ...(p.onMove
+      ? ([
+          { label: "Move to…", icon: FolderInput, onSelect: () => p.onMove?.(c) },
+          "separator",
+        ] satisfies MenuEntry[])
+      : []),
+    ...baseConnectionMenu(c),
+  ];
+
+  const baseConnectionMenu = (c: ConnectionConfig): MenuEntry[] => {
     const active = c.id === p.activeId;
     // A team connection is managed by the team admin: no editing or deleting it here.
     if (c.team) {
@@ -269,8 +300,17 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
         label: current ? "Open" : "Open database",
         icon: FolderOpen,
         disabled: current,
-        onSelect: () => p.onOpenDatabase(name),
+        onSelect: () => (p.onOpenAt ? p.onOpenAt(c.id, name) : p.onOpenDatabase(name)),
       },
+      ...(p.onMoveDatabase
+        ? ([
+            {
+              label: "Move to group…",
+              icon: FolderInput,
+              onSelect: () => p.onMoveDatabase?.(c, name),
+            },
+          ] satisfies MenuEntry[])
+        : []),
       { label: "New SQL tab", icon: FilePlus2, onSelect: () => p.onNewTab(c.id, name) },
       { label: "Refresh", icon: RefreshCw, disabled: !current || p.loading, onSelect: p.onRefresh },
       {
@@ -566,26 +606,27 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
       </>
     );
 
-  const renderDatabases = (c: ConnectionConfig, list: DatabaseList) => {
+  const renderDatabases = (c: ConnectionConfig, list: DatabaseList, base: number) => {
+    const databases = list.databases.filter((name) => !p.isPlacedApart?.(c.id, name));
     const folder = `${c.id}:databases`;
     const open = !collapsed.has(folder);
     return (
       <div role="group">
         <TreeRow
-          depth={1}
+          depth={base + 1}
           expanded={open}
           icon={<Folder size={14} />}
           label="Databases"
-          meta={list.databases.length}
+          meta={databases.length}
           onClick={() => setCollapsed((s) => toggle(s, folder))}
         />
         {open &&
-          list.databases.map((name) => {
+          databases.map((name) => {
             const current = name === p.databaseName;
             return (
               <div key={name} role="group">
                 <TreeRow
-                  depth={2}
+                  depth={base + 2}
                   expanded={current}
                   selected={current}
                   icon={<Database size={14} />}
@@ -595,7 +636,7 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
                   onClick={() => p.onOpenDatabase(name)}
                   onContextMenu={(e) => menu.open(e, databaseMenu(c, name))}
                 />
-                {current && renderSchema(`${c.id}/${name}`, 3)}
+                {current && renderSchema(`${c.id}/${name}`, base + 3)}
               </div>
             );
           })}
@@ -603,18 +644,27 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
     );
   };
 
+  const groups = p.groups ?? [];
+  // With groups, the filter also finds connections and groups. The open connection stays, since
+  // its tables are what the filter also searches.
+  const matchesFind = (c: ConnectionConfig) =>
+    !groups.length || !query || c.id === p.activeId || c.name.toLowerCase().includes(query);
   const own = p.connections.filter((c) => !c.team);
   const team = p.connections.filter((c) => c.team);
+  // Those not in one of this person's own groups, under the groups the team's server set up.
+  const teamLoose = team.filter((c) => !p.groupOf?.(c.id));
+  const serverGroups = [...new Set(teamLoose.flatMap((c) => c.team?.groups ?? []))].sort();
 
-  const renderConnection = (c: ConnectionConfig) => {
+  const renderConnection = (c: ConnectionConfig, base = 0) => {
     const active = c.id === p.activeId;
     const list = p.databases[c.id];
     return (
       <div key={c.id} role="group">
         <TreeRow
-          depth={0}
+          depth={base}
           expanded={active}
-          selected={active}
+          // What's open is one row: a database placed in a group of its own, or this connection.
+          selected={active && !(p.databaseName && p.isPlacedApart?.(c.id, p.databaseName))}
           icon={<Logo id={DATABASE_KINDS[c.kind].logo} size={14} />}
           label={
             <span className={styles.connName}>
@@ -647,7 +697,7 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
         {/* Not connected yet (SayQL never connects on its own at start): one click connects. */}
         {active && !p.connected && (
           <TreeRow
-            depth={1}
+            depth={base + 1}
             icon={<Plug size={14} />}
             label={<span className={styles.message}>Not connected</span>}
             title={`Connect to ${c.name}`}
@@ -667,7 +717,81 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
           />
         )}
         {/* Servers list their databases; SQLite (or a server that won't list them) shows the schema directly. */}
-        {active && p.connected && (list ? renderDatabases(c, list) : renderSchema(c.id, 1))}
+        {active &&
+          p.connected &&
+          (list ? renderDatabases(c, list, base) : renderSchema(c.id, base + 1))}
+      </div>
+    );
+  };
+
+  /** One database of a server, placed in a group of its own. */
+  const renderSingleDatabase = (connectionId: string, name: string) => {
+    const c = p.connections.find((x) => x.id === connectionId);
+    if (!c) return null;
+    const current = c.id === p.activeId && name === p.databaseName;
+    return (
+      <div key={`${connectionId}/${name}`} role="group">
+        <TreeRow
+          depth={1}
+          expanded={current}
+          selected={current}
+          icon={<Logo id={DATABASE_KINDS[c.kind].logo} size={14} />}
+          label={<span className={styles.connLabel}>{name}</span>}
+          meta={c.name}
+          title={`${name} on ${c.name}`}
+          onClick={() => p.onOpenAt?.(c.id, name)}
+          onContextMenu={(e) => menu.open(e, databaseMenu(c, name))}
+        />
+        {current && renderSchema(`${c.id}/${name}`, 2)}
+      </div>
+    );
+  };
+
+  const renderGroup = (g: { id: string; name: string }) => {
+    const nameHit = !!query && g.name.toLowerCase().includes(query);
+    // Local groups can hold team connections too: this only organises them on this computer.
+    const whole = p.connections.filter((c) => p.groupOf?.(c.id) === g.id);
+    const singles = (p.databasesIn?.(g.id) ?? []).filter((d) =>
+      p.connections.some((c) => c.id === d.connectionId),
+    );
+    const shownWhole = nameHit ? whole : whole.filter(matchesFind);
+    const shownSingles =
+      !query || nameHit ? singles : singles.filter((d) => d.database.toLowerCase().includes(query));
+    if (query && !nameHit && !shownWhole.length && !shownSingles.length) return null;
+    const key = `group:${g.id}`;
+    const open = !!query || !collapsed.has(key);
+    const size = whole.length + singles.length;
+    return (
+      <div key={g.id} role="group">
+        <TreeRow
+          depth={0}
+          expanded={open}
+          icon={<Layers size={14} />}
+          label={<span className={styles.connLabel}>{g.name}</span>}
+          meta={size}
+          onClick={() => setCollapsed((s) => toggle(s, key))}
+          onContextMenu={(e) =>
+            menu.open(e, [
+              { label: "New connection", icon: Plus, onSelect: p.onAdd },
+              "separator",
+              { label: "Rename…", icon: Pencil, onSelect: () => p.onRenameGroup?.(g.id, g.name) },
+              {
+                label: "Delete group",
+                icon: Trash2,
+                danger: true,
+                onSelect: () => p.onDeleteGroup?.(g.id),
+              },
+            ])
+          }
+        />
+        {open && shownWhole.map((c) => renderConnection(c, 1))}
+        {open && shownSingles.map((d) => renderSingleDatabase(d.connectionId, d.database))}
+        {open && size === 0 && (
+          <TreeRow
+            depth={1}
+            label={<span className={styles.message}>Right-click a connection to move it here</span>}
+          />
+        )}
       </div>
     );
   };
@@ -678,6 +802,17 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
       icon={Server}
       actions={
         <>
+          {p.onNewWorkspace && (
+            <IconButton
+              icon={Building2}
+              label="New workspace, for another company"
+              size="sm"
+              onClick={p.onNewWorkspace}
+            />
+          )}
+          {p.onNewGroup && (
+            <IconButton icon={FolderPlus} label="New group" size="sm" onClick={p.onNewGroup} />
+          )}
           <IconButton icon={Plus} label="New connection" size="sm" onClick={p.onAdd} />
           <IconButton
             icon={RefreshCw}
@@ -693,14 +828,17 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
         <Search size={13} className={styles.filterIcon} />
         <TextInput
           className={styles.filterInput}
-          placeholder="Filter tables and columns"
+          placeholder={
+            groups.length ? "Find connection, table or column" : "Filter tables and columns"
+          }
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
       </div>
       <div className={styles.tree} role="tree" aria-label="Database objects">
-        {own.map(renderConnection)}
-        {own.length === 0 && team.length === 0 && (
+        {groups.map(renderGroup)}
+        {own.filter((c) => !p.groupOf?.(c.id) && matchesFind(c)).map((c) => renderConnection(c))}
+        {own.length === 0 && groups.length === 0 && team.length === 0 && (
           <TreeRow depth={0} label={<span className={styles.message}>No connections yet</span>} />
         )}
         {/* Where team connections would be: a quiet way in for someone who lost their invite link. */}
@@ -723,18 +861,52 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
             />
           </div>
         )}
-        {team.length > 0 && (
+        {team.length === 0 && p.teamSignedIn && (
+          <div role="group" className={styles.scripts}>
+            <TreeRow
+              depth={0}
+              icon={<Users size={14} />}
+              label={
+                <span className={styles.message}>
+                  Your team admin hasn&apos;t given you access to any databases yet
+                </span>
+              }
+            />
+          </div>
+        )}
+        {teamLoose.length > 0 && (
           <div role="group" className={styles.scripts}>
             <TreeRow
               depth={0}
               expanded={!collapsed.has("team")}
               icon={<Users size={14} />}
               label={<span className={styles.connLabel}>Team</span>}
-              meta={team.length}
+              meta={teamLoose.length}
               title="Shared by your team admin on your team's SayQL server. Queries on them run there."
               onClick={() => setCollapsed((s) => toggle(s, "team"))}
             />
-            {!collapsed.has("team") && team.map(renderConnection)}
+            {!collapsed.has("team") &&
+              serverGroups.map((name) => {
+                const key = `team-group:${name}`;
+                const open = !collapsed.has(key);
+                const members = teamLoose.filter((c) => c.team?.groups?.includes(name));
+                return (
+                  <div key={key} role="group">
+                    <TreeRow
+                      depth={1}
+                      expanded={open}
+                      icon={<Layers size={14} />}
+                      label={<span className={styles.connLabel}>{name}</span>}
+                      meta={members.length}
+                      title="A group your team admin set up on your team's SayQL server."
+                      onClick={() => setCollapsed((s) => toggle(s, key))}
+                    />
+                    {open && members.map((c) => renderConnection(c, 2))}
+                  </div>
+                );
+              })}
+            {!collapsed.has("team") &&
+              teamLoose.filter((c) => !c.team?.groups?.length).map((c) => renderConnection(c, 1))}
           </div>
         )}
         {p.scripts.length > 0 && (

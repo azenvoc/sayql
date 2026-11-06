@@ -3,6 +3,7 @@ import type { ConnectionConfig, Schema } from "../api";
 import { Badge, Wordmark, Button, IconButton, Logo, ToolbarDivider } from "../components/ui";
 import { DATABASE_KINDS, ProdBadge } from "../features/connections";
 import { ThemeToggle } from "../features/theme";
+import { WorkspaceCrumb, type WorkspacesApi } from "../features/workspaces";
 import styles from "./Workbench.module.css";
 
 export interface TopBarProps {
@@ -13,6 +14,7 @@ export interface TopBarProps {
   onOpenSettings: () => void;
   /** Notes AI apps suggested, waiting; shown as a count on the settings button. */
   pendingSuggestions?: number;
+  workspaces?: WorkspacesApi;
 }
 
 export function TopBar({
@@ -22,6 +24,7 @@ export function TopBar({
   onNewConnection,
   onOpenSettings,
   pendingSuggestions = 0,
+  workspaces,
 }: TopBarProps) {
   return (
     <header className={styles.topbar}>
@@ -32,6 +35,13 @@ export function TopBar({
       <Button size="sm" variant="ghost" icon={Plus} onClick={onNewConnection}>
         New connection
       </Button>
+      {workspaces && (
+        <WorkspaceCrumb
+          workspaces={workspaces}
+          connectionId={active?.id ?? null}
+          database={databaseName}
+        />
+      )}
       {active && (
         <div
           className={styles.activeConnection}

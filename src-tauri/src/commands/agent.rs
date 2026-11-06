@@ -160,6 +160,7 @@ pub async fn start_agent(
         focus,
         skill,
         access,
+        databases: state.store.layout()?.limit_of(&target.connection_id),
         limits: settings.agent.clone(),
         history,
     };

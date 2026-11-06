@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import type { PreviousQuery, Target } from "../../api";
+import { useLatest } from "../../hooks/useLatest";
 import { usePersistentState } from "../../hooks/usePersistentState";
 import type { AgentRunState } from "../agent";
 
@@ -51,6 +52,16 @@ export function hasUnsavedChanges(tab: EditorTab): boolean {
 interface TabsState {
   tabs: EditorTab[];
   activeId: string | null;
+  /** The tab last active in each workspace, to come back to. */
+  activeIn?: Record<string, string>;
+}
+
+/** Which workspace's tabs to show. Without it, all of them. */
+export interface TabScope {
+  id: string;
+  workspaceOf: (connectionId: string) => string;
+  /** Shows the workspace a new tab opened in. */
+  reveal: (connectionId: string) => void;
 }
 
 export type NewTab = Partial<
@@ -61,12 +72,24 @@ export type NewTab = Partial<
 >;
 
 /** Open editor tabs and which one is active. Remembered across launches. */
-export function useTabs() {
+export function useTabs(scope?: TabScope) {
   const [state, setState] = usePersistentState<TabsState>("editor-tabs", {
     tabs: [],
     activeId: null,
   });
-  const active = state.tabs.find((t) => t.id === state.activeId) ?? state.tabs[0] ?? null;
+  // Every tab stays mounted, so what runs in one keeps running; a workspace shows its own.
+  const here = scope
+    ? state.tabs.filter((t) => scope.workspaceOf(t.target.connectionId) === scope.id)
+    : state.tabs;
+  const remembered = scope ? state.activeIn?.[scope.id] : undefined;
+  const active =
+    here.find((t) => t.id === remembered) ??
+    here.find((t) => t.id === state.activeId) ??
+    here[0] ??
+    null;
+  const latestScope = useLatest(scope);
+  const remember = (s: TabsState, tabId: string, workspace: string | undefined) =>
+    workspace ? { ...s.activeIn, [workspace]: tabId } : s.activeIn;
 
   const open = useCallback(
     (target: Target, init: NewTab = {}) => {
@@ -78,15 +101,26 @@ export function useTabs() {
         sql: "",
         ...init,
       };
-      setState((s) => ({ tabs: [...s.tabs, tab], activeId: tab.id }));
+      const now = latestScope.current;
+      setState((s) => ({
+        tabs: [...s.tabs, tab],
+        activeId: tab.id,
+        activeIn: remember(s, tab.id, now?.workspaceOf(target.connectionId)),
+      }));
+      now?.reveal(target.connectionId);
       return tab.id;
     },
-    [setState],
+    [setState, latestScope],
   );
 
   const activate = useCallback(
-    (id: string) => setState((s) => ({ ...s, activeId: id })),
-    [setState],
+    (id: string) =>
+      setState((s) => ({
+        ...s,
+        activeId: id,
+        activeIn: remember(s, id, latestScope.current?.id),
+      })),
+    [setState, latestScope],
   );
 
   const update = useCallback(
@@ -109,12 +143,12 @@ export function useTabs() {
             .find((t) => !match(t)) ??
           tabs[0] ??
           null;
-        return { tabs, activeId: neighbour?.id ?? null };
+        return { ...s, tabs, activeId: neighbour?.id ?? null };
       }),
     [setState],
   );
 
   const close = useCallback((id: string) => closeWhere((t) => t.id === id), [closeWhere]);
 
-  return { tabs: state.tabs, active, open, activate, update, close, closeWhere };
+  return { tabs: state.tabs, here, active, open, activate, update, close, closeWhere };
 }

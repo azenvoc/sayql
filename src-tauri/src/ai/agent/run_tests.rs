@@ -117,6 +117,7 @@ async fn go_with(
         focus: vec![],
         skill: None,
         access,
+        databases: Default::default(),
         limits,
         history: None,
     };
@@ -680,6 +681,7 @@ async fn a_follow_up_continues_the_conversation() {
         focus: vec![],
         skill: None,
         access: access(Results::Counts, false),
+        databases: Default::default(),
         limits: AgentSettings::default(),
         history: Some(first.outcome.history),
     };
@@ -735,6 +737,7 @@ async fn big_tables_need_a_filter_or_a_checked_plan() {
         focus: vec![],
         skill: None,
         access: access(Results::Counts, false),
+        databases: Default::default(),
         limits: AgentSettings::default(),
         history: None,
     };
@@ -793,6 +796,7 @@ async fn follow_ups_mask_values_the_person_quotes() {
         focus: vec![],
         skill: None,
         access: access(Results::Rows, false),
+        databases: Default::default(),
         limits: AgentSettings::default(),
         history: Some(first.outcome.history),
     };
@@ -867,6 +871,7 @@ async fn tools_work_on_every_database() {
             focus: vec![],
             skill: None,
             access: access(Results::Rows, false),
+            databases: Default::default(),
             limits: AgentSettings::default(),
             history: None,
         };
@@ -1255,6 +1260,7 @@ async fn a_run_checks_notes_and_suggests_fixes_for_the_person() {
         focus: vec![],
         skill: None,
         access: access(Results::Counts, false),
+        databases: Default::default(),
         limits: AgentSettings {
             skip_plan: true,
             ..Default::default()
@@ -1368,6 +1374,7 @@ async fn on_a_team_connection_suggested_notes_go_to_the_team_server() {
         focus: vec![],
         skill: None,
         access: access(Results::Counts, false),
+        databases: Default::default(),
         limits: AgentSettings {
             skip_plan: true,
             ..Default::default()

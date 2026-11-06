@@ -26,6 +26,11 @@ impl SayqlServer {
             .connections()
             .map_err(|e| e.to_string())
             .and_then(|list| {
+                let layout = self.layout()?;
+                let list: Vec<_> = list
+                    .into_iter()
+                    .filter(|c| self.in_reach(&layout, &c.id))
+                    .collect();
                 Ok(match arg("connection") {
                     Some(wanted) => Some(audit::find_connection(&list, &wanted)?.clone()),
                     None if list.len() == 1 => list.into_iter().next(),
@@ -37,16 +42,22 @@ impl SayqlServer {
             Err(e) => {
                 log.status = "error".into();
                 log.detail = Some(e.chars().take(160).collect());
-                let _ = self.state.store.log_app_activity(log);
+                self.write_log(log);
                 return Err(e);
             }
         };
         let Some(conn) = conn else {
             // The app picks the connection; nothing to record until it names one.
             log.detail = Some("audit prompt, connection not named".into());
-            let _ = self.state.store.log_app_activity(log);
+            self.write_log(log);
             return Ok(audit::instructions(None, false));
         };
+        if let Some(database) = arg("database")
+            && conn.kind != Kind::Sqlite
+            && !self.limit_for(&conn.id)?.allows(&database)
+        {
+            return Err(scope::no_database(&database));
+        }
         // A SQLite file is one database: its notes are kept without one.
         let database = if conn.kind == Kind::Sqlite {
             None
@@ -61,7 +72,7 @@ impl SayqlServer {
         log.connection_id = conn.id.clone();
         log.connection = conn.name.clone();
         log.detail = Some("audit prompt".into());
-        let _ = self.state.store.log_app_activity(log);
+        self.write_log(log);
         Ok(audit::instructions(
             Some(&audit::Target {
                 connection_id: &conn.id,

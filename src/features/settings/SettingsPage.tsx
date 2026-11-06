@@ -37,6 +37,7 @@ import { ProviderChooser } from "./ProviderChooser";
 import { MyActivityLog } from "./MyActivity";
 import { version } from "../../../package.json";
 import { docsUrl } from "../help";
+import { TeamWorkspace, type WorkspacesApi } from "../workspaces";
 import styles from "./SettingsPage.module.css";
 
 import type { SettingsSection } from "./sections";
@@ -76,6 +77,7 @@ export interface SettingsPageProps {
   createSkill?: boolean;
   /** Signed in to or out of a SayQL Team server. */
   onTeamChange: (account: TeamAccount | null) => void;
+  workspaces?: WorkspacesApi;
 }
 
 /** What the form holds for one provider; kept per provider so switching back loses nothing. */
@@ -137,6 +139,7 @@ export function SettingsPage({
   noteSuggestions,
   createSkill,
   onTeamChange,
+  workspaces,
 }: SettingsPageProps) {
   const [section, setSection] = useState<SettingsSection>(initial);
   const [saved, setSaved] = useState(false);
@@ -460,6 +463,7 @@ export function SettingsPage({
                 provider={agentProvider}
                 suggestions={noteSuggestions}
                 tab={aiAppsTab}
+                workspaces={workspaces}
               />
             </>
           )}
@@ -473,6 +477,7 @@ export function SettingsPage({
             <>
               <h2 className={styles.title}>Team</h2>
               <TeamSection account={settings.team ?? null} onChange={onTeamChange} />
+              {settings.team && workspaces && <TeamWorkspace workspaces={workspaces} />}
             </>
           )}
           {section === "about" && (

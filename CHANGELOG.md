@@ -5,6 +5,30 @@ All notable changes to SayQL are listed here. Downloads are on the
 
 ## Unreleased
 
+### Access on team servers
+
+- **Your team's server decides which databases you can use,** with team server 0.6.0. SayQL asks again when it comes
+  to the front, so new access shows up without a restart. When you lose access, its tabs close and SayQL says so,
+  and a tab with SQL that isn't saved stays so you can copy it.
+- **Your team admin's groups** show under Team, read-only. They're separate from your own groups.
+
+### Workspaces and groups
+
+- **Workspaces keep each company's databases apart.** Each has its own connections, groups, saved scripts and
+  tabs, on a rail at the left of the window once there's more than one. Everything you've saved stays in Personal,
+  and with only Personal nothing looks different. Switching doesn't stop anything: a query or Investigate run in
+  another workspace keeps going.
+- **Groups keep the databases of one project together,** as whole connections or single databases of a server.
+- **An AI app sees one workspace, or one group in it:** `sayql-mcp --workspace acme --group portside`. Anything
+  else gets the same reply as something that doesn't exist. **An app set up without a workspace sees Personal
+  only**, so moving a connection out of Personal hides it from apps set up the old way. Settings → AI apps → Access
+  shows the setup for each one, and the activity log says which workspace each request came through.
+- **A server shared with other companies** can be limited to the databases you pick. The others are hidden, and
+  Investigate, note checks and AI apps can't run a query that names one or reads the server's list of databases.
+  Only a separate database login guarantees separation; the docs explain why.
+- **`export_csv` on an unknown connection** now says the connection wasn't found, like every other tool.
+- **`list_scripts` no longer lists scripts whose connection was deleted,** since they're in no workspace.
+
 ### Fixes
 
 - **"Last audit" is per database.** Auditing one database of a server made all of them look audited, and hid

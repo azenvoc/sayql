@@ -14,6 +14,7 @@ pub mod skills;
 pub mod team;
 pub mod updates;
 pub mod voice;
+pub mod workspaces;
 
 #[cfg(test)]
 mod bindings;

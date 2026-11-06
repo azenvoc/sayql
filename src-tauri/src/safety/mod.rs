@@ -13,6 +13,7 @@
 //! - `gate`: the AI query gate, which every query run for an AI goes through.
 
 pub mod classify;
+pub mod databases;
 pub mod gate;
 pub mod mask;
 pub mod never_send;

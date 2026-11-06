@@ -18,7 +18,9 @@ impl SayqlServer {
         p: ExportParams,
         log: &mut Activity,
     ) -> Result<String, String> {
-        let target = Target::new(p.connection_id, p.database);
+        let target = self.target_in_reach(&p.connection_id, p.database).await?;
+        log.database.clone_from(&target.database);
+        let limit = self.limit_for(&target.connection_id)?;
         // The AI app could read the file back, so exporting needs the same permission as seeing rows.
         let access = self.access(&target.connection_id)?;
         log.may_see = Some(access.apps);
@@ -31,7 +33,9 @@ impl SayqlServer {
             .await
             .map_err(|e| e.to_string())?;
         // The same checks as run_query: the AI app could read the file back.
-        let guard = self.checked(&pool, &p.sql, &access.never_send, log).await?;
+        let guard = self
+            .checked(&pool, &p.sql, &access.never_send, &limit, log)
+            .await?;
         let mut never = Masker::new(&access.never_send);
         let dir = dirs::download_dir()
             .or_else(dirs::home_dir)

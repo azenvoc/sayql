@@ -3,8 +3,9 @@ use crate::db::{self, ConnConfig, DatabaseList, Kind};
 use crate::error::AppResult;
 use crate::schema::Schema;
 use crate::state::{AppState, Target};
+use crate::store::layout::Layout;
 use crate::store::secrets;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 use tauri::State;
 
@@ -15,6 +16,7 @@ const DEMO_ID: &str = "demo";
 pub struct InitView {
     connections: Vec<ConnConfig>,
     settings: SettingsView,
+    layout: Layout,
 }
 
 fn demo_connection(path: &Path) -> ConnConfig {
@@ -42,6 +44,7 @@ pub async fn init(state: State<'_, AppState>) -> AppResult<InitView> {
     // (with where it was moved) instead of quietly showing an empty list later.
     state.store.scripts()?;
     state.store.skills()?;
+    let layout = state.store.layout()?;
     let mut settings = state.store.settings()?;
     if !settings.demo_added {
         db::ensure_demo(&state.demo_path).await?;
@@ -57,16 +60,30 @@ pub async fn init(state: State<'_, AppState>) -> AppResult<InitView> {
     Ok(InitView {
         connections: state.store.connections()?,
         settings: settings_view(&settings),
+        layout,
     })
 }
 
-/// Creates (empty id) or updates a connection. `password: None` keeps the saved password.
+/// Where a connection being saved goes, and which databases it may use.
+#[derive(Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SavePlacement {
+    /// For a new connection.
+    workspace_id: Option<String>,
+    group_id: Option<String>,
+    /// `None`: every database on the server.
+    allowed_databases: Option<Vec<String>>,
+}
+
+/// Creates (empty id) or updates a connection. `password: None` keeps the saved password. Its
+/// place is saved first, so an AI app never sees it in the wrong workspace, or with no list.
 #[tauri::command]
 #[specta::specta]
 pub fn save_connection(
     state: State<'_, AppState>,
     mut config: ConnConfig,
     password: Option<String>,
+    placement: Option<SavePlacement>,
 ) -> AppResult<ConnConfig> {
     refuse_team(&config.id)?;
     if config.id.is_empty() {
@@ -74,6 +91,15 @@ pub fn save_connection(
     }
     if let Some(pw) = password {
         secrets::set_password(&config.id, &pw)?;
+    }
+    if let Some(p) = placement {
+        state.store.update_layout(|l| {
+            if let Some(workspace) = &p.workspace_id {
+                l.move_connection(&config.id, workspace, p.group_id.as_deref())?;
+            }
+            l.set_allowed_databases(&config.id, p.allowed_databases);
+            Ok(())
+        })?;
     }
     state.store.update_connections(|list| {
         match list.iter_mut().find(|c| c.id == config.id) {
@@ -91,17 +117,22 @@ pub fn save_connection(
 #[tauri::command]
 #[specta::specta]
 pub fn delete_connection(state: State<'_, AppState>, id: String) -> AppResult<()> {
-    refuse_team(&id)?;
+    remove_connection(&state, &id)
+}
+
+/// Removes a saved connection, its password and everything kept about it.
+pub(super) fn remove_connection(state: &AppState, id: &str) -> AppResult<()> {
+    refuse_team(id)?;
     state.store.update_connections(|list| {
         list.retain(|c| c.id != id);
         Ok(())
     })?;
-    state.close(&id);
-    if let Err(e) = state.store.forget_agent(&id) {
+    state.close(id);
+    if let Err(e) = state.store.forget_agent(id) {
         eprintln!("sayql: couldn't remove the agent settings of connection {id}: {e}");
     }
     // The connection is already gone; a keychain failure here only leaves a stale secret.
-    if let Err(e) = secrets::delete_password(&id) {
+    if let Err(e) = secrets::delete_password(id) {
         eprintln!("sayql: couldn't remove the saved password of connection {id}: {e}");
     }
     Ok(())
@@ -184,5 +215,12 @@ pub async fn list_databases(
     id: String,
 ) -> AppResult<Option<DatabaseList>> {
     let pool = state.target_pool(&Target::default_of(&id)).await?;
-    db::list_databases(&pool).await
+    let limit = state.store.layout()?.limit_of(&id);
+    Ok(db::list_databases(&pool).await?.map(|mut list| {
+        list.databases.retain(|d| limit.allows(d));
+        if list.current.as_deref().is_some_and(|c| !limit.allows(c)) {
+            list.current = None;
+        }
+        list
+    }))
 }

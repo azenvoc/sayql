@@ -44,6 +44,10 @@ pub struct ConnectionDraft {
     pub ssl: Option<bool>,
     /// SQL Server: "Trust server certificate".
     pub trust_cert: Option<bool>,
+    /// The workspace to save it in: the one the asking AI app serves. `None`: the open one.
+    pub workspace: Option<String>,
+    /// The group to save it in: the one the asking AI app is limited to.
+    pub group: Option<String>,
 }
 
 /// SQL to open, unrun, in a new tab.
@@ -244,6 +248,8 @@ pub fn connection_draft(
         } else {
             None
         },
+        workspace: get("workspace").filter(|w| !w.is_empty()),
+        group: get("group").filter(|g| !g.is_empty()),
     };
     if kind == Kind::Sqlite && draft.file.is_empty() {
         return Err("`file` (the SQLite database file path) is required for sqlite.".into());
@@ -310,6 +316,8 @@ pub fn to_url(handoff: &Handoff, token: &str) -> Result<String, String> {
                 put("user", &c.user);
                 put("file", &c.file);
                 put("ssl", &c.ssl.map(|b| b.to_string()).unwrap_or_default());
+                put("workspace", c.workspace.as_deref().unwrap_or_default());
+                put("group", c.group.as_deref().unwrap_or_default());
                 put(
                     "trust_server_certificate",
                     &c.trust_cert.map(|b| b.to_string()).unwrap_or_default(),
@@ -371,6 +379,8 @@ pub fn parse_url(link: &str) -> Result<(Handoff, String), String> {
             "file",
             "ssl",
             "trust_server_certificate",
+            "workspace",
+            "group",
         ],
         Some("open-query") => &[
             "token",
