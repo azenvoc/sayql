@@ -3,6 +3,17 @@
 All notable changes to SayQL are listed here. Downloads are on the
 [releases page](https://github.com/azenvoc/sayql-releases/releases).
 
+## Unreleased
+
+### Fixes
+
+- **"Last audit" is per database.** Auditing one database of a server made all of them look audited, and hid
+  "Teach SayQL this database" on the others. Settings → AI apps and the connection overview now say which database
+  each audit was of.
+- **Suggested notes show up on a tab with no database named.** A suggestion for the connection's default database
+  was left out of that tab's list, and its count in the navigator.
+- **Banners fit a narrow window.** Their buttons wrap below the text, instead of squeezing it into a tall column.
+
 ## 0.6.0 (2026-11-03)
 
 ### A more familiar desktop database tool

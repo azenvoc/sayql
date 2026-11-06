@@ -1,17 +1,26 @@
 import { useCallback, useEffect, useState } from "react";
 import { commands, type DbNote, type NoteSuggestion, type Target } from "../../api";
+import { notesDatabase } from "./audit";
 
 /** Sent on `window` when a suggestion is accepted or dismissed, so every list and the notes refresh. */
 export const SUGGESTIONS_CHANGED = "sayql:note-suggestions-changed";
 /** AI apps suggest notes from their own process (sayql-mcp), so the list is read again now and then. */
 const REFRESH_MS = 20_000;
 
-/** Whether a suggestion is for the database open in `target`. */
-export function suggestionFor(s: NoteSuggestion, target: Target | null): boolean {
+/**
+ * Whether a suggestion is for the database open in `target`. An app that names no database
+ * suggests for the connection's default, which is what a tab naming none has open.
+ */
+export function suggestionFor(
+  s: NoteSuggestion,
+  target: Target | null,
+  connectionDefault: string | null = null,
+): boolean {
   return (
     !!target &&
     s.connectionId === target.connectionId &&
-    (s.database ?? null) === (target.database ?? null)
+    notesDatabase(s.database, connectionDefault) ===
+      notesDatabase(target.database, connectionDefault)
   );
 }
 

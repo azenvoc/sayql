@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { auditAge, auditCommand, auditStale, lastAudit } from "./audit";
+import { auditAge, auditCommand, auditStale, lastAudit, notesDatabase, otherAudits } from "./audit";
 
 const DAY = 86_400_000;
 const NOW = Date.UTC(2026, 9, 28, 12);
@@ -19,8 +19,10 @@ it("says when a connection was last audited, and when to run it again", () => {
     { connectionId: "c1", database: "a", app: "Cursor", at: NOW - 40 * DAY },
     { connectionId: "c1", database: "b", app: "Cursor", at: NOW - 3 * DAY },
   ];
-  expect(lastAudit(audits, "c1")).toBe(NOW - 3 * DAY);
-  expect(lastAudit(audits, "c2")).toBeNull();
+  const c1 = { id: "c1", database: "a" };
+  expect(lastAudit(audits, c1)).toBe(NOW - 40 * DAY);
+  expect(lastAudit(audits, c1, "b")).toBe(NOW - 3 * DAY);
+  expect(lastAudit(audits, { id: "c2", database: "" })).toBeNull();
   expect(auditAge(null, NOW)).toBe("Never");
   expect(auditAge(NOW - 3 * DAY, NOW)).toBe("3 days ago");
   expect(auditAge(NOW - 1 * DAY, NOW)).toBe("yesterday");
@@ -29,4 +31,39 @@ it("says when a connection was last audited, and when to run it again", () => {
   expect(auditStale(null, NOW)).toBe(true);
   expect(auditStale(NOW - 29 * DAY, NOW)).toBe(false);
   expect(auditStale(NOW - 31 * DAY, NOW)).toBe(true);
+});
+
+it("doesn't let one tenant's audit make every database look audited", () => {
+  const audits = [{ connectionId: "server", database: "tenant_a", app: "Cursor", at: NOW }];
+  const server = { id: "server", database: "" };
+  expect(lastAudit(audits, server, "tenant_a")).toBe(NOW);
+  expect(lastAudit(audits, server, "tenant_b")).toBeNull();
+  expect(lastAudit(audits, server)).toBeNull();
+  expect(otherAudits(audits, server)).toEqual([{ database: "tenant_a", at: NOW }]);
+  expect(otherAudits(audits, server, "tenant_a")).toEqual([]);
+});
+
+it("treats no database and the connection's default as the same place", () => {
+  const conn = { id: "c1", database: "shop" };
+  const named = [{ connectionId: "c1", database: "shop", app: "Cursor", at: NOW }];
+  const unnamed = [{ connectionId: "c1", database: null, app: "Cursor", at: NOW }];
+  for (const audits of [named, unnamed]) {
+    expect(lastAudit(audits, conn)).toBe(NOW);
+    expect(lastAudit(audits, conn, "shop")).toBe(NOW);
+    expect(otherAudits(audits, conn)).toEqual([]);
+  }
+  expect(notesDatabase(" ", " shop ")).toBe("shop");
+  expect(notesDatabase(null, "")).toBeNull();
+});
+
+it("lists other audited databases, most recent first", () => {
+  const audits = [
+    { connectionId: "c1", database: "old", app: "Cursor", at: NOW - DAY },
+    { connectionId: "c1", database: "new", app: "Cursor", at: NOW },
+    { connectionId: "c2", database: "elsewhere", app: "Cursor", at: NOW },
+  ];
+  expect(otherAudits(audits, { id: "c1", database: "" }).map((o) => o.database)).toEqual([
+    "new",
+    "old",
+  ]);
 });

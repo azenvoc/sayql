@@ -137,6 +137,12 @@ it("shows why an accept failed", async () => {
 it("matches suggestions to the open database", () => {
   const s = suggestion("s1", "x");
   expect(suggestionFor(s, { connectionId: "c1", database: "shop" })).toBe(true);
+  // A tab naming no database has the connection's default open.
+  expect(suggestionFor(s, { connectionId: "c1", database: null }, "shop")).toBe(true);
+  expect(
+    suggestionFor({ ...s, database: null }, { connectionId: "c1", database: "shop" }, "shop"),
+  ).toBe(true);
+  expect(suggestionFor(s, { connectionId: "c1", database: null }, "other")).toBe(false);
   expect(suggestionFor(s, { connectionId: "c1", database: null })).toBe(false);
   expect(suggestionFor({ ...s, database: null }, { connectionId: "c1", database: null })).toBe(
     true,
