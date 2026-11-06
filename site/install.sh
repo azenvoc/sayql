@@ -12,7 +12,7 @@
 # The checks ask sayql.dev/api/setup-check, sending only the domain; SAYQL_NO_CHECK=1 skips them.
 set -eu
 
-VERSION=0.5.1
+VERSION=0.6.0
 IMAGE="ghcr.io/azenvoc/sayql-server:$VERSION"
 CADDY_IMAGE="caddy:2.10"
 DIR="${SAYQL_DIR:-$HOME/sayql}"
