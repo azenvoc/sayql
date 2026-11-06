@@ -1859,6 +1859,8 @@ export type TeamInfo = {
 	/**  The database's name on the server, for display. */
 	database: string,
 	notes: string,
+	/**  The server groups it's in, by name, shown read-only under Team. */
+	groups: string[],
 };
 
 /**  A SayQL Team invite: the "Sign in to your team" dialog, filled in. The person confirms it. */

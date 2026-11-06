@@ -318,6 +318,13 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
       setNotice(`Couldn't load your team's connections: ${e}`);
     },
     setTeamAi,
+    (lost) => {
+      const names = lost.map((c) => c.name).join(", ");
+      setNotice(`You no longer have access to ${names}. Ask your team admin.`);
+      const ids = new Set(lost.map((c) => c.id));
+      // A tab with SQL that isn't saved stays, so the person can copy it.
+      tabs.closeWhere((t) => ids.has(t.target.connectionId) && !hasUnsavedChanges(t));
+    },
   );
   /** Team AI for a connection: only team connections use it. */
   const teamAiFor = (connectionId: string) =>
@@ -769,6 +776,7 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
                   onDeleteGroup={(id) =>
                     void workspaces.deleteGroup(id).catch((e) => setNotice(errorText(e)))
                   }
+                  teamSignedIn={!!settings.team}
                   onNewWorkspace={
                     workspaces.several ? undefined : () => setDialog({ kind: "newWorkspace" })
                   }

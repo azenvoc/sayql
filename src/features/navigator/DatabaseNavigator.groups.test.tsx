@@ -133,6 +133,46 @@ describe("DatabaseNavigator with groups", () => {
     expect(rows().some((r) => r.includes("meridian_orders"))).toBe(true);
   });
 
+  const teamConnection = (id: string, name: string, groups: string[]): ConnectionConfig => ({
+    ...connection(id, name),
+    team: { database: "app", notes: "", groups },
+  });
+
+  it("shows the team's server groups read-only under Team", () => {
+    show({
+      connections: [
+        teamConnection("team:1", "Orders", ["Portside"]),
+        teamConnection("team:2", "Reports", ["Portside", "Finance"]),
+        teamConnection("team:3", "Lonely", []),
+      ],
+      groups: [],
+    });
+    const list = rows();
+    const at = (text: string) => list.findIndex((r) => r.startsWith(text));
+    expect(at("Team")).toBeLessThan(at("Finance"));
+    expect(at("Finance")).toBeLessThan(at("Portside"));
+    expect(at("Portside")).toBeLessThan(at("Orders"));
+    expect(list.filter((r) => r.startsWith("Reports"))).toHaveLength(2);
+    expect(at("Portside")).toBeLessThan(at("Lonely"));
+  });
+
+  it("puts a team connection in a local group when someone moved it there", () => {
+    show({
+      connections: [teamConnection("team:1", "Orders", [])],
+      groupOf: (id) => (id === "team:1" ? "portside" : null),
+    });
+    const list = rows();
+    expect(list.findIndex((r) => r.startsWith("Orders"))).toBeGreaterThan(
+      list.findIndex((r) => r.startsWith("Portside Freight")),
+    );
+    expect(list.some((r) => r.startsWith("Team"))).toBe(false);
+  });
+
+  it("says so when a team member has been given nothing", () => {
+    show({ teamSignedIn: true, connections: [] });
+    expect(screen.getByText(/hasn.t given you access to any databases/)).toBeTruthy();
+  });
+
   it("shows nothing about groups to someone with none", () => {
     show({ groups: undefined, groupOf: undefined, databasesIn: undefined, onNewGroup: undefined });
     expect(screen.getByPlaceholderText("Filter tables and columns")).toBeTruthy();
