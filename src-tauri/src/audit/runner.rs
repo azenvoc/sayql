@@ -456,7 +456,7 @@ pub struct RunFiles {
 }
 
 /// The MCP config: SayQL's server, by the path of the `sayql-mcp` binary next to the app.
-pub fn mcp_config_json(sayql_mcp: &Path) -> String {
+pub fn mcp_config_json(sayql_mcp: &Path, workspace: &str) -> String {
     // This app's identifier, so the server uses this app's files and keychain item.
     let (key, id) = crate::mcp::launch_env();
     serde_json::json!({
@@ -465,11 +465,16 @@ pub fn mcp_config_json(sayql_mcp: &Path) -> String {
                 "type": "stdio",
                 "command": sayql_mcp.to_string_lossy(),
                 "args": [],
-                "env": { key: id }
+                "env": { key: id, crate::mcp::WORKSPACE_VAR: workspace }
             }
         }
     })
     .to_string()
+}
+
+#[cfg(test)]
+fn mcp_config_json_for_test(sayql_mcp: &Path) -> String {
+    mcp_config_json(sayql_mcp, crate::store::layout::PERSONAL)
 }
 
 pub const SETTINGS_JSON: &str = r#"{"disableAllHooks":true}"#;
@@ -1396,7 +1401,7 @@ mod tests {
 
     #[test]
     fn the_mcp_config_names_only_sayql() {
-        let v: Value = serde_json::from_str(&mcp_config_json(Path::new(
+        let v: Value = serde_json::from_str(&mcp_config_json_for_test(Path::new(
             "/Applications/SayQL.app/Contents/MacOS/sayql-mcp",
         )))
         .unwrap();

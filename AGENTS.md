@@ -93,7 +93,7 @@ Where new code goes:
 |---|---|
 | Tauri commands | `commands/<area>.rs`, thin: check input, call a module, map the result |
 | Database access, decoding, introspection | `db/` (no Tauri types) |
-| SQL lexing, read-only and never-send checks, personal-data detection, masking, error redaction, the AI query gate | `safety/` (`sql_lex`, `classify`, `never_send`, `pii`, `mask`, `redact`, `readonly`, `gate`) |
+| SQL lexing, read-only and never-send checks, personal-data detection, masking, error redaction, the AI query gate | `safety/` (`sql_lex`, `classify`, `never_send`, `databases`, `pii`, `mask`, `redact`, `readonly`, `gate`) |
 | AI providers, prompts, agent mode | `ai/` |
 | The audit, its runners and child processes, knowledge and code sources | `audit/` (`runner`, `opencode`, `process`, `coding_agents`, `knowledge`, `repos`) |
 | Saved files and secrets | `store/` (secrets only through `store::secrets`) |

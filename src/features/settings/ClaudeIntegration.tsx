@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { commands, type ConnectionConfig, type McpApps, type McpSetup } from "../../api";
 import { Alert } from "../../components/ui";
 import { cx } from "../../lib/cx";
+import { WorkspaceAccess, type WorkspacesApi } from "../workspaces";
 import { errorText } from "../../lib/errors";
 import { AgentPicker, AgentSetupView, useCodingAgent, type NoteSuggestionsApi } from "../agent";
 import { AgentActivity } from "./AgentActivity";
@@ -91,7 +92,9 @@ function AccessTab({
   connections,
   provider,
   onReview,
+  workspaces,
 }: {
+  workspaces?: WorkspacesApi;
   connections: ConnectionConfig[];
   provider: { label: string; local: boolean };
   onReview: () => void;
@@ -139,6 +142,7 @@ function AccessTab({
           onToggle={() => setConnectOpen(!connectOpen)}
         />
       )}
+      {workspaces?.several && <WorkspaceAccess workspaces={workspaces} />}
       <AppsList
         list={apps}
         onBlock={(app, blocked) => update(commands.setMcpAppBlocked(app.name, blocked))}
@@ -159,6 +163,7 @@ export interface ClaudeIntegrationProps {
   suggestions: NoteSuggestionsApi;
   /** The tab to open on; otherwise the one open last in this session. */
   tab?: AiAppsTab;
+  workspaces?: WorkspacesApi;
 }
 
 /** Settings → AI apps: what AI apps over MCP may see and did, and the notes they suggested, in three tabs. */
@@ -167,6 +172,7 @@ export function ClaudeIntegration({
   provider,
   suggestions,
   tab: initial,
+  workspaces,
 }: ClaudeIntegrationProps) {
   const [tab, setTabState] = useState<AiAppsTab>(initial ?? lastTab);
   const setTab = (t: AiAppsTab) => {
@@ -248,10 +254,19 @@ export function ClaudeIntegration({
           <AccessTab
             connections={connections}
             provider={provider}
+            workspaces={workspaces}
             onReview={() => setTab("suggestions")}
           />
         )}
-        {tab === "activity" && <AgentActivity />}
+        {tab === "activity" && (
+          <AgentActivity
+            workspace={
+              workspaces?.several && workspaces.workspace
+                ? { id: workspaces.workspace.id, name: workspaces.workspace.name }
+                : undefined
+            }
+          />
+        )}
         {tab === "suggestions" && (
           <SuggestedNotes
             connections={connections}

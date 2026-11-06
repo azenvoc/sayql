@@ -16,14 +16,20 @@ impl SayqlServer {
 
     /// Stores a suggested note for the user to accept or dismiss, and logs it.
     pub(super) fn suggest(&self, app: &str, p: SuggestNoteParams) -> Result<String, String> {
+        let reach = self.limit_for(&p.connection_id);
+        if let Err(e) = &reach
+            && e == SETTINGS_UNREADABLE
+        {
+            return Err(e.clone());
+        }
         let conn = match self.state.store.connection(&p.connection_id) {
-            Ok(c) => c,
-            Err(_) => {
+            Ok(c) if reach.is_ok() => c,
+            _ => {
                 let e = format!(
                     "No saved connection has id {:?}; use one from list_connections.",
                     p.connection_id
                 );
-                let _ = self.state.store.log_app_activity(Activity {
+                self.write_log(Activity {
                     connection_id: p.connection_id.clone(),
                     status: "refused".into(),
                     detail: Some("unknown connection".into()),
@@ -32,6 +38,12 @@ impl SayqlServer {
                 return Err(e);
             }
         };
+        if let (Ok(limit), Some(database)) = (&reach, &p.database)
+            && conn.kind != Kind::Sqlite
+            && !limit.allows(database)
+        {
+            return Err(scope::no_database(database));
+        }
         let mut log = Activity {
             connection_id: conn.id.clone(),
             connection: conn.name.clone(),
@@ -95,7 +107,7 @@ impl SayqlServer {
                 log.detail = Some(e.chars().take(160).collect());
             }
         }
-        let _ = self.state.store.log_app_activity(log);
+        self.write_log(log);
         result
     }
 }

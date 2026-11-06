@@ -14,6 +14,7 @@ import {
 } from "../../components/ui";
 import { errorText } from "../../lib/errors";
 import { parseConnectionString } from "./connectionString";
+import { AllowedDatabases } from "./AllowedDatabases";
 import { DatabasePicker } from "./DatabasePicker";
 import { DATABASE_KINDS, KIND_OPTIONS, type DatabaseChoice } from "./kinds";
 import styles from "./ConnectionDialog.module.css";
@@ -46,6 +47,15 @@ export interface ConnectionDialogProps {
   onClose: () => void;
   onSaved: (c: ConnectionConfig) => void;
   onDeleted: (id: string) => void;
+  /** Where it's saved, and which databases it may use. */
+  placement?: {
+    workspaceId: string;
+    workspaceName: string;
+    groupId: string | null;
+    allowed: string[] | null;
+    /** Another workspace with a connection to this host, for a warning. */
+    sharedWith: (host: string, id: string) => string | null;
+  };
 }
 
 export function ConnectionDialog({
@@ -54,6 +64,7 @@ export function ConnectionDialog({
   onClose,
   onSaved,
   onDeleted,
+  placement,
 }: ConnectionDialogProps) {
   const isNew = !initial.id;
   const [c, setC] = useState(initial);
@@ -68,6 +79,7 @@ export function ConnectionDialog({
   const [picking, setPicking] = useState(isNew && !note);
   const [filter, setFilter] = useState("");
   const [choice, setChoice] = useState<DatabaseChoice | null>(null);
+  const [allowed, setAllowed] = useState<string[] | null>(placement?.allowed ?? null);
   const set = (patch: Partial<ConnectionConfig>) => setC((prev) => ({ ...prev, ...patch }));
 
   // Fills the form from a pasted connection string, then clears it so the password isn't left on screen.
@@ -118,7 +130,18 @@ export function ConnectionDialog({
   const save = async () => {
     try {
       onSaved(
-        await commands.saveConnection({ ...c, name: c.name.trim() || defaultName(c) }, password),
+        await commands.saveConnection(
+          { ...c, name: c.name.trim() || defaultName(c) },
+          password,
+          placement
+            ? {
+                // A connection stays where it is when edited; "Move to…" moves it.
+                workspaceId: isNew ? placement.workspaceId : null,
+                groupId: isNew ? placement.groupId : null,
+                allowedDatabases: c.kind === "sqlite" ? null : allowed,
+              }
+            : null,
+        ),
       );
     } catch (e) {
       setStatus({ ok: false, text: errorText(e) });
@@ -224,7 +247,16 @@ export function ConnectionDialog({
             Test
           </Button>
           <Button onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={save}>
+          <Button
+            variant="primary"
+            onClick={save}
+            disabled={c.kind !== "sqlite" && allowed?.length === 0}
+            title={
+              c.kind !== "sqlite" && allowed?.length === 0
+                ? "Pick at least one database, or allow everything on this server"
+                : undefined
+            }
+          >
             Save
           </Button>
         </>
@@ -235,6 +267,9 @@ export function ConnectionDialog({
         <Logo id={shown?.logo ?? DATABASE_KINDS[c.kind].logo} size={28} />
         <span>{shown?.name ?? DATABASE_KINDS[c.kind].label}</span>
       </div>
+      {isNew && placement && placement.workspaceId !== "personal" && (
+        <p className={styles.savingTo}>Saving to {placement.workspaceName}</p>
+      )}
       {connectionString}
       <Field label="Database type">
         {() => (
@@ -333,6 +368,16 @@ export function ConnectionDialog({
               )}
             </Field>
           </FieldRow>
+          {placement && (
+            <AllowedDatabases
+              connection={c}
+              password={password}
+              workspaceName={placement.workspaceName}
+              sharedWith={placement.sharedWith(c.host, c.id)}
+              allowed={allowed}
+              onChange={setAllowed}
+            />
+          )}
           <Checkbox
             label={c.kind === "mssql" ? "Encrypt connection" : "Require SSL"}
             checked={c.ssl}

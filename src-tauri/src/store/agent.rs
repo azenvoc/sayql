@@ -269,6 +269,7 @@ impl Store {
 
     /// Forgets a deleted connection's agent access, notes, suggested notes, audits and audit folder.
     pub fn forget_agent(&self, connection_id: &str) -> AppResult<()> {
+        self.forget_layout(connection_id)?;
         self.update(ACCESS_FILE, |all: &mut BTreeMap<String, AgentAccess>| {
             all.remove(connection_id);
             Ok(())

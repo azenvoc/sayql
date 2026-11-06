@@ -1,3 +1,13 @@
+import { cx } from "../lib/cx";
+import {
+  MoveConnectionDialog,
+  MoveDatabaseDialog,
+  NameDialog,
+  NewWorkspaceDialog,
+  useWorkspaces,
+  workspaceStyles,
+  WorkspaceRail,
+} from "../features/workspaces";
 import { useEffect, useRef, useState } from "react";
 import { Copy, Database, FileCode2, Plus, Save, Server, Table2, X } from "lucide-react";
 import {
@@ -105,6 +115,8 @@ type OpenDialog =
       fromSetup?: boolean;
       note?: string;
       key?: string;
+      workspaceId?: string | null;
+      groupId?: string | null;
     }
   /** `createSkill`: opened from "Create skill…" in the Ask box. */
   | { kind: "settings"; section?: SettingsSection; aiAppsTab?: AiAppsTab; createSkill?: boolean }
@@ -124,12 +136,30 @@ type OpenDialog =
   | { kind: "audit" }
   /** From a sayql://team-join invite link. */
   | { kind: "teamSignIn"; server: string; code: string; key: string }
+  | { kind: "newGroup" }
+  | { kind: "renameGroup"; id: string; name: string }
+  | { kind: "newWorkspace" }
+  | { kind: "moveConnection"; connection: ConnectionConfig }
+  | { kind: "moveDatabase"; connection: ConnectionConfig; database: string }
   | null;
 
 /** The main window. Owns no logic of its own: it wires the feature hooks to the feature views. */
 export function Workbench({ boot }: { boot: Bootstrap }) {
-  const conn = useConnections(boot.connections);
-  const tabs = useTabs();
+  const workspaces = useWorkspaces(boot.layout);
+  const everyConnection = useConnections(boot.connections);
+  // Lists show the open workspace's connections. Looking one up by id still finds any of them:
+  // tabs in other workspaces stay open and keep running.
+  const conn = {
+    ...everyConnection,
+    connections: everyConnection.connections.filter(
+      (c) => workspaces.workspaceOf(c.id) === workspaces.activeId,
+    ),
+  };
+  const tabs = useTabs({
+    id: workspaces.activeId,
+    workspaceOf: workspaces.workspaceOf,
+    reveal: workspaces.reveal,
+  });
   const scripts = useScripts();
   const { scriptOf, saveTab, openScript, deleteScript } = useScriptActions(scripts, tabs);
   const connActions = useConnectionActions(conn, tabs);
@@ -237,7 +267,7 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
     {
       aiReady: settings.aiReady,
       askedNow: tabs.tabs.some((t) => !!t.lastRun || !!t.agentRun),
-      ownDatabase: conn.connections.some((c) => c.id !== "demo"),
+      ownDatabase: everyConnection.connections.some((c) => c.id !== "demo"),
       taught: audits.length > 0 || notes.length > 0,
     },
     {
@@ -325,6 +355,7 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
   /** Focuses a tab already open on `t`, or opens a new one, and connects (the person asked for it). */
   const showTarget = (t: Target) => {
     const name = conn.databaseName(t);
+    workspaces.reveal(t.connectionId);
     const existing = tabs.tabs.find(
       (x) =>
         x.target.connectionId === t.connectionId &&
@@ -365,7 +396,7 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
 
   /** A tab's right-click menu, like an editor's. */
   const tabMenu = (id: string): MenuEntry[] => {
-    const all = tabs.tabs;
+    const all = tabs.here;
     const i = all.findIndex((t) => t.id === id);
     const t = all[i];
     if (!t) return [];
@@ -498,7 +529,7 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
     return { name: c?.name ?? "Closed connection", db };
   };
 
-  const tabItems: TabItem[] = tabs.tabs.map((t) => {
+  const tabItems: TabItem[] = tabs.here.map((t) => {
     const { name, db } = tabLabel(t);
     const c = conn.connection(t.target.connectionId);
     // Named tabs are table previews, unless they are saved scripts or SQL from an AI app.
@@ -522,21 +553,24 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
     };
   });
 
-  const navigatorScripts: NavigatorScript[] = scripts.scripts.map((s) => {
-    const c = conn.connection(s.connectionId);
-    return {
-      id: s.id,
-      name: s.name,
-      location: c?.kind === "sqlite" ? c.name : (s.database ?? c?.database ?? c?.name ?? ""),
-      orphaned: !c,
-      // With no database open, "This database" lists them all.
-      here:
-        !target ||
-        (!!c &&
-          target.connectionId === c.id &&
-          (s.database || c.database || null) === (target.database || c.database || null)),
-    };
-  });
+  const navigatorScripts: NavigatorScript[] = scripts.scripts
+    // Scripts follow their connection; one whose connection is gone shows in Personal.
+    .filter((s) => workspaces.workspaceOf(s.connectionId) === workspaces.activeId)
+    .map((s) => {
+      const c = conn.connection(s.connectionId);
+      return {
+        id: s.id,
+        name: s.name,
+        location: c?.kind === "sqlite" ? c.name : (s.database ?? c?.database ?? c?.name ?? ""),
+        orphaned: !c,
+        // With no database open, "This database" lists them all.
+        here:
+          !target ||
+          (!!c &&
+            target.connectionId === c.id &&
+            (s.database || c.database || null) === (target.database || c.database || null)),
+      };
+    });
 
   /** A name to suggest when a tab is saved for the first time. */
   const suggestedName = (t: EditorTab) =>
@@ -566,12 +600,42 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
   };
   const openNewConnection = () => setDialog({ kind: "connection", config: newConnection() });
 
+  /** Where the connection dialog saves to: the asking AI app's workspace, else the open one. */
+  const connectionPlacement = (d: {
+    config: ConnectionConfig;
+    workspaceId?: string | null;
+    groupId?: string | null;
+  }) => {
+    const known = (id?: string | null) => workspaces.workspaces.find((w) => w.id === id);
+    const workspace = known(d.workspaceId) ?? workspaces.workspace;
+    if (!workspace) return undefined;
+    return {
+      workspaceId: workspace.id,
+      workspaceName: workspace.name,
+      groupId: d.groupId ?? null,
+      allowed: d.config.id ? workspaces.allowedOf(d.config.id) : null,
+      sharedWith: (host: string, id: string) => {
+        if (!host.trim()) return null;
+        const other = everyConnection.connections.find(
+          (c) =>
+            c.id !== id &&
+            c.host.toLowerCase() === host.trim().toLowerCase() &&
+            workspaces.workspaceOf(c.id) !== workspace.id,
+        );
+        return other
+          ? (workspaces.workspaces.find((w) => w.id === workspaces.workspaceOf(other.id))?.name ??
+              null)
+          : null;
+      },
+    };
+  };
+
   // AI apps hand over a connection to finish or SQL to review; nothing runs or saves on its own.
   useHandoffs(
     {
       connection: conn.connection,
-      openConnectionDialog: (config, note) =>
-        setDialog({ kind: "connection", config, note, key: crypto.randomUUID() }),
+      openConnectionDialog: (config, note, place) =>
+        setDialog({ kind: "connection", config, note, key: crypto.randomUUID(), ...place }),
       openTab: (t, init) => tabs.open(t, init),
       openScript,
       openTeamSignIn: (server, code) =>
@@ -598,6 +662,7 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
         schema={schema}
         onNewConnection={openNewConnection}
         pendingSuggestions={noteSuggestions.suggestions.length}
+        workspaces={workspaces}
         // With suggested notes waiting, the gear opens them: Settings → AI apps → Suggestions.
         onOpenSettings={() =>
           openSettings(
@@ -679,165 +744,193 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
         </div>
       )}
 
-      <main className={styles.body}>
-        <SplitPane
-          direction="horizontal"
-          persistKey="navigator"
-          initialSize={280}
-          minSize={200}
-          maxSize={560}
-          first={
-            <div className={styles.sideColumn}>
-              <DatabaseNavigator
-                connections={conn.connections}
-                activeId={active?.id ?? null}
-                databases={conn.databases}
-                databaseName={databaseName}
-                schema={schema}
-                loading={loading}
-                connected={targetConnected}
-                onConnect={() => target && conn.connect(target)}
-                onOpen={(id) => {
-                  const c = conn.connection(id);
-                  if (c && id !== active?.id) openConnection(c);
-                  else if (target) conn.connect(target);
-                }}
-                onOpenDatabase={(database) =>
-                  active && showTarget({ connectionId: active.id, database })
-                }
-                onAdd={openNewConnection}
-                onEdit={(c) => setDialog({ kind: "connection", config: c })}
-                onDeleteConnection={(c) => setDialog({ kind: "deleteConnection", connection: c })}
-                onRefresh={() => target && conn.ensure(target, true)}
-                onPreviewTable={previewTable}
-                onNewTab={(connectionId, database) => {
-                  const c = conn.connection(connectionId);
-                  if (c)
-                    tabs.open({ connectionId, database: database ?? (c.database.trim() || null) });
-                }}
-                onOpenSql={openSql}
-                selectedTables={tabs.active?.focusTables ?? []}
-                // A new pick is meant to be used, so it switches a hidden selection back on.
-                onSelectTables={(focusTables) =>
-                  tabs.active && tabs.update(tabs.active.id, { focusTables, focusEnabled: true })
-                }
-                scripts={navigatorScripts}
-                onOpenScript={openScript}
-                onDeleteScript={(id) => {
-                  const s = scripts.scripts.find((x) => x.id === id);
-                  if (s) setDialog({ kind: "deleteScript", script: s });
-                }}
-                notes={notes}
-                sharedNotes={sharedNotes}
-                onEditNote={(note) => setDialog({ kind: "note", note: sharedNotes ? null : note })}
-                onDeleteNote={(note) =>
-                  void commands.deleteNote(note.id).then(() => setNotesVersion((v) => v + 1))
-                }
-                onCheckNotes={() => {
-                  if (!target) return;
-                  void commands.checkNotes(target).then(
-                    (n) => {
-                      setNotes(n);
-                      conn.ensure(target, true);
-                    },
-                    (e) => setNotice(String(e)),
-                  );
-                }}
-                suggestedNotes={suggestionsHere.length}
-                onReviewSuggestions={() => setDialog({ kind: "noteSuggestions" })}
-                onTeach={teachHere ? () => setDialog({ kind: "teach" }) : undefined}
-                onHideTeach={() => setTeachHidden(true)}
-                onAgentSettings={(connection) => setDialog({ kind: "agentAccess", connection })}
-                onOverview={(connection) => setDialog({ kind: "overview", connection })}
-                onTeamSignIn={
-                  settings.team
-                    ? undefined
-                    : () =>
-                        setDialog({
-                          kind: "teamSignIn",
-                          server: "",
-                          code: "",
-                          key: crypto.randomUUID(),
-                        })
-                }
-              />
-              {!getStarted.hidden && !setupStep && (
-                <GetStarted items={getStarted.items} onHide={getStarted.hide} />
-              )}
-            </div>
-          }
-          second={
-            <div className={styles.editorArea}>
-              <TabBar
-                items={tabItems}
-                activeId={tabs.active?.id ?? null}
-                onSelect={tabs.activate}
-                onClose={requestClose}
-                menu={tabMenu}
-                onAdd={conn.connections.length ? newTab : undefined}
-                addLabel="New SQL tab (⌘T)"
-              />
-              <div className={styles.tabBody}>
-                {tabs.tabs.map((t) => {
-                  const { name, db } = tabLabel(t);
-                  return (
-                    <ErrorBoundary key={t.id} label="This tab" hidden={t.id !== tabs.active?.id}>
-                      <QueryTab
-                        tab={t}
-                        active={t.id === tabs.active?.id}
-                        label={db ? `${name} · ${db}` : name}
-                        schema={conn.schemaState(t.target).schema}
-                        connected={conn.isConnected(t.target.connectionId)}
-                        production={!!conn.connection(t.target.connectionId)?.production}
-                        onConnect={() => conn.connect(t.target)}
-                        settings={settings}
-                        modelNames={modelNames}
-                        onChange={(patch) => tabs.update(t.id, patch)}
-                        onOpenSettings={() => openSettings()}
-                        skills={skills.skills}
-                        onCreateSkill={() =>
-                          setDialog({ kind: "settings", section: "skills", createSkill: true })
-                        }
-                        onSave={() => requestSave(t)}
-                        onOpenQuery={(sql, question) => tabs.open(t.target, { sql, question })}
-                        onSaveAsScript={(sql, question) => {
-                          const id = tabs.open(t.target, { sql, question });
-                          setDialog({ kind: "saveScript", tabId: id, closeAfter: false });
-                        }}
-                        onAgentBusy={(busy) => setBusy(t.id, busy)}
-                        onNotesChanged={() => setNotesVersion((v) => v + 1)}
-                        onSettingsChange={setSettings}
-                        onNotice={setNotice}
-                        teamAi={teamAiFor(t.target.connectionId)}
-                      />
-                    </ErrorBoundary>
-                  );
-                })}
-                {tabs.tabs.length === 0 && (
-                  <EmptyState
-                    icon={conn.connections.length ? Database : Server}
-                    title={conn.connections.length ? "No tabs open" : "No connections yet"}
-                    action={
-                      conn.connections.length ? (
-                        <Button variant="primary" onClick={newTab}>
-                          New SQL tab
-                        </Button>
-                      ) : (
-                        <Button variant="primary" onClick={openNewConnection}>
-                          New connection
-                        </Button>
-                      )
-                    }
-                  >
-                    {conn.connections.length
-                      ? "Pick a database in the Database Navigator, or open a new tab."
-                      : "Add a connection to get started."}
-                  </EmptyState>
+      <main className={cx(styles.body, workspaceStyles.withRail)}>
+        <WorkspaceRail
+          workspaces={workspaces}
+          onConnectionsDeleted={(ids) => ids.forEach(connActions.forget)}
+        />
+        <div className={workspaceStyles.besideRail}>
+          <SplitPane
+            direction="horizontal"
+            persistKey="navigator"
+            initialSize={280}
+            minSize={200}
+            maxSize={560}
+            first={
+              <div className={styles.sideColumn}>
+                <DatabaseNavigator
+                  groups={workspaces.groupsHere}
+                  groupOf={(id) => workspaces.groupOf(id)?.id ?? null}
+                  databasesIn={workspaces.databasesIn}
+                  isPlacedApart={workspaces.isPlacedApart}
+                  onOpenAt={(connectionId, database) => showTarget({ connectionId, database })}
+                  onNewGroup={() => setDialog({ kind: "newGroup" })}
+                  onRenameGroup={(id, name) => setDialog({ kind: "renameGroup", id, name })}
+                  onDeleteGroup={(id) =>
+                    void workspaces.deleteGroup(id).catch((e) => setNotice(errorText(e)))
+                  }
+                  onNewWorkspace={
+                    workspaces.several ? undefined : () => setDialog({ kind: "newWorkspace" })
+                  }
+                  onMove={(connection) => setDialog({ kind: "moveConnection", connection })}
+                  onMoveDatabase={(connection, database) =>
+                    setDialog({ kind: "moveDatabase", connection, database })
+                  }
+                  connections={conn.connections}
+                  activeId={active?.id ?? null}
+                  databases={conn.databases}
+                  databaseName={databaseName}
+                  schema={schema}
+                  loading={loading}
+                  connected={targetConnected}
+                  onConnect={() => target && conn.connect(target)}
+                  onOpen={(id) => {
+                    const c = conn.connection(id);
+                    if (c && id !== active?.id) openConnection(c);
+                    else if (target) conn.connect(target);
+                  }}
+                  onOpenDatabase={(database) =>
+                    active && showTarget({ connectionId: active.id, database })
+                  }
+                  onAdd={openNewConnection}
+                  onEdit={(c) => setDialog({ kind: "connection", config: c })}
+                  onDeleteConnection={(c) => setDialog({ kind: "deleteConnection", connection: c })}
+                  onRefresh={() => target && conn.ensure(target, true)}
+                  onPreviewTable={previewTable}
+                  onNewTab={(connectionId, database) => {
+                    const c = conn.connection(connectionId);
+                    if (c)
+                      tabs.open({
+                        connectionId,
+                        database: database ?? (c.database.trim() || null),
+                      });
+                  }}
+                  onOpenSql={openSql}
+                  selectedTables={tabs.active?.focusTables ?? []}
+                  // A new pick is meant to be used, so it switches a hidden selection back on.
+                  onSelectTables={(focusTables) =>
+                    tabs.active && tabs.update(tabs.active.id, { focusTables, focusEnabled: true })
+                  }
+                  scripts={navigatorScripts}
+                  onOpenScript={openScript}
+                  onDeleteScript={(id) => {
+                    const s = scripts.scripts.find((x) => x.id === id);
+                    if (s) setDialog({ kind: "deleteScript", script: s });
+                  }}
+                  notes={notes}
+                  sharedNotes={sharedNotes}
+                  onEditNote={(note) =>
+                    setDialog({ kind: "note", note: sharedNotes ? null : note })
+                  }
+                  onDeleteNote={(note) =>
+                    void commands.deleteNote(note.id).then(() => setNotesVersion((v) => v + 1))
+                  }
+                  onCheckNotes={() => {
+                    if (!target) return;
+                    void commands.checkNotes(target).then(
+                      (n) => {
+                        setNotes(n);
+                        conn.ensure(target, true);
+                      },
+                      (e) => setNotice(String(e)),
+                    );
+                  }}
+                  suggestedNotes={suggestionsHere.length}
+                  onReviewSuggestions={() => setDialog({ kind: "noteSuggestions" })}
+                  onTeach={teachHere ? () => setDialog({ kind: "teach" }) : undefined}
+                  onHideTeach={() => setTeachHidden(true)}
+                  onAgentSettings={(connection) => setDialog({ kind: "agentAccess", connection })}
+                  onOverview={(connection) => setDialog({ kind: "overview", connection })}
+                  onTeamSignIn={
+                    settings.team
+                      ? undefined
+                      : () =>
+                          setDialog({
+                            kind: "teamSignIn",
+                            server: "",
+                            code: "",
+                            key: crypto.randomUUID(),
+                          })
+                  }
+                />
+                {!getStarted.hidden && !setupStep && (
+                  <GetStarted items={getStarted.items} onHide={getStarted.hide} />
                 )}
               </div>
-            </div>
-          }
-        />
+            }
+            second={
+              <div className={styles.editorArea}>
+                <TabBar
+                  items={tabItems}
+                  activeId={tabs.active?.id ?? null}
+                  onSelect={tabs.activate}
+                  onClose={requestClose}
+                  menu={tabMenu}
+                  onAdd={conn.connections.length ? newTab : undefined}
+                  addLabel="New SQL tab (⌘T)"
+                />
+                <div className={styles.tabBody}>
+                  {tabs.tabs.map((t) => {
+                    const { name, db } = tabLabel(t);
+                    return (
+                      <ErrorBoundary key={t.id} label="This tab" hidden={t.id !== tabs.active?.id}>
+                        <QueryTab
+                          tab={t}
+                          active={t.id === tabs.active?.id}
+                          label={db ? `${name} · ${db}` : name}
+                          schema={conn.schemaState(t.target).schema}
+                          connected={conn.isConnected(t.target.connectionId)}
+                          production={!!conn.connection(t.target.connectionId)?.production}
+                          onConnect={() => conn.connect(t.target)}
+                          settings={settings}
+                          modelNames={modelNames}
+                          onChange={(patch) => tabs.update(t.id, patch)}
+                          onOpenSettings={() => openSettings()}
+                          skills={skills.skills}
+                          onCreateSkill={() =>
+                            setDialog({ kind: "settings", section: "skills", createSkill: true })
+                          }
+                          onSave={() => requestSave(t)}
+                          onOpenQuery={(sql, question) => tabs.open(t.target, { sql, question })}
+                          onSaveAsScript={(sql, question) => {
+                            const id = tabs.open(t.target, { sql, question });
+                            setDialog({ kind: "saveScript", tabId: id, closeAfter: false });
+                          }}
+                          onAgentBusy={(busy) => setBusy(t.id, busy)}
+                          onNotesChanged={() => setNotesVersion((v) => v + 1)}
+                          onSettingsChange={setSettings}
+                          onNotice={setNotice}
+                          teamAi={teamAiFor(t.target.connectionId)}
+                        />
+                      </ErrorBoundary>
+                    );
+                  })}
+                  {tabs.here.length === 0 && (
+                    <EmptyState
+                      icon={conn.connections.length ? Database : Server}
+                      title={conn.connections.length ? "No tabs open" : "No connections yet"}
+                      action={
+                        conn.connections.length ? (
+                          <Button variant="primary" onClick={newTab}>
+                            New SQL tab
+                          </Button>
+                        ) : (
+                          <Button variant="primary" onClick={openNewConnection}>
+                            New connection
+                          </Button>
+                        )
+                      }
+                    >
+                      {conn.connections.length
+                        ? "Pick a database in the Database Navigator, or open a new tab."
+                        : "Add a connection to get started."}
+                    </EmptyState>
+                  )}
+                </div>
+              </div>
+            }
+          />
+        </div>
       </main>
 
       <StatusBar
@@ -853,6 +946,14 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
         onFeedback={() => setDialog({ kind: "feedback" })}
         provider={active ? destinationFor(active.id) : null}
         onPrivacy={() => active && setDialog({ kind: "agentAccess", connection: active })}
+        aiScope={
+          workspaces.several && workspaces.workspace
+            ? {
+                workspaceName: workspaces.workspace.name,
+                onOpen: () => openSettings({ section: "mcp", aiAppsTab: "access" }),
+              }
+            : undefined
+        }
       />
 
       {dialog?.kind === "overview" && (
@@ -886,6 +987,7 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
           key={dialog.key}
           initial={dialog.config}
           note={dialog.note}
+          placement={connectionPlacement(dialog)}
           onClose={() => {
             setDialog(null);
             if (dialog.fromSetup) setSetupStep("database");
@@ -893,6 +995,7 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
           onSaved={(c) => {
             setDialog(null);
             conn.upsert(c);
+            void workspaces.refresh();
             openConnection(c);
             if (dialog.fromSetup) setSetupStep("try");
           }}
@@ -900,6 +1003,42 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
             setDialog(null);
             connActions.forget(id);
           }}
+        />
+      )}
+      {dialog?.kind === "newGroup" && (
+        <NameDialog
+          title={`New group in ${workspaces.workspace?.name ?? "this workspace"}`}
+          hint="Databases that belong together, such as one client project."
+          action="Create"
+          onSubmit={workspaces.createGroup}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog?.kind === "renameGroup" && (
+        <NameDialog
+          title={`Rename ${dialog.name}`}
+          initial={dialog.name}
+          action="Rename"
+          onSubmit={(name) => workspaces.renameGroup(dialog.id, name)}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog?.kind === "newWorkspace" && (
+        <NewWorkspaceDialog workspaces={workspaces} onClose={() => setDialog(null)} />
+      )}
+      {dialog?.kind === "moveConnection" && (
+        <MoveConnectionDialog
+          workspaces={workspaces}
+          connection={dialog.connection}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog?.kind === "moveDatabase" && (
+        <MoveDatabaseDialog
+          workspaces={workspaces}
+          connection={dialog.connection}
+          database={dialog.database}
+          onClose={() => setDialog(null)}
         />
       )}
       {dialog?.kind === "saveScript" && tabById(dialog.tabId) && (
@@ -1142,6 +1281,7 @@ export function Workbench({ boot }: { boot: Bootstrap }) {
         <SettingsPage
           settings={settings}
           connections={conn.connections}
+          workspaces={workspaces}
           skills={skills}
           section={dialog.section}
           aiAppsTab={dialog.aiAppsTab}

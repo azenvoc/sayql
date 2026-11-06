@@ -1,5 +1,5 @@
 import { commands as generated } from "./bindings";
-import type { ConnectionConfig, GenerationTask, QuerySource, Target } from "./types";
+import type { ConnectionConfig, GenerationTask, QuerySource, SavePlacement, Target } from "./types";
 
 /** What Settings saves for one provider (`save_settings`). `apiKey: null` keeps the saved key. */
 export interface ProviderChoice {
@@ -20,8 +20,13 @@ export const commands = {
   ...generated,
 
   /** `config` may be a team connection's (its `team` details are ignored). */
-  saveConnection: (config: ConnectionConfig, password: string | null) =>
-    generated.saveConnection(config, password),
+  saveConnection: (
+    config: ConnectionConfig,
+    password: string | null,
+    placement: SavePlacement | null = null,
+  ) => generated.saveConnection(config, password, placement),
+  serverDatabases: (config: ConnectionConfig, password: string | null) =>
+    generated.serverDatabases(config, password),
   testConnection: (config: ConnectionConfig, password: string | null) =>
     generated.testConnection(config, password),
   openDatabase: (t: Target) => generated.openDatabase(t.connectionId, t.database),

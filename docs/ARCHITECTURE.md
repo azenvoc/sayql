@@ -159,7 +159,7 @@ src-tauri/src/
       eval/             tests only: the evaluation question set (questions.json, demo store and tenant fixture);
                         `Reference` checks the set, `agent.rs` runs it with a real model (opt-in, API key)
   schema/               schema model (mod.rs) and compact prompt rendering (render.rs)
-  store/                settings/connections JSON (mod.rs), keychain secrets (secrets.rs), and agent mode's
+  store/                workspaces and groups (layout.rs), settings/connections JSON (mod.rs), keychain secrets (secrets.rs), and agent mode's
                         per-connection access, run limits and database notes (agent.rs); SHA-256 of downloaded files
                         checked against a pinned hash (digest.rs)
   voice/                voice input, all on this computer, no Tauri types

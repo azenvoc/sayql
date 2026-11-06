@@ -60,7 +60,8 @@ const detailOf = (e: McpActivity) =>
     : null;
 
 /** What AI apps ran through SayQL over MCP: filters, a row to open for the full SQL, and clearing the log. */
-export function AgentActivity() {
+export function AgentActivity({ workspace }: { workspace?: { id: string; name: string } }) {
+  const [everywhere, setEverywhere] = useState(false);
   const [log, setLog] = useState<McpActivity[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,6 +103,8 @@ export function AgentActivity() {
     .map((e, i) => ({ e, i }))
     .filter(
       ({ e }) =>
+        // An entry from before workspaces, or from an app with none set, is Personal's.
+        (!workspace || everywhere || (e.workspace ?? "personal") === workspace.id) &&
         (app === ALL || e.app === app) &&
         (connection === ALL || e.connection === connection) &&
         (shown === "all" || e.status === "refused"),
@@ -115,6 +118,17 @@ export function AgentActivity() {
         Click a row for the full SQL.
       </p>
       <div className={styles.filters}>
+        {workspace && (
+          <SegmentedControl<"here" | "everywhere">
+            ariaLabel="Which workspaces"
+            value={everywhere ? "everywhere" : "here"}
+            options={[
+              { value: "here", label: workspace.name },
+              { value: "everywhere", label: "All workspaces" },
+            ]}
+            onChange={(v) => setEverywhere(v === "everywhere")}
+          />
+        )}
         <Select
           aria-label="App"
           className={styles.filter}

@@ -29,6 +29,8 @@ function actions(connections: ConnectionConfig[] = [demo]) {
 }
 
 const draft = {
+  workspace: null,
+  group: null,
   name: "",
   host: "",
   port: null,
@@ -67,6 +69,7 @@ describe("applyHandoff", () => {
         production: false,
       },
       "From Claude (MCP)",
+      { workspaceId: null, groupId: null },
     );
     expect(a.openConnectionDialog.mock.calls[0][0]).not.toHaveProperty("password");
     expect(a.openTab).not.toHaveBeenCalled();

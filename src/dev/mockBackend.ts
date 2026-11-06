@@ -62,8 +62,18 @@ const suggestion = (
   s: Omit<NoteSuggestion, "replaces" | "replacedText" | "remove"> & Partial<NoteSuggestion>,
 ): NoteSuggestion => ({ replaces: null, replacedText: null, remove: false, ...s });
 const appActivity = (
-  e: Omit<McpActivity, "detail" | "rows" | "maySee"> & Partial<McpActivity>,
-): McpActivity => ({ detail: null, rows: null, maySee: null, ...e });
+  e: Omit<McpActivity, "detail" | "rows" | "maySee" | "database" | "workspace" | "group"> &
+    Partial<McpActivity>,
+): McpActivity => ({
+  detail: null,
+  rows: null,
+  maySee: null,
+  database: null,
+  // In the preview, the Postgres and SQL Server connections are Acme's.
+  workspace: e.connectionId === "pg" || e.connectionId === "ms" ? "acme-logistics" : null,
+  group: null,
+  ...e,
+});
 
 /** Your activity in the preview: a few queries from each place. */
 const MIN = 60_000;
@@ -285,7 +295,93 @@ const settings: Settings = {
   ],
 };
 
+/** Two companies and a shared server in the preview, unless it shows a first run. */
+const previewConnections: Bootstrap["connections"] = FIRSTRUN
+  ? []
+  : (
+      [
+        ["billing", "billing-prod", "postgres", "billing", true],
+        ["shared", "sql-shared", "mssql", "portside_orders", true],
+        ["warehouse", "warehouse", "postgres", "warehouse", false],
+        ["clinics", "clinics-prod", "postgres", "clinics", true],
+        ["claims", "claims_main", "mssql", "claims_main", true],
+      ] as const
+    ).map(([id, name, kind, database, production]) => ({
+      id,
+      name,
+      kind,
+      host: id === "shared" || id === "claims" ? "sql-shared.example.com" : `${id}.example.com`,
+      port: kind === "mssql" ? 1433 : 5432,
+      database,
+      user: "reader",
+      file: "",
+      ssl: true,
+      trustCert: false,
+      production,
+    }));
+
+const previewLayout = (): Bootstrap["layout"] => {
+  const personal = { id: "personal", name: "Personal", color: 0 };
+  if (FIRSTRUN)
+    return {
+      workspaces: [personal],
+      groups: [],
+      placement: {},
+      databaseGroups: [],
+      teamWorkspace: null,
+    };
+  const place = (
+    workspaceId: string,
+    groupId: string | null,
+    allowedDatabases: string[] | null = null,
+  ) => ({
+    workspaceId,
+    groupId,
+    allowedDatabases,
+  });
+  return {
+    workspaces: [
+      personal,
+      { id: "acme-logistics", name: "Acme Logistics", color: 1 },
+      { id: "harbor-health", name: "Harbor Health", color: 2 },
+    ],
+    groups: [
+      { id: "side-projects", workspaceId: "personal", name: "Side projects" },
+      { id: "portside-freight", workspaceId: "acme-logistics", name: "Portside Freight" },
+      { id: "meridian-foods", workspaceId: "acme-logistics", name: "Meridian Foods" },
+      { id: "clinic-network", workspaceId: "harbor-health", name: "Clinic network" },
+    ],
+    placement: {
+      my: place("personal", "side-projects"),
+      pg: place("acme-logistics", "portside-freight"),
+      billing: place("acme-logistics", "portside-freight"),
+      shared: place("acme-logistics", "meridian-foods", ["portside_orders", "meridian_orders"]),
+      ms: place("acme-logistics", "meridian-foods"),
+      warehouse: place("acme-logistics", null),
+      clinics: place("harbor-health", "clinic-network"),
+      claims: place("harbor-health", "clinic-network"),
+    },
+    databaseGroups: [
+      { connectionId: "shared", database: "portside_orders", groupId: "portside-freight" },
+    ],
+    teamWorkspace: null,
+  };
+};
+
+let layout = previewLayout();
+const slug = (name: string) =>
+  name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-");
+const named = (name: unknown) => {
+  const clean = String(name).trim();
+  if (!clean) throw "Enter a name.";
+  return clean;
+};
+
 const boot: Bootstrap = {
+  layout,
   connections: [
     {
       id: "demo",
@@ -339,6 +435,7 @@ const boot: Bootstrap = {
       trustCert: false,
       production: false,
     },
+    ...previewConnections,
   ],
   settings,
 };
@@ -1333,9 +1430,127 @@ const handlers: MockHandlers = {
     return schema;
   },
   list_databases: async (a) => {
-    return a.id === "demo"
-      ? null
-      : { databases: ["analytics", "master", "sales", "staging"], current: "master" };
+    if (a.id === "demo") return null;
+    if (a.id === "shared")
+      return { databases: ["meridian_orders", "portside_orders"], current: "meridian_orders" };
+    return { databases: ["analytics", "master", "sales", "staging"], current: "master" };
+  },
+  server_databases: async () => ({
+    databases: [
+      "acme_payroll",
+      "claims_main",
+      "meridian_orders",
+      "portside_orders",
+      "store_reports",
+    ],
+    current: "master",
+  }),
+  get_layout: async () => layout,
+  create_workspace: async (a) => {
+    const name = named(a.name);
+    if (layout.workspaces.some((w) => w.name.toLowerCase() === name.toLowerCase()))
+      throw "You already have a workspace with that name.";
+    const color = (layout.workspaces.length % 6) + 1;
+    layout = { ...layout, workspaces: [...layout.workspaces, { id: slug(name), name, color }] };
+    return layout;
+  },
+  rename_workspace: async (a) => {
+    const name = named(a.name);
+    layout = {
+      ...layout,
+      workspaces: layout.workspaces.map((w) => (w.id === a.id ? { ...w, name } : w)),
+    };
+    return layout;
+  },
+  delete_workspace: async (a) => {
+    if (a.id === "personal") throw "The Personal workspace can't be deleted.";
+    const placement = Object.fromEntries(
+      Object.entries(layout.placement).flatMap(([id, p]) =>
+        p.workspaceId !== a.id
+          ? [[id, p]]
+          : a.moveTo
+            ? [[id, { ...p, workspaceId: a.moveTo, groupId: null }]]
+            : [],
+      ),
+    );
+    if (!a.moveTo)
+      boot.connections = boot.connections.filter(
+        (c) => layout.placement[c.id]?.workspaceId !== a.id,
+      );
+    layout = {
+      ...layout,
+      placement,
+      workspaces: layout.workspaces.filter((w) => w.id !== a.id),
+      groups: layout.groups.filter((g) => g.workspaceId !== a.id),
+    };
+    return layout;
+  },
+  create_group: async (a) => {
+    const name = named(a.name);
+    if (
+      layout.groups.some(
+        (g) => g.workspaceId === a.workspaceId && g.name.toLowerCase() === name.toLowerCase(),
+      )
+    )
+      throw "This workspace already has a group with that name.";
+    layout = {
+      ...layout,
+      groups: [...layout.groups, { id: slug(name), workspaceId: a.workspaceId, name }],
+    };
+    return layout;
+  },
+  rename_group: async (a) => {
+    const name = named(a.name);
+    layout = { ...layout, groups: layout.groups.map((g) => (g.id === a.id ? { ...g, name } : g)) };
+    return layout;
+  },
+  delete_group: async (a) => {
+    layout = {
+      ...layout,
+      groups: layout.groups.filter((g) => g.id !== a.id),
+      databaseGroups: layout.databaseGroups.filter((d) => d.groupId !== a.id),
+      placement: Object.fromEntries(
+        Object.entries(layout.placement).map(([id, p]) => [
+          id,
+          p.groupId === a.id ? { ...p, groupId: null } : p,
+        ]),
+      ),
+    };
+    return layout;
+  },
+  move_connection: async (a) => {
+    const moved = (layout.placement[a.id]?.workspaceId ?? "personal") !== a.workspaceId;
+    layout = {
+      ...layout,
+      databaseGroups: moved
+        ? layout.databaseGroups.filter((d) => d.connectionId !== a.id)
+        : layout.databaseGroups,
+      placement: {
+        ...layout.placement,
+        [a.id]: {
+          workspaceId: a.workspaceId,
+          groupId: a.groupId,
+          allowedDatabases: layout.placement[a.id]?.allowedDatabases ?? null,
+        },
+      },
+    };
+    return layout;
+  },
+  set_database_group: async (a) => {
+    const others = layout.databaseGroups.filter(
+      (d) => d.connectionId !== a.id || d.database !== a.database,
+    );
+    layout = {
+      ...layout,
+      databaseGroups: a.groupId
+        ? [...others, { connectionId: a.id, database: a.database, groupId: a.groupId }]
+        : others,
+    };
+    return layout;
+  },
+  set_team_workspace: async (a) => {
+    layout = { ...layout, teamWorkspace: a.workspaceId };
+    return layout;
   },
   run_query: async (a) => {
     if (String(a.sql).includes("first_nme"))
@@ -1810,6 +2025,21 @@ const handlers: MockHandlers = {
   save_connection: async (a) => {
     // The backend's defaults for fields the form left out.
     const c = a.config;
+    const id = c.id || crypto.randomUUID();
+    if (a.placement) {
+      const old = layout.placement[id];
+      layout = {
+        ...layout,
+        placement: {
+          ...layout.placement,
+          [id]: {
+            workspaceId: a.placement.workspaceId ?? old?.workspaceId ?? "personal",
+            groupId: a.placement.groupId ?? old?.groupId ?? null,
+            allowedDatabases: a.placement.allowedDatabases ?? null,
+          },
+        },
+      };
+    }
     return {
       ...c,
       host: c.host ?? "",
@@ -1820,7 +2050,7 @@ const handlers: MockHandlers = {
       ssl: c.ssl ?? false,
       trustCert: c.trustCert ?? false,
       production: c.production ?? false,
-      id: c.id || crypto.randomUUID(),
+      id,
     };
   },
   delete_connection: async (a) => {
