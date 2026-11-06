@@ -105,9 +105,39 @@ describe("SayQL Team", () => {
     expect(teamSignIn).not.toHaveBeenCalled();
   });
 
+  it("asks again when SayQL comes to the front, applying only a list that changed", async () => {
+    const prod = conn("team:c_1", "Production", { database: "app", notes: "", groups: [] });
+    const billing = conn("team:c_2", "Billing", { database: "b", notes: "", groups: ["Portside"] });
+    teamConnections.mockResolvedValue([prod, billing]);
+    teamAi.mockResolvedValue(ai);
+    const apply = vi.fn();
+    const onLost = vi.fn();
+    renderHook(() => useTeamConnections(account, apply, vi.fn(), vi.fn(), onLost));
+    await waitFor(() => expect(apply).toHaveBeenCalledTimes(1));
+    expect(onLost).not.toHaveBeenCalled();
+
+    // Nothing changed: the list isn't applied again, which would reload the schemas.
+    window.dispatchEvent(new Event("focus"));
+    await waitFor(() => expect(teamConnections).toHaveBeenCalledTimes(2));
+    await new Promise((r) => setTimeout(r));
+    expect(apply).toHaveBeenCalledTimes(1);
+
+    // Access was removed on the server.
+    teamConnections.mockResolvedValue([prod]);
+    window.dispatchEvent(new Event("focus"));
+    await waitFor(() => expect(apply).toHaveBeenCalledTimes(2));
+    expect(onLost).toHaveBeenCalledWith([expect.objectContaining({ name: "Billing" })]);
+
+    // A server out of reach says nothing when coming back to the window, and changes nothing.
+    teamConnections.mockRejectedValue("Couldn't reach it.");
+    window.dispatchEvent(new Event("focus"));
+    await new Promise((r) => setTimeout(r));
+    expect(apply).toHaveBeenCalledTimes(2);
+  });
+
   it("signed in, loads the team's connections and shows the account and licence", async () => {
     teamConnections.mockResolvedValue([
-      conn("team:c_1", "Production", { database: "app", notes: "" }),
+      conn("team:c_1", "Production", { database: "app", notes: "", groups: [] }),
     ]);
     teamStatus.mockResolvedValue({ account, server: info, ai });
     teamSignOut.mockResolvedValue();
@@ -261,7 +291,7 @@ describe("SayQL Team", () => {
       <DatabaseNavigator
         connections={[
           conn("c1", "Local"),
-          conn("team:c_1", "Production", { database: "app", notes: "Read replica" }),
+          conn("team:c_1", "Production", { database: "app", notes: "Read replica", groups: [] }),
         ]}
         activeId={null}
         databases={{}}

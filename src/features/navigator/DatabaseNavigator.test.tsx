@@ -136,7 +136,7 @@ describe("DatabaseNavigator", () => {
       id: "team:c_1",
       name: "Production",
       kind: "postgres",
-      team: { database: "app", notes: "" },
+      team: { database: "app", notes: "", groups: [] },
     };
     const onEditNote = vi.fn();
     const onCheckNotes = vi.fn();

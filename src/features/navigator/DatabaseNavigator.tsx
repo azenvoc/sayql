@@ -54,6 +54,8 @@ import styles from "./DatabaseNavigator.module.css";
 export interface DatabaseNavigatorProps {
   /** The open workspace's groups. */
   groups?: { id: string; name: string }[];
+  /** Signed in to a team server, so an empty Team list means something. */
+  teamSignedIn?: boolean;
   groupOf?: (connectionId: string) => string | null;
   /** The single databases placed in a group. */
   databasesIn?: (groupId: string) => { connectionId: string; database: string }[];
@@ -649,6 +651,9 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
     !groups.length || !query || c.id === p.activeId || c.name.toLowerCase().includes(query);
   const own = p.connections.filter((c) => !c.team);
   const team = p.connections.filter((c) => c.team);
+  // Those not in one of this person's own groups, under the groups the team's server set up.
+  const teamLoose = team.filter((c) => !p.groupOf?.(c.id));
+  const serverGroups = [...new Set(teamLoose.flatMap((c) => c.team?.groups ?? []))].sort();
 
   const renderConnection = (c: ConnectionConfig, base = 0) => {
     const active = c.id === p.activeId;
@@ -744,7 +749,8 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
 
   const renderGroup = (g: { id: string; name: string }) => {
     const nameHit = !!query && g.name.toLowerCase().includes(query);
-    const whole = own.filter((c) => p.groupOf?.(c.id) === g.id);
+    // Local groups can hold team connections too: this only organises them on this computer.
+    const whole = p.connections.filter((c) => p.groupOf?.(c.id) === g.id);
     const singles = (p.databasesIn?.(g.id) ?? []).filter((d) =>
       p.connections.some((c) => c.id === d.connectionId),
     );
@@ -855,18 +861,52 @@ export function DatabaseNavigator(p: DatabaseNavigatorProps) {
             />
           </div>
         )}
-        {team.length > 0 && (
+        {team.length === 0 && p.teamSignedIn && (
+          <div role="group" className={styles.scripts}>
+            <TreeRow
+              depth={0}
+              icon={<Users size={14} />}
+              label={
+                <span className={styles.message}>
+                  Your team admin hasn&apos;t given you access to any databases yet
+                </span>
+              }
+            />
+          </div>
+        )}
+        {teamLoose.length > 0 && (
           <div role="group" className={styles.scripts}>
             <TreeRow
               depth={0}
               expanded={!collapsed.has("team")}
               icon={<Users size={14} />}
               label={<span className={styles.connLabel}>Team</span>}
-              meta={team.length}
+              meta={teamLoose.length}
               title="Shared by your team admin on your team's SayQL server. Queries on them run there."
               onClick={() => setCollapsed((s) => toggle(s, "team"))}
             />
-            {!collapsed.has("team") && team.map((c) => renderConnection(c))}
+            {!collapsed.has("team") &&
+              serverGroups.map((name) => {
+                const key = `team-group:${name}`;
+                const open = !collapsed.has(key);
+                const members = teamLoose.filter((c) => c.team?.groups?.includes(name));
+                return (
+                  <div key={key} role="group">
+                    <TreeRow
+                      depth={1}
+                      expanded={open}
+                      icon={<Layers size={14} />}
+                      label={<span className={styles.connLabel}>{name}</span>}
+                      meta={members.length}
+                      title="A group your team admin set up on your team's SayQL server."
+                      onClick={() => setCollapsed((s) => toggle(s, key))}
+                    />
+                    {open && members.map((c) => renderConnection(c, 2))}
+                  </div>
+                );
+              })}
+            {!collapsed.has("team") &&
+              teamLoose.filter((c) => !c.team?.groups?.length).map((c) => renderConnection(c, 1))}
           </div>
         )}
         {p.scripts.length > 0 && (

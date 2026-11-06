@@ -5,6 +5,13 @@ All notable changes to SayQL are listed here. Downloads are on the
 
 ## Unreleased
 
+### Access on team servers
+
+- **Your team's server decides which databases you can use,** with team server 0.6.0. SayQL asks again when it comes
+  to the front, so new access shows up without a restart. When you lose access, its tabs close and SayQL says so,
+  and a tab with SQL that isn't saved stays so you can copy it.
+- **Your team admin's groups** show under Team, read-only. They're separate from your own groups.
+
 ### Workspaces and groups
 
 - **Workspaces keep each company's databases apart.** Each has its own connections, groups, saved scripts and

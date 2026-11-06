@@ -47,6 +47,8 @@ struct TeamInfo {
     /// The database's name on the server, for display.
     database: String,
     notes: String,
+    /// The server groups it's in, by name, shown read-only under Team.
+    groups: Vec<String>,
 }
 
 fn view(c: &TeamConnection) -> Option<TeamConnectionView> {
@@ -69,6 +71,7 @@ fn view(c: &TeamConnection) -> Option<TeamConnectionView> {
         team: TeamInfo {
             database: c.database.clone(),
             notes: c.notes.clone(),
+            groups: c.groups.clone(),
         },
     })
 }
