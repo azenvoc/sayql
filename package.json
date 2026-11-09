@@ -20,10 +20,10 @@
   },
   "dependencies": {
     "@monaco-editor/react": "4.7.0",
-    "@tanstack/react-virtual": "3.14.21",
+    "@tanstack/react-virtual": "3.14.26",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
-    "lucide-react": "1.59.0",
+    "lucide-react": "1.69.0",
     "monaco-editor": "0.57.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
@@ -34,13 +34,13 @@
     "@testing-library/react": "^16.3.3",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^6.0.2",
+    "@vitejs/plugin-react": "^6.2.1",
     "jsdom": "^26.1.0",
-    "oxlint": "1.90.0",
+    "oxlint": "1.91.0",
     "prettier": "3.9.10",
     "typescript": "~7.0.2",
-    "vite": "^8.0.16",
-    "vitest": "5.0.5"
+    "vite": "^8.3.6",
+    "vitest": "5.1.0"
   },
   "pnpm": {
     "overrides": {
