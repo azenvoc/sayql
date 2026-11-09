@@ -54,12 +54,26 @@
 <p>For admins. Claude Code, Cursor and your own bots can query your databases through the server, over MCP, under rules you set per agent.</p>
 <ul>
   <li>On the admin page, open <b>Agents</b> and click <b>Add agent</b>. Give it a name, tick the connections it may use, and choose what it gets back from a query: only the row count and column names, <b>counts and summaries</b> (the default: no row values), or all rows.</li>
+  <li><b>Limit what it may read</b> on the same form, or later with <b>What it can read</b>: the tables, and which rows. It can't get around a limit: queries that reach anything else are refused and logged. A filter can apply to every table with a column like <code>tenant_id</code>. The form says which tables that leaves unfiltered, and with <b>All tables</b> a table added later isn't filtered until you add it. If you have access to the database, <b>Test</b> counts the rows a filter matches, and that's in the audit log. Needs team server 0.6.0.</li>
   <li>Copy what the page shows once: the <code>claude mcp add</code> command for Claude Code, or the config for Cursor and other MCP apps. They hold the agent's key, which starts with <code>sqa_</code>. The server keeps only a hash of it.</li>
   <li>The agent can list its connections, read the schema and run read-only queries. Columns marked never send are refused and withheld on the server, and nothing can change data.</li>
   <li>Every query an agent runs, or tries on a connection it isn't allowed, is in the <b>Audit log</b> under <code>agent: name</code>, with the source <b>AI agent (gateway)</b>.</li>
-  <li>Change an agent's setting any time, or click <b>Revoke</b>: its key stops working at once.</li>
+  <li><b>Every key expires</b>, after 90 days unless you choose, a year at most. <b>Renew</b> extends it. Every agent has an <b>owner</b> on the team: it never reaches a database its owner can't, and it stops when its owner leaves, until you give it a new one. Needs team server 0.6.0.</li>
+  <li>Change an agent's setting any time, or click <b>Revoke</b>: its key stops working at once. Every change is in the audit log, with who made it and from what to what.</li>
 </ul>
 <p>An agent sees what you allow wherever it runs, so choose all rows only for data you're happy to give that agent.</p>
+
+<h2 id="access">Who can use which database</h2>
+<p>For admins, with team server 0.6.0. Without access, a database doesn't exist for that person: it isn't listed, and asking for it gets the same reply as for one that was never there. On the admin page, open <b>Access</b>.</p>
+<ul>
+  <li><b>Give access</b> to one person, everyone on the team, or a group from your login provider, on one connection or a <b>group</b> of them, like one client project. Add an end date for contractors.</li>
+  <li><b>Removing access</b> takes effect on the person's next request. A query already running finishes.</li>
+  <li><b>New connections start closed</b>, with only their creator's access. <b>Upgrading doesn't lock anyone out</b>: connections from before stay open to everyone, with a banner until you review them.</li>
+  <li><b>The access review</b> shows who can reach what and why, for people and agents, and downloads as a CSV.</li>
+  <li><b>Every change is in the audit log</b>, saved together with the change.</li>
+</ul>
+<p><b>Admins go through this too.</b> They can manage a connection without reading it, and giving yourself access is on record. That makes it a record rather than a wall: an admin can give themselves access, and whoever runs the server can read its files.</p>
+<p><b>Login provider groups</b> count as of the person's last sign-in with it, so a change there can lag until they sign in again. Okta and similar providers send groups, Microsoft sends app roles, and Google sends none, so Workspace teams name people. Someone removed at your provider keeps access until their session ends; removing them in SayQL stops them at once.</p>
 
 <h2 id="shared-knowledge">Shared knowledge</h2>
 <p>For admins and connection owners, with team server 0.5.0. One set of facts about each database that the schema can't tell (what a status code means, which table is current, how two tables relate), kept on your server and used by every agent behind the gateway.</p>
@@ -86,6 +100,7 @@
 <p>The team's connections appear in the Database Navigator under <b>Team</b>. They work like your own: the Ask box, the editor and Investigate all use them. A few things differ:</p>
 <ul>
   <li><b>Read-only.</b> Your team's server runs only queries that read data. A statement that would change data is refused before it reaches the database.</li>
+  <li><b>Only what you've been given.</b> You see the connections your admin gave you access to, and any groups your admin set up. SayQL checks again whenever it comes to the front. When you lose access, its tabs close and SayQL says so; a tab with SQL that isn't saved stays, so you can copy it. Your own workspaces and groups only organise them on your computer, and don't change what you can reach.</li>
   <li><b>No host or password.</b> SayQL never sees them: the schema and every query go through your team's server. Team connections can't be edited or deleted in SayQL; your team admin manages them.</li>
   <li><b>Audited.</b> Each query is recorded in the server's audit log with where it came from (Ask box, editor or agent) and, from the Ask box or Investigate, the question it answers. Results are never stored.</li>
 </ul>
