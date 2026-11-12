@@ -5,6 +5,11 @@ All notable changes to SayQL are listed here. Downloads are on the
 
 ## Unreleased
 
+### Security
+
+- **Updated two dependencies with security advisories:** the `zip` library used by the app updater, and `tokio`. The
+  updater only unpacks an update after checking SayQL's signature on it.
+
 ## 0.7.0 (2026-11-09)
 
 ### Access on team servers
