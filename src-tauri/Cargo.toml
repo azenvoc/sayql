@@ -114,7 +114,7 @@ rustix = { version = "1", features = ["process"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # tauri-plugin-deep-link 2.6.2 doesn't compile with rust-ini 0.21.2+ (new ParseOption fields).
-rust-ini = "=0.21.1"
+rust-ini = "=0.21.3"
 
 # Patched copies of two database drivers; see vendor/README.md for what changed and why.
 [patch.crates-io]
